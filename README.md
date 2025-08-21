@@ -1,40 +1,149 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+[join discord server](https://discord.gg/NTKHD9pW) 
 
-## Getting Started
+### current priority 
+- chromium extension 
+
+
+# Klariti OS
+
+## [Manifesto] : Project anti zuckerberg
+
+
+> We believe that technology should serve people, not exploit them. We reject addictive designs and data commodification. We hence prioritize transparency, privacy, and digital well-being. Our tools empower users to reclaim their time, align technology with human values, and live balanced, productive lives.
+
+
+### We are developing a system to address the growing issue of digital addiction and its associated impacts. This initiative includes creating a web application, a Chrome extension, and a mobile app. The project will involve conducting research on brain activity linked to interactions with specific digital platforms, such as Instagram. Insights from this research will guide the design of effective solutions to counteract highly addictive algorithms.
+
+
+---
+
+# [suggested] Repository Structure (there will be some changes)
  
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev 
-# or
-pnpm dev
-# or
-bun dev
+```graphql
+klariti-OS/
+│
+├── extensions/
+│   ├── chromium/        # Chromium-based browser extension
+│   ├── firefox/         # Firefox-specific implementation or adaptations
+│   ├── safari/          # Safari-specific implementation or adaptations
+│   └── shared/          # Shared code or assets used across all extensions
+│
+├── mobile/
+│   ├── android/         # Android-specific code
+│   ├── ios/             # iOS-specific code
+│   └── shared/          # Shared code (if using a cross-platform framework like Flutter or React Native)
+│
+├── desktop/
+│   ├── electron/        # If using Electron or similar frameworks
+│   ├── macos/           # macOS-specific implementation (if native)
+│   ├── windows/         # Windows-specific implementation (if native)
+│   ├── linux/           # Linux-specific implementation (if native)
+│   └── shared/          # Shared code for the desktop apps
+│
+├── backend/             # Backend services for sync, data storage, or APIs
+│   ├── api/             # API implementation
+│   ├── database/        # Database migrations or setup
+│   └── auth/            # Authentication logic
+│
+├── common/              # Shared utilities, constants, or libraries across all platforms
+│   ├── utils/
+│   ├── config/
+│   └── assets/          # Common assets like icons, images, etc.
+│
+├── docs/                # Documentation for the project
+│   ├── api/             # API documentation
+│   ├── development/     # Development guidelines and setup instructions
+│   └── user/            # User-facing documentation (e.g., README, FAQ)
+│
+├── tests/               # Centralized test cases (unit, integration, E2E)
+│   ├── extensions/
+│   ├── mobile/
+│   ├── desktop/
+│   ├── backend/
+│   └── common/
+│
+├── scripts/             # Helper scripts for building, testing, or deployment
+│   ├── build/           # Build scripts
+│   ├── deploy/          # Deployment scripts
+│   └── setup/           # Environment setup scripts
+│
+├── .github/             # GitHub-specific configuration
+│   ├── workflows/       # CI/CD pipeline configurations
+│   └── ISSUE_TEMPLATE/  # Issue templates for contributors
+│
+├── package.json         # Dependencies (if using Node.js for parts of the project)
+├── README.md            # Main project README
+└── LICENSE              # Project license
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+## Development
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+### Prerequisites
+- **Node.js** (for extensions and some shared utilities)
+- **Android Studio** and/or **Xcode** (for mobile apps)
+- **Electron** (for desktop apps)
+- **Docker** (for backend services)
+- **Git** (for version control)
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+### Getting Started
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/snwtr/klariti-os.git
+   cd <repo-name>
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+2. Install dependencies for the component you want to work on. For example:
+   ```bash
+   # For extensions
+   cd extensions/chromium
+   npm install
+   ```
 
-## Learn More
+3. Start the development environment:
+   ```bash
+   npm start
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Contributing
+We welcome contributions! Please follow these steps:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+1. Fork the repository.
+2. Create a new branch for your feature or bug fix:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. Commit your changes:
+   ```bash
+   git commit -m "Add your feature description here"
+   ```
+4. Push to your fork and submit a pull request.
 
-## Deploy on Vercel
+Refer to the `CONTRIBUTING.md` file in the `docs/development/` directory for more details.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## Testing
+Tests are organized by component under the `tests/` directory. Run tests using:
+
+```bash
+npm test
+```
+
+Refer to individual component directories for specific testing instructions.
+
+---
+
+## License
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+---
+
+## Contact
+For inquiries or support, contact [klariti@googlegroups.com](mailto:klariti@googlegroups.com).
+
+
+![sample image](common/assets/snwtr.png)
