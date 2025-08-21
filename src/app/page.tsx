@@ -15,7 +15,7 @@ import Kline from "@/components/kline";
 export const metadata: Metadata = {
   title: "Klariti OS",
   description:
-    "Reklaim your time — develop a healthy relationship with technology",
+    "Reklaim your time — Develop a healthy relationship with technology",
   openGraph: {
     title: "Klariti .ORG",
     description: "Develope a healthier relationship with technology",
