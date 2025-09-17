@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toggle Recommendations</title>
+  <style>
+    /* Global styling */
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f7f7f7;
+    }
+    
+    .container {
+      text-align: center;
+      padding: 25px;
+      border-radius: 15px;
+      background-color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      width: 320px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 250px;
+    }
+
+    h2 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+
+    /* Switch Styling */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 50px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      border-radius: 50px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: 0.4s;
+    }
+
+    input:checked + .slider {
+      background-color: #4CAF50;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    /* Status message styling */
+    .status-message {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #333;
+      transition: color 0.4s;
+      flex-grow: 1;
+    }
+
+    .status-message.success {
+      color: #4CAF50;
+    }
+
+    .status-message.error {
+      color: #f44336;
+    }
+
+    /* Footer styling */
+    footer {
+      width: 100%;
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+      padding-top: 20px;
+    }
+
+    footer a {
+      text-decoration: none;
+      color: #4CAF50;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Toggle YouTube Recommendations</h2>
+
+    <label class="switch">
+      <input type="checkbox" id="toggleSwitch">
+      <span class="slider"></span>
+    </label>
+
+    <div class="status-message" id="statusMessage"></div>
+  </div>
+
+  <footer>
+    <p>&copy; <a href="https://klariti.org" target="_blank">Klariti OS</a> 2025. All rights reserved.</p>
+  </footer>
+
+  <script src="popup.js"></script>
+  
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+    "manifest_version": 3,
+    "name": "klariti-os",
+    "version": "1.0.0",
+    "action": {
+        "default_icon" : "snwtr.png"
+    },
+    "permission": ["tabs"],
+    "background":{
+        "service_worker": "background.js"
+    }
+}
+

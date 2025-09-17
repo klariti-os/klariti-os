@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toggle Button</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      width: 275px;
+      height: 155px;
+      background-image: url('images/popup_icon.png'); 
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed; 
+      background-position: center;
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+    }
+    .container {
+      text-align: center;
+      transform: translateX(-31px)
+    }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #413f3f; 
+        width:70px;
+        height:30px;
+        border-radius: 90px; 
+        transition: 0.4s;
+      }
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 21px; 
+        width: 21px; 
+        left: 4px; 
+        bottom: 4px;
+        background-color: rgb(248, 242, 242);
+        border-radius: 50%; 
+        transition: 0.4s;
+      }
+      input:checked + .slider {
+        background-color: #0ed215; 
+      }
+      input:checked + .slider:before {
+        transform: translateX(40px); 
+      }
+    .status {
+      margin-top: 10px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <label class="toggle-switch">
+        <input type="checkbox" id="toggle">
+        <span class="slider"></span>
+      </label>
+  </div>
+  <script src="scripts/popup.js"></script>
+</body>
+</html>
