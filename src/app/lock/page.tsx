@@ -82,11 +82,11 @@ export default function LockPage() {
         </div>
 
         <div className="pt-8 mt-8">
-          <div className="border border-white/30 rounded-lg p-6 bg-black/50 backdrop-blur-sm">
+          <div className="border border-white/30 rounded-lg p-6 bg-black/30 backdrop-blur-sm">
             <blockquote className="mb-3">
-              <p className="font-pp-editorial-ultralight-italic text-xl text-white">&ldquo;{randomQuote.text}&rdquo;</p>
+              <p className="font-pp-editorial-ultralight  text-2xl text-white">&ldquo;{randomQuote.text}&rdquo;</p>
             </blockquote>
-            <cite className="text-sm text-white/70 block text-right">— {randomQuote.author}</cite>
+            <cite className="text-sm non-italic text-white/70 block uppercase text-right">— {randomQuote.author}</cite>
           </div>
         </div>
       </div>
