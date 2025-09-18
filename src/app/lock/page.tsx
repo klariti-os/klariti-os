@@ -1,4 +1,12 @@
 import React from 'react';
+import localFont from 'next/font/local';
+
+// Using PP Editorial New Ultralight from local font files
+const ppEditorial = localFont({
+  src: 'fonts/editorial-new-font-family-1758145744-0/PPEditorialNew-Ultralight-BF644b21500d0c0.otf',
+  variable: '--font-pp-editorial',
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'K-Switch Activated',
@@ -30,13 +38,13 @@ export default function LockPage() {
   const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
+    <div className={`flex flex-col items-center justify-center min-h-screen p-4 text-center ${ppEditorial.variable}`}>
       <div className="max-w-2xl mx-auto">
         <div className="mb-16">
-          <h1 className="text-4xl md:text-6xl font-bold mb-8">
+          <h1 className="font-pp-editorial text-4xl md:text-6xl mb-8 tracking-wider leading-relaxed">
             K-switch has been activated
           </h1>
-          <p className="text-xl md:text-2xl">
+          <p className="font-serif italic text-xl md:text-2xl">
             Go reKlaim your time
           </p>
         </div>
