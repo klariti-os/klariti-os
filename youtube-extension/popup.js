@@ -8,6 +8,10 @@ function updateUI(isRecommendationsHidden, apiForceHide, userPreferenceHide) {
   // Disable the toggle if API is forcing hide
   toggleSwitch.disabled = apiForceHide && isRecommendationsHidden;
   
+  // Disable the strict mode checkbox if API is forcing hide (lock is activated)
+  const strictModeCheckbox = document.getElementById("strictModeCheckbox");
+  strictModeCheckbox.disabled = apiForceHide && isRecommendationsHidden;
+  
   // Add a class to the switch when it's disabled by API
   const switchContainer = document.querySelector(".switch");
   if (apiForceHide && isRecommendationsHidden) {
@@ -27,6 +31,15 @@ function updateUI(isRecommendationsHidden, apiForceHide, userPreferenceHide) {
         h1::after {
           content: " 🔒";
           font-size: 20px;
+        }
+        /* Style for disabled strict mode checkbox */
+        .checkbox-container input:disabled + label {
+          color: #999;
+          cursor: not-allowed;
+        }
+        .checkbox-container input:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
       `;
       document.head.appendChild(styleEl);
@@ -130,7 +143,47 @@ document.getElementById("toggleSwitch").addEventListener("change", (event) => {
 // Event listener for the strict mode checkbox
 document.getElementById("strictModeCheckbox").addEventListener("change", (event) => {
   const isChecked = event.target.checked;
+  const toggleSwitch = document.getElementById("toggleSwitch");
+  const statusMessage = document.getElementById("statusMessage");
   
-  // Save the strict mode setting
-  chrome.storage.local.set({ strictMode: isChecked });
+  // Check if API lock is activated before allowing changes
+  chrome.storage.local.get(["apiForceHide", "isRecommendationsHidden"], (data) => {
+    const apiForceHide = data.apiForceHide !== undefined ? data.apiForceHide : false;
+    const isRecommendationsHidden = data.isRecommendationsHidden !== undefined ? data.isRecommendationsHidden : false;
+    
+    // If API is forcing hide, prevent strict mode changes
+    if (apiForceHide && isRecommendationsHidden) {
+      event.preventDefault();
+      // Revert the checkbox state to its previous value
+      chrome.storage.local.get(["strictMode"], (data) => {
+        const strictMode = data.strictMode !== undefined ? data.strictMode : false;
+        event.target.checked = strictMode;
+      });
+      
+      // Show warning message
+      statusMessage.textContent = "Cannot change strict mode while lock is active.";
+      statusMessage.className = "status-message warning";
+      statusMessage.style.display = "block";
+      
+      // Hide the message after 3 seconds
+      setTimeout(() => {
+        statusMessage.style.display = "none";
+      }, 3000);
+      
+      return;
+    }
+    
+    // If API lock is not active, proceed with the change
+    // Save the strict mode setting
+    chrome.storage.local.set({ strictMode: isChecked }, () => {
+      // If strict mode is being enabled and the toggle is ON, 
+      // immediately check for YouTube tabs to close
+      if (isChecked && toggleSwitch.checked) {
+        chrome.runtime.sendMessage({ 
+          action: "strictModeEnabled",
+          isRecommendationsHidden: toggleSwitch.checked
+        });
+      }
+    });
+  });
 });
