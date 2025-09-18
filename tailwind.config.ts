@@ -17,7 +17,9 @@ const config: Config = {
       fontFamily: {
         sans: ["Nunito", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
-        "pp-editorial": ["var(--font-pp-editorial)", "serif"],
+        "pp-editorial-ultralight": ["var(--font-pp-editorial-ultralight)", "serif"],
+        "pp-editorial-regular": ["var(--font-pp-editorial-regular)", "serif"],
+        "pp-editorial-ultralight-italic": ["var(--font-pp-editorial-ultralight-italic)", "serif"],
       },
     },
   },

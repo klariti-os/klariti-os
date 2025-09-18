@@ -2,9 +2,41 @@ import React from 'react';
 import localFont from 'next/font/local';
 
 // Using PP Editorial New Ultralight from local font files
-const ppEditorial = localFont({
-  src: 'fonts/editorial-new-font-family-1758145744-0/PPEditorialNew-Ultralight-BF644b21500d0c0.otf',
-  variable: '--font-pp-editorial',
+const ppEditorialUltralight = localFont({
+  src: [
+    {
+      path: '../../../public/fonts/editorial-new/PPEditorialNew-Ultralight.otf',
+      weight: '200',
+      style: 'normal',
+    }
+  ],
+  variable: '--font-pp-editorial-ultralight',
+  display: 'swap',
+});
+
+// Using PP Editorial New Regular for "reclaim your time"
+const ppEditorialRegular = localFont({
+  src: [
+    {
+      path: '../../../public/fonts/editorial-new/PPEditorialNew-Regular.otf',
+      weight: '400',
+      style: 'normal',
+    }
+  ],
+  variable: '--font-pp-editorial-regular',
+  display: 'swap',
+});
+
+// Using PP Editorial New UltralightItalic for quotes
+const ppEditorialUltralightItalic = localFont({
+  src: [
+    {
+      path: '../../../public/fonts/editorial-new/PPEditorialNew-UltralightItalic.otf',
+      weight: '200',
+      style: 'italic',
+    }
+  ],
+  variable: '--font-pp-editorial-ultralight-italic',
   display: 'swap',
 });
 
@@ -38,13 +70,13 @@ export default function LockPage() {
   const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
 
   return (
-    <div className={`flex flex-col items-center justify-center min-h-screen p-4 text-center ${ppEditorial.variable}`}>
+    <div className={`flex flex-col items-center justify-center min-h-screen p-4 text-center ${ppEditorialUltralight.variable} ${ppEditorialRegular.variable} ${ppEditorialUltralightItalic.variable}`}>
       <div className="max-w-2xl mx-auto">
         <div className="mb-16">
-          <h1 className="font-pp-editorial text-4xl md:text-6xl mb-8 tracking-wider leading-relaxed">
+          <h1 className="font-pp-editorial-ultralight text-4xl md:text-6xl mb-8 tracking-wider leading-relaxed">
             K-switch has been activated
           </h1>
-          <p className="font-serif italic text-xl md:text-2xl">
+          <p className="font-pp-editorial-regular text-xl md:text-2xl">
             Go reKlaim your time
           </p>
         </div>
@@ -52,7 +84,7 @@ export default function LockPage() {
         <div className="pt-8 mt-8">
           <div className="border border-white/30 rounded-lg p-6 bg-black/50 backdrop-blur-sm">
             <blockquote className="mb-3">
-              <p className="text-xl italic text-white">&ldquo;{randomQuote.text}&rdquo;</p>
+              <p className="font-pp-editorial-ultralight-italic text-xl text-white">&ldquo;{randomQuote.text}&rdquo;</p>
             </blockquote>
             <cite className="text-sm text-white/70 block text-right">— {randomQuote.author}</cite>
           </div>
