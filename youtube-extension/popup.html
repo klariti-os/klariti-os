@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Toggle Recommendations</title>
+  <title>Klariti</title>
   <style>
     /* Global styling */
     body {
@@ -19,21 +19,20 @@
     
     .container {
       text-align: center;
-      padding: 25px;
-      border-radius: 15px;
+      padding: 20px;
+      border-radius: 12px;
       background-color: #fff;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      width: 320px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      width: 260px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      height: 250px;
+      align-items: center;
     }
 
-    h2 {
-      font-size: 24px;
+    h1 {
+      font-size: 28px;
       color: #333;
-      margin-bottom: 20px;
+      margin: 0 0 25px 0;
       font-weight: 600;
     }
 
@@ -43,6 +42,7 @@
       display: inline-block;
       width: 60px;
       height: 34px;
+      margin: 15px 0;
     }
 
     .switch input {
@@ -83,55 +83,46 @@
       transform: translateX(26px);
     }
 
-    /* Status message styling */
-    .status-message {
-      margin-top: 20px;
+    /* Checkbox styling */
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      margin-top: 15px;
+    }
+
+    .checkbox-container input {
+      margin-right: 8px;
+    }
+
+    .checkbox-container label {
       font-size: 14px;
-      color: #333;
-      transition: color 0.4s;
-      flex-grow: 1;
+      color: #444;
     }
 
-    .status-message.success {
-      color: #4CAF50;
-    }
-
-    .status-message.error {
-      color: #f44336;
-    }
-
-    /* Footer styling */
-    footer {
-      width: 100%;
-      text-align: center;
-      font-size: 12px;
-      color: #666;
-      padding-top: 20px;
-    }
-
-    footer a {
-      text-decoration: none;
-      color: #4CAF50;
-      font-weight: 600;
+    /* Hide status message by default */
+    .status-message {
+      display: none;
     }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h2>Toggle YouTube Recommendations</h2>
+    <h1>Klariti OS</h1>
 
     <label class="switch">
       <input type="checkbox" id="toggleSwitch">
       <span class="slider"></span>
     </label>
 
+    <!-- Hidden but kept for functionality -->
     <div class="status-message" id="statusMessage"></div>
+    
+    <div class="checkbox-container">
+      <input type="checkbox" id="strictModeCheckbox">
+      <label for="strictModeCheckbox">Strict Mode</label>
+    </div>
   </div>
-
-  <footer>
-    <p>&copy; <a href="https://klariti.org" target="_blank">Klariti OS</a> 2025. All rights reserved.</p>
-  </footer>
 
   <script src="popup.js"></script>
   
