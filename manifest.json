@@ -1,13 +1,29 @@
 {
-    "manifest_version": 3,
-    "name": "klariti-os",
-    "version": "1.0.0",
-    "action": {
-        "default_icon" : "snwtr.png"
-    },
-    "permission": ["tabs"],
-    "background":{
-        "service_worker": "background.js"
-    }
-}
+  "manifest_version": 3,
+  "name": "Klariti OS",
+  "version": "1.0",
+  "description": "Customize different websites to optimize for your digital well-being ",
+  "permissions": ["tabs", "activeTab", "storage", "alarms"],
+  "background": {
+    "service_worker": "background.js"
+  },
 
+  "content_scripts": [
+    {
+      "matches": ["*://www.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "snwtr.png",
+      "32": "snwtr.png"
+    }
+  },
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://k-switch.onrender.com/*"
+  ]
+}
