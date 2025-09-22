@@ -14,9 +14,9 @@ const ToolsPage: NextPage = () => {
           <EmbedSection
             title="Pitch Video"
             description="watch our pitch video"
-            embedSrc="https://www.youtube.com/embed/atjAUR"
-            buttonHref="https://youtu.be/atjAURP2_9"
-            buttonText="Watch on YouTube"
+            embedSrc="https://player.vimeo.com/video/1120696066?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479"
+            buttonHref="https://player.vimeo.com/video/1120696066?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479"
+            buttonText="Full Preview"
             allowAttributes="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           />
           <EmbedSection
