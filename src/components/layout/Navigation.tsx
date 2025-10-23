@@ -37,7 +37,7 @@ const Navigation: React.FC = () => {
         
         {!isLoading && user && (
           <>
-            <NavItem href="/playground" title="Dashboard" />
+            <NavItem href="/dashboard" title="Dashboard" />
             <button
               onClick={logout}
               className="transition-[box-shadow_background-color_border-color] duration-300 motion-reduce:transition-none font-bold ml-auto mr-2 px-4 py-2.5 rounded-lg hover:bg-red-300/30"

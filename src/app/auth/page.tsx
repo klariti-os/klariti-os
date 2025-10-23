@@ -26,7 +26,7 @@ export default function AuthPage() {
     if (checkIsLoggedIn()) {
       console.log("User is logged in, redirecting after brief delay");
       const timer = setTimeout(() => {
-        router.push("/playground");
+        router.push("/dashboard");
       }, 500);
 
       return () => clearTimeout(timer);
@@ -57,7 +57,7 @@ export default function AuthPage() {
     const data = await res.json();
     localStorage.setItem("access_token", data.access_token);
     console.log("Login successful, token stored");
-    router.push("/playground");
+    router.push("/dashboard");
   };
 
   const handleRegister = async (username: string, password: string) => {
