@@ -1,7 +1,6 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import Cookies from "js-cookie";
 import { config } from "@/config/api";
 
 interface User {
@@ -29,10 +28,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const checkAuth = async () => {
-    const token = Cookies.get("auth_token");
+    const token = localStorage.getItem("access_token");
     if (token) {
       try {
-        // Verify token with backend (no /auth prefix)
+        // Verify token with backend
         const response = await fetch(`${config.apiUrl}/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -44,11 +43,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(userData);
         } else {
           // Token is invalid, remove it
-          Cookies.remove("auth_token");
+          localStorage.removeItem("access_token");
         }
       } catch (error) {
         console.error("Auth check failed:", error);
-        Cookies.remove("auth_token");
+        localStorage.removeItem("access_token");
       }
     }
     setIsLoading(false);
@@ -87,8 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
       console.log("Login successful, token received");
       
-      // Store token in cookie (JWT token for future requests)
-      Cookies.set("auth_token", data.access_token, { expires: 7 }); // 7 days
+      // Store token in localStorage (JWT token for future requests)
+      localStorage.setItem("access_token", data.access_token);
 
       // Fetch user data using the token
       const userResponse = await fetch(`${config.apiUrl}/me`, {
@@ -146,7 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    Cookies.remove("auth_token");
+    localStorage.removeItem("access_token");
     setUser(null);
   };
 
