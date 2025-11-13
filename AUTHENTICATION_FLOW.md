@@ -8,7 +8,7 @@
 ┌──────────────┐
 │   Browser    │
 │   Requests   │
-│  /playground │
+│  /dashboard  │
 └──────┬───────┘
        │
        ▼
