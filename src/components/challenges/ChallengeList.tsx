@@ -88,11 +88,28 @@ export default function ChallengeList({
 
   const handleToggleChallenge = async (challengeId: number) => {
     try {
+      // Optimistically update the UI first
+      setChallenges(prevChallenges =>
+        prevChallenges.map(challenge => {
+          if (challenge.id === challengeId && challenge.toggle_details) {
+            return {
+              ...challenge,
+              toggle_details: {
+                ...challenge.toggle_details,
+                is_active: !challenge.toggle_details.is_active,
+              },
+            };
+          }
+          return challenge;
+        })
+      );
+
+      // Then make the API call
       await toggleChallengeStatus(challengeId);
-      // Reload challenges to reflect the change
-      await loadChallenges();
     } catch (err: any) {
+      // On error, revert by reloading
       alert(err.message || "Failed to toggle challenge");
+      await loadChallenges();
     }
   };
 
