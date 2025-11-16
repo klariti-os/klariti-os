@@ -235,7 +235,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 
 // Create light-weight alarms
 chrome.alarms.create('keepAlive', { periodInMinutes: 1 });
-chrome.alarms.create('checkActiveTab', { periodInMinutes: 0.25 }); // ~15s
+chrome.alarms.create('checkActiveTab', { periodInMinutes: 0.01 }); // ~15s
 chrome.alarms.create('checkTimedChallenges', { periodInMinutes: 1 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -265,9 +265,30 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   }
 });
 
-// Check when Chrome window regains focus
-chrome.windows.onFocusChanged.addListener(async (windowId) => {
-  if (windowId !== chrome.windows.WINDOW_ID_NONE) {
-    await checkActiveTab();
+// Check when Chrome window regains focus (immediate close if blocked)
+chrome.windows.onFocusChanged.addListener((windowId) => {
+  console.log('Window focus changed:', windowId);
+  if (windowId === chrome.windows.WINDOW_ID_NONE) return;
+  chrome.tabs.query({ active: true, windowId }, (tabs) => {
+    if (!tabs || tabs.length === 0) return;
+    const tab = tabs[0];
+    const url = tab.url;
+    if (!url) return;
+    if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) return;
+    if (isUrlBlocked(url)) {
+      chrome.tabs.remove(tab.id).catch(err => console.error('Error closing focused blocked tab:', err));
+    }
+  });
+});
+
+// Check when a tab's URL changes (immediate reaction)
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (!tab || !tab.active) return;
+  if (!changeInfo.url && changeInfo.status !== 'loading') return;
+  const url = tab.url;
+  if (!url) return;
+  if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) return;
+  if (isUrlBlocked(url)) {
+    chrome.tabs.remove(tabId).catch(err => console.error('Error closing updated blocked tab:', err));
   }
 });
