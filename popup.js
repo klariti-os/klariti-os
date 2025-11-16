@@ -1,189 +1,296 @@
-// Function to update UI based on state
-function updateUI(isRecommendationsHidden, apiForceHide, userPreferenceHide) {
-  const toggleSwitch = document.getElementById("toggleSwitch");
+// popup.js - Handle authentication and display challenges
+
+// Import config
+// Note: config.js is loaded before this script in popup.html
+
+// UI Elements
+const authSection = document.getElementById('authSection');
+const challengesSection = document.getElementById('challengesSection');
+const loadingSection = document.getElementById('loadingSection');
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const authError = document.getElementById('authError');
+const userName = document.getElementById('userName');
+const challengesList = document.getElementById('challengesList');
+const connectionStatus = document.getElementById('connectionStatus');
+
+// State
+let currentUser = null;
+let challenges = [];
+let wsConnection = null;
+
+// Initialize popup
+async function init() {
+  // Check if user is already logged in
+  const { access_token, username } = await chrome.storage.local.get(['access_token', 'username']);
   
-  // Update the checkbox state based on user preference, not the effective state
-  toggleSwitch.checked = userPreferenceHide !== undefined ? userPreferenceHide : isRecommendationsHidden;
-  
-  // Disable the toggle if API is forcing hide
-  toggleSwitch.disabled = apiForceHide && isRecommendationsHidden;
-  
-  // Disable the strict mode checkbox if API is forcing hide (lock is activated)
-  const strictModeCheckbox = document.getElementById("strictModeCheckbox");
-  strictModeCheckbox.disabled = apiForceHide && isRecommendationsHidden;
-  
-  // Add a class to the switch when it's disabled by API
-  const switchContainer = document.querySelector(".switch");
-  if (apiForceHide && isRecommendationsHidden) {
-    switchContainer.classList.add("api-forced");
-    // Add a special style for forced API state if it doesn't exist
-    if (!document.getElementById("apiForceStyle")) {
-      const styleEl = document.createElement("style");
-      styleEl.id = "apiForceStyle";
-      styleEl.textContent = `
-        .switch.api-forced .slider {
-          background-color: #f44336 !important;
-          box-shadow: 0 0 5px #f44336;
-        }
-        .switch.api-forced input:disabled + .slider:before {
-          background-color: #ffcdd2;
-        }
-        h1::after {
-          content: " 🔒";
-          font-size: 20px;
-        }
-        /* Style for disabled strict mode checkbox */
-        .checkbox-container input:disabled + label {
-          color: #999;
-          cursor: not-allowed;
-        }
-        .checkbox-container input:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-      `;
-      document.head.appendChild(styleEl);
-    }
+  if (access_token && username) {
+    currentUser = { access_token, username };
+    await showChallengesView();
   } else {
-    switchContainer.classList.remove("api-forced");
-  }
-  
-  // Update the status message (hidden in the UI, but kept for debugging)
-  const statusMessage = document.getElementById("statusMessage");
-  if (isRecommendationsHidden) {
-    if (apiForceHide) {
-      statusMessage.textContent = "API Force: ON";
-      statusMessage.className = "status-message warning";
-    } else {
-      statusMessage.textContent = "ON";
-      statusMessage.className = "status-message success";
-    }
-  } else {
-    statusMessage.textContent = "OFF";
-    statusMessage.className = "status-message success";
+    showAuthView();
   }
 }
 
-// Listen for state changes from the background script
-chrome.storage.onChanged.addListener((changes) => {
-  // When any relevant state changes, get all current states
-  if (changes.isRecommendationsHidden || changes.apiForceHide || changes.userPreferenceHide) {
-    chrome.storage.local.get(["isRecommendationsHidden", "apiForceHide", "userPreferenceHide"], (data) => {
-      const isRecommendationsHidden = data.isRecommendationsHidden !== undefined ? data.isRecommendationsHidden : false;
-      const apiForceHide = data.apiForceHide !== undefined ? data.apiForceHide : false;
-      const userPreferenceHide = data.userPreferenceHide !== undefined ? data.userPreferenceHide : isRecommendationsHidden;
-      
-      updateUI(isRecommendationsHidden, apiForceHide, userPreferenceHide);
-    });
+// Show authentication view
+function showAuthView() {
+  loadingSection.style.display = 'none';
+  authSection.style.display = 'flex';
+  challengesSection.style.display = 'none';
+}
+
+// Show challenges view
+async function showChallengesView() {
+  loadingSection.style.display = 'none';
+  authSection.style.display = 'none';
+  challengesSection.style.display = 'flex';
+  
+  userName.textContent = currentUser.username;
+  
+  // Fetch challenges
+  await fetchChallenges();
+  
+  // Connect to WebSocket
+  connectWebSocket();
+}
+
+// Handle login
+loginBtn.addEventListener('click', async () => {
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value.trim();
+  
+  if (!username || !password) {
+    showAuthError('Please enter username and password');
+    return;
   }
   
-  if (changes.strictMode) {
-    document.getElementById("strictModeCheckbox").checked = changes.strictMode.newValue;
-  }
-});
-
-// Fetch and update the UI when the popup is opened
-chrome.storage.local.get(["isRecommendationsHidden", "strictMode", "apiForceHide", "userPreferenceHide"], (data) => {
-  const isRecommendationsHidden = data.isRecommendationsHidden !== undefined ? data.isRecommendationsHidden : false;
-  const strictMode = data.strictMode !== undefined ? data.strictMode : false;
-  const apiForceHide = data.apiForceHide !== undefined ? data.apiForceHide : false;
-  const userPreferenceHide = data.userPreferenceHide !== undefined ? data.userPreferenceHide : isRecommendationsHidden;
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Logging in...';
+  authError.style.display = 'none';
   
-  // Update UI with current values
-  updateUI(isRecommendationsHidden, apiForceHide, userPreferenceHide);
-  document.getElementById("strictModeCheckbox").checked = strictMode;
-});
-
-// Event listener for the toggle switch
-document.getElementById("toggleSwitch").addEventListener("change", (event) => {
-  const statusMessage = document.getElementById("statusMessage");
-  const isChecked = event.target.checked;
-  
-  // Check if strict mode is enabled
-  const strictModeEnabled = document.getElementById("strictModeCheckbox").checked;
-
-  // Check current API state before sending the toggle command
-  chrome.storage.local.get(["apiForceHide"], (data) => {
-    const apiForceHide = data.apiForceHide !== undefined ? data.apiForceHide : false;
+  try {
+    // Create form data for OAuth2 password flow
+    const formData = new URLSearchParams();
+    formData.append('username', username);
+    formData.append('password', password);
     
-    // If API is forcing hide and user is trying to uncheck, prevent it
-    if (apiForceHide && !isChecked) {
-      event.preventDefault();
-      // Revert the checkbox state immediately
-      event.target.checked = true;
-      
-      statusMessage.textContent = "API is forcing recommendations to be hidden.";
-      statusMessage.className = "status-message warning";
-      return;
+    const response = await fetch(`${config.apiUrl}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Login failed');
     }
     
-    // Update user preference - this is what the toggle actually controls
-    chrome.storage.local.set({ userPreferenceHide: isChecked }, () => {
-      chrome.runtime.sendMessage({ 
-        action: "toggleRecommendations",
-        strictMode: strictModeEnabled
-      }, (response) => {
-        if (response && response.success) {
-          // Update UI with the response data
-          updateUI(
-            response.effectiveHide, 
-            response.apiForceHide,
-            response.userPreferenceHide
-          );
-        } else {
-          console.error("Failed to toggle recommendations");
-          statusMessage.textContent = "Something went wrong.";
-          statusMessage.className = "status-message error";
+    const data = await response.json();
+    
+    // Store credentials
+    await chrome.storage.local.set({
+      access_token: data.access_token,
+      username: username,
+    });
+    
+    currentUser = { access_token: data.access_token, username };
+    
+    // Notify background script
+    chrome.runtime.sendMessage({ action: 'user_logged_in', username });
+    
+    await showChallengesView();
+  } catch (error) {
+    showAuthError(error.message);
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Login';
+  }
+});
+
+// Handle logout
+logoutBtn.addEventListener('click', async () => {
+  // Close WebSocket
+  if (wsConnection) {
+    wsConnection.close();
+    wsConnection = null;
+  }
+  
+  // Clear storage
+  await chrome.storage.local.remove(['access_token', 'username', 'challenges']);
+  
+  // Notify background script
+  chrome.runtime.sendMessage({ action: 'user_logged_out' });
+  
+  currentUser = null;
+  challenges = [];
+  usernameInput.value = '';
+  passwordInput.value = '';
+  
+  showAuthView();
+});
+
+// Show auth error
+function showAuthError(message) {
+  authError.textContent = message;
+  authError.style.display = 'block';
+}
+
+// Fetch challenges
+async function fetchChallenges() {
+  try {
+    challengesList.innerHTML = '<div class="loading">Loading challenges...</div>';
+    
+    // Use the correct endpoint that matches klariti.so frontend
+    const response = await fetch(`${config.apiUrl}/challenges/my-challenges?skip=0&limit=100`, {
+      headers: {
+        'Authorization': `Bearer ${currentUser.access_token}`,
+        'Content-Type': 'application/json'
+      },
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to fetch challenges:', response.status, errorText);
+      throw new Error(`Failed to fetch challenges: ${response.status}`);
+    }
+    
+    challenges = await response.json();
+    
+    // Store challenges in local storage
+    await chrome.storage.local.set({ challenges });
+    
+    // Update UI
+    renderChallenges();
+    
+    // Notify background script to update blocking rules
+    chrome.runtime.sendMessage({ action: 'challenges_updated', challenges });
+  } catch (error) {
+    console.error('Error fetching challenges:', error);
+    challengesList.innerHTML = `<div class="error-message">Failed to load challenges: ${error.message}</div>`;
+  }
+}
+
+// Render challenges
+function renderChallenges() {
+  if (challenges.length === 0) {
+    challengesList.innerHTML = '<div class="no-challenges">No active challenges. Create one at klariti.so!</div>';
+    return;
+  }
+  
+  challengesList.innerHTML = challenges.map(challenge => {
+    const isActive = challenge.challenge_type === 'toggle' 
+      ? challenge.toggle_details?.is_active 
+      : isTimeBasedActive(challenge);
+    
+    const statusClass = challenge.completed ? 'completed' : (isActive ? 'active' : 'paused');
+    const statusText = challenge.completed ? 'Completed' : (isActive ? 'Active' : 'Paused');
+    
+    const websites = challenge.distracting_websites || [];
+    const websiteText = websites.length > 0 
+      ? `Blocking: ${websites.map(w => w.name || w.url).join(', ')}`
+      : 'No websites blocked';
+    
+    return `
+      <div class="challenge-item ${isActive && !challenge.completed ? 'active' : ''}">
+        <div class="challenge-name">
+          ${escapeHtml(challenge.name)}
+          <span class="status-badge status-${statusClass}">${statusText}</span>
+        </div>
+        <div class="challenge-status">
+          ${challenge.strict_mode ? '🔒 Strict Mode' : ''}
+        </div>
+        <div class="challenge-websites">${websiteText}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Check if time-based challenge is active
+function isTimeBasedActive(challenge) {
+  if (challenge.challenge_type !== 'time_based' || !challenge.time_based_details) {
+    return false;
+  }
+  
+  const now = new Date();
+  const start = new Date(challenge.time_based_details.start_date);
+  const end = new Date(challenge.time_based_details.end_date);
+  
+  return now >= start && now <= end;
+}
+
+// WebSocket connection
+function connectWebSocket() {
+  try {
+    wsConnection = new WebSocket(config.wsUrl);
+    
+    wsConnection.onopen = () => {
+      console.log('WebSocket connected');
+      connectionStatus.textContent = '🟢 Connected';
+      connectionStatus.className = 'connection-status connected';
+    };
+    
+    wsConnection.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('WebSocket message:', data);
+        
+        if (data.type === 'challenge_toggled') {
+          // Refresh challenges when a toggle occurs
+          fetchChallenges();
         }
-      });
-    });
-  });
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
+    };
+    
+    wsConnection.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      connectionStatus.textContent = '🔴 Connection Error';
+      connectionStatus.className = 'connection-status disconnected';
+    };
+    
+    wsConnection.onclose = () => {
+      console.log('WebSocket disconnected');
+      connectionStatus.textContent = '🔴 Disconnected';
+      connectionStatus.className = 'connection-status disconnected';
+      
+      // Attempt to reconnect after 3 seconds
+      setTimeout(() => {
+        if (currentUser) {
+          connectWebSocket();
+        }
+      }, 3000);
+    };
+  } catch (error) {
+    console.error('Error creating WebSocket:', error);
+    connectionStatus.textContent = '🔴 Connection Failed';
+    connectionStatus.className = 'connection-status disconnected';
+  }
+}
+
+// Utility function to escape HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Handle Enter key for login
+usernameInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    passwordInput.focus();
+  }
 });
 
-// Event listener for the strict mode checkbox
-document.getElementById("strictModeCheckbox").addEventListener("change", (event) => {
-  const isChecked = event.target.checked;
-  const toggleSwitch = document.getElementById("toggleSwitch");
-  const statusMessage = document.getElementById("statusMessage");
-  
-  // Check if API lock is activated before allowing changes
-  chrome.storage.local.get(["apiForceHide", "isRecommendationsHidden"], (data) => {
-    const apiForceHide = data.apiForceHide !== undefined ? data.apiForceHide : false;
-    const isRecommendationsHidden = data.isRecommendationsHidden !== undefined ? data.isRecommendationsHidden : false;
-    
-    // If API is forcing hide, prevent strict mode changes
-    if (apiForceHide && isRecommendationsHidden) {
-      event.preventDefault();
-      // Revert the checkbox state to its previous value
-      chrome.storage.local.get(["strictMode"], (data) => {
-        const strictMode = data.strictMode !== undefined ? data.strictMode : false;
-        event.target.checked = strictMode;
-      });
-      
-      // Show warning message
-      statusMessage.textContent = "Cannot change strict mode while lock is active.";
-      statusMessage.className = "status-message warning";
-      statusMessage.style.display = "block";
-      
-      // Hide the message after 3 seconds
-      setTimeout(() => {
-        statusMessage.style.display = "none";
-      }, 3000);
-      
-      return;
-    }
-    
-    // If API lock is not active, proceed with the change
-    // Save the strict mode setting
-    chrome.storage.local.set({ strictMode: isChecked }, () => {
-      // If strict mode is being enabled and the toggle is ON, 
-      // immediately check for YouTube tabs to close
-      if (isChecked && toggleSwitch.checked) {
-        chrome.runtime.sendMessage({ 
-          action: "strictModeEnabled",
-          isRecommendationsHidden: toggleSwitch.checked
-        });
-      }
-    });
-  });
+passwordInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    loginBtn.click();
+  }
 });
+
+// Initialize on load
+init();

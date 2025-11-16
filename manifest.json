@@ -1,16 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Klariti OS",
-  "version": "1.0",
-  "description": "Customize different websites to optimize for your digital well-being ",
-  "permissions": ["tabs", "activeTab", "storage", "alarms"],
+  "version": "2.0",
+  "description": "Block distracting websites and stay focused on your challenges",
+  "permissions": ["tabs", "activeTab", "storage", "alarms", "webRequest", "webNavigation", "declarativeNetRequest", "declarativeNetRequestWithHostAccess"],
   "background": {
     "service_worker": "background.js"
   },
-
   "content_scripts": [
     {
-      "matches": ["*://www.youtube.com/*"],
+      "matches": ["<all_urls>"],
       "js": ["content.js"],
       "run_at": "document_start"
     }
@@ -23,7 +22,6 @@
     }
   },
   "host_permissions": [
-    "https://www.youtube.com/*",
-    "https://k-switch.onrender.com/*"
+    "<all_urls>"
   ]
 }
