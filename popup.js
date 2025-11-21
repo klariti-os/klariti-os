@@ -16,6 +16,21 @@ const userName = document.getElementById('userName');
 const challengesList = document.getElementById('challengesList');
 const connectionStatus = document.getElementById('connectionStatus');
 
+// Modal Elements
+const challengeModal = document.getElementById('challengeModal');
+const modalCloseBtn = document.getElementById('modalCloseBtn');
+const modalTitle = document.getElementById('modalTitle');
+const modalBadges = document.getElementById('modalBadges');
+const modalDescription = document.getElementById('modalDescription');
+const modalTimeDetails = document.getElementById('modalTimeDetails');
+const modalStartDate = document.getElementById('modalStartDate');
+const modalEndDate = document.getElementById('modalEndDate');
+const modalToggleDetails = document.getElementById('modalToggleDetails');
+const modalToggleStatus = document.getElementById('modalToggleStatus');
+const modalToggleIndicator = document.getElementById('modalToggleIndicator');
+const modalWebsiteCount = document.getElementById('modalWebsiteCount');
+const modalWebsites = document.getElementById('modalWebsites');
+
 // State
 let currentUser = null;
 let challenges = [];
@@ -176,12 +191,14 @@ async function fetchChallenges() {
 
 // Render challenges
 function renderChallenges() {
+  challengesList.innerHTML = '';
+  
   if (challenges.length === 0) {
     challengesList.innerHTML = '<div class="no-challenges">No active challenges. Create one at klariti.so!</div>';
     return;
   }
   
-  challengesList.innerHTML = challenges.map(challenge => {
+  challenges.forEach(challenge => {
     const isActive = challenge.challenge_type === 'toggle' 
       ? challenge.toggle_details?.is_active 
       : isTimeBasedActive(challenge);
@@ -194,19 +211,23 @@ function renderChallenges() {
       ? `Blocking: ${websites.map(w => w.name || w.url).join(', ')}`
       : 'No websites blocked';
     
-    return `
-      <div class="challenge-item ${isActive && !challenge.completed ? 'active' : ''}">
-        <div class="challenge-name">
-          ${escapeHtml(challenge.name)}
-          <span class="status-badge status-${statusClass}">${statusText}</span>
-        </div>
-        <div class="challenge-status">
-          ${challenge.strict_mode ? '🔒 Strict Mode' : ''}
-        </div>
-        <div class="challenge-websites">${websiteText}</div>
+    const item = document.createElement('div');
+    item.className = `challenge-item ${isActive && !challenge.completed ? 'active' : ''}`;
+    item.style.cursor = 'pointer';
+    item.innerHTML = `
+      <div class="challenge-name">
+        ${escapeHtml(challenge.name)}
+        <span class="status-badge status-${statusClass}">${statusText}</span>
       </div>
+      <div class="challenge-status">
+        ${challenge.strict_mode ? '🔒 Strict Mode' : ''}
+      </div>
+      <div class="challenge-websites">${websiteText}</div>
     `;
-  }).join('');
+    
+    item.addEventListener('click', () => openModal(challenge));
+    challengesList.appendChild(item);
+  });
 }
 
 // Check if time-based challenge is active
@@ -239,8 +260,29 @@ function connectWebSocket() {
         console.log('WebSocket message:', data);
         
         if (data.type === 'challenge_toggled') {
-          // Refresh challenges when a toggle occurs
-          fetchChallenges();
+          // Update local state directly instead of re-fetching
+          // The server sends fields at top level, not in a payload object
+          const { challenge_id, is_active } = data;
+          
+          const challengeIndex = challenges.findIndex(c => c.id === challenge_id);
+          if (challengeIndex !== -1) {
+            // Update the specific challenge
+            if (challenges[challengeIndex].toggle_details) {
+              challenges[challengeIndex].toggle_details.is_active = is_active;
+            }
+            
+            // Re-render UI with updated data
+            renderChallenges();
+            
+            // Update storage
+            chrome.storage.local.set({ challenges });
+            
+            // Notify background script
+            chrome.runtime.sendMessage({ action: 'challenges_updated', challenges });
+          } else {
+            // If challenge not found (rare), fallback to fetch
+            fetchChallenges();
+          }
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -292,5 +334,121 @@ passwordInput.addEventListener('keypress', (e) => {
   }
 });
 
+// Modal Functions
+function openModal(challenge) {
+  modalTitle.textContent = challenge.name;
+  
+  // Badges
+  modalBadges.innerHTML = '';
+  
+  // Status Badge
+  const isActive = challenge.challenge_type === 'toggle' 
+    ? challenge.toggle_details?.is_active 
+    : isTimeBasedActive(challenge);
+  
+  const statusBadge = document.createElement('span');
+  statusBadge.className = 'modal-badge';
+  if (challenge.completed) {
+    statusBadge.textContent = 'Completed';
+    statusBadge.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
+    statusBadge.style.color = '#4ADE80';
+  } else if (isActive) {
+    statusBadge.textContent = 'Active';
+    statusBadge.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
+    statusBadge.style.color = '#4ADE80';
+  } else {
+    statusBadge.textContent = 'Paused';
+    statusBadge.style.backgroundColor = 'rgba(245, 158, 11, 0.1)';
+    statusBadge.style.color = '#FBBF24';
+  }
+  modalBadges.appendChild(statusBadge);
+  
+  // Type Badge
+  const typeBadge = document.createElement('span');
+  typeBadge.className = 'modal-badge';
+  typeBadge.textContent = challenge.challenge_type === 'time_based' ? 'Time Based' : 'Toggle';
+  typeBadge.style.backgroundColor = '#27272A';
+  typeBadge.style.color = '#A1A1AA';
+  typeBadge.style.border = '1px solid #3F3F46';
+  modalBadges.appendChild(typeBadge);
+  
+  // Strict Mode Badge
+  if (challenge.strict_mode) {
+    const strictBadge = document.createElement('span');
+    strictBadge.className = 'modal-badge';
+    strictBadge.textContent = 'Strict Mode';
+    strictBadge.style.backgroundColor = 'rgba(249, 115, 22, 0.1)';
+    strictBadge.style.color = '#FB923C';
+    modalBadges.appendChild(strictBadge);
+  }
+  
+  // Description
+  if (challenge.description) {
+    modalDescription.querySelector('p').textContent = challenge.description;
+    modalDescription.style.display = 'block';
+  } else {
+    modalDescription.style.display = 'none';
+  }
+  
+  // Time Details
+  if (challenge.challenge_type === 'time_based' && challenge.time_based_details) {
+    modalStartDate.textContent = new Date(challenge.time_based_details.start_date).toLocaleString();
+    modalEndDate.textContent = new Date(challenge.time_based_details.end_date).toLocaleString();
+    modalTimeDetails.style.display = 'block';
+    modalToggleDetails.style.display = 'none';
+  } else if (challenge.challenge_type === 'toggle' && challenge.toggle_details) {
+    // Toggle Details
+    const isToggleActive = challenge.toggle_details.is_active;
+    modalToggleStatus.textContent = isToggleActive ? 'Active' : 'Inactive';
+    modalToggleIndicator.style.backgroundColor = isToggleActive ? '#22C55E' : '#52525B';
+    modalToggleIndicator.style.boxShadow = isToggleActive ? '0 0 8px rgba(34, 197, 94, 0.5)' : 'none';
+    
+    modalTimeDetails.style.display = 'none';
+    modalToggleDetails.style.display = 'block';
+  }
+  
+  // Websites
+  const websites = challenge.distracting_websites || [];
+  modalWebsiteCount.textContent = websites.length;
+  modalWebsites.innerHTML = '';
+  
+  if (websites.length > 0) {
+    websites.forEach(site => {
+      const div = document.createElement('div');
+      div.className = 'website-item';
+      div.innerHTML = `
+        <div class="website-icon">${site.url.charAt(0).toUpperCase()}</div>
+        <div class="website-url">${escapeHtml(site.url)}</div>
+      `;
+      modalWebsites.appendChild(div);
+    });
+  } else {
+    modalWebsites.innerHTML = '<p style="font-size: 13px; color: #71717A; font-style: italic;">No websites blocked.</p>';
+  }
+  
+  challengeModal.style.display = 'flex';
+}
+
+function closeModal() {
+  challengeModal.style.display = 'none';
+}
+
+// Modal Event Listeners
+modalCloseBtn.addEventListener('click', closeModal);
+challengeModal.addEventListener('click', (e) => {
+  if (e.target === challengeModal) {
+    closeModal();
+  }
+});
+
 // Initialize on load
-init();
+// Initialize on load
+try {
+  init().catch(err => {
+    console.error('Init error:', err);
+    loadingSection.innerHTML = `<div style="color: red; padding: 20px;">Error initializing: ${err.message}</div>`;
+  });
+} catch (err) {
+  console.error('Top-level error:', err);
+  loadingSection.innerHTML = `<div style="color: red; padding: 20px;">Critical error: ${err.message}</div>`;
+}
