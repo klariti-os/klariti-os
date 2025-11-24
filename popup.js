@@ -128,6 +128,14 @@ loginBtn.addEventListener('click', async () => {
 
 // Handle logout
 logoutBtn.addEventListener('click', async () => {
+  // Security check: Prevent logout if there are active challenges
+  if (hasActiveChallenges()) {
+    console.warn('Logout prevented: Active challenges exist');
+    // Optionally show a message to the user
+    alert('Cannot logout while you have active challenges. Please pause or complete your challenges first.');
+    return;
+  }
+  
   // Close WebSocket
   if (wsConnection) {
     wsConnection.close();
@@ -195,6 +203,7 @@ function renderChallenges() {
   
   if (challenges.length === 0) {
     challengesList.innerHTML = '<div class="no-challenges">No active challenges. Create one at klariti.so!</div>';
+    updateLogoutButtonVisibility();
     return;
   }
   
@@ -228,6 +237,9 @@ function renderChallenges() {
     item.addEventListener('click', () => openModal(challenge));
     challengesList.appendChild(item);
   });
+  
+  // Update logout button visibility based on active challenges
+  updateLogoutButtonVisibility();
 }
 
 // Check if time-based challenge is active
@@ -241,6 +253,28 @@ function isTimeBasedActive(challenge) {
   const end = new Date(challenge.time_based_details.end_date);
   
   return now >= start && now <= end;
+}
+
+// Check if there are any active challenges
+function hasActiveChallenges() {
+  return challenges.some(challenge => {
+    if (challenge.completed) return false;
+    
+    const isActive = challenge.challenge_type === 'toggle' 
+      ? challenge.toggle_details?.is_active 
+      : isTimeBasedActive(challenge);
+    
+    return isActive;
+  });
+}
+
+// Update logout button visibility based on active challenges
+function updateLogoutButtonVisibility() {
+  if (hasActiveChallenges()) {
+    logoutBtn.style.display = 'none';
+  } else {
+    logoutBtn.style.display = 'flex';
+  }
 }
 
 // WebSocket connection
