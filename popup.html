@@ -6,148 +6,610 @@
   <title>Klariti</title>
   <style>
     /* Global styling */
+    :root {
+      --bg-color: #0C0C0F;
+      --card-bg: #18181B;
+      --text-primary: #FFFFFF;
+      --text-secondary: #A1A1AA;
+      --accent-color: #22C55E; /* Green-500 equivalent */
+      --accent-hover: #16A34A;
+      --border-color: #27272A;
+      --input-bg: #27272A;
+      --danger: #EF4444;
+      --warning: #F59E0B;
+    }
+
     body {
-      font-family: 'Arial', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
       margin: 0;
       padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background-color: #f7f7f7;
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      width: 360px;
+      min-height: 480px;
     }
     
     .container {
-      text-align: center;
-      padding: 20px;
-      border-radius: 12px;
-      background-color: #fff;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      width: 260px;
+      padding: 24px;
+      background-color: var(--bg-color);
+      min-height: 480px;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      box-sizing: border-box;
     }
 
     h1 {
-      font-size: 28px;
-      color: #333;
-      margin: 0 0 25px 0;
+      font-size: 20px;
+      color: var(--text-primary);
+      margin: 0 0 24px 0;
       font-weight: 600;
+      text-align: center;
+      letter-spacing: -0.02em;
     }
 
-    /* Switch Styling */
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 60px;
-      height: 34px;
-      margin: 15px 0;
+    /* Auth Section */
+    .auth-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
-    .slider {
-      position: absolute;
+    label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      padding: 12px;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+    }
+
+    .btn {
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
       cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #ccc;
-      transition: 0.4s;
-      border-radius: 50px;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 26px;
-      width: 26px;
-      border-radius: 50px;
-      left: 4px;
-      bottom: 4px;
-      background-color: white;
-      transition: 0.4s;
+    .btn-primary {
+      background-color: var(--accent-color);
+      color: white;
     }
 
-    input:checked + .slider {
-      background-color: #4CAF50;
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-1px);
     }
 
-    input:checked + .slider:before {
-      transform: translateX(26px);
+    .btn-primary:active {
+      transform: translateY(0);
     }
 
-    /* Checkbox styling */
-    .checkbox-container {
+    .btn-secondary {
+      background-color: var(--card-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background-color: #27272A;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Challenges Section */
+    .challenges-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1;
+    }
+
+    .user-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+
+    .user-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .btn-logout {
+      padding: 6px 12px;
+      font-size: 12px;
+      background-color: transparent;
+      border: 1px solid var(--border-color);
+    }
+
+    .challenges-list {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 320px;
+      padding-right: 4px;
+    }
+    
+    /* Scrollbar styling */
+    .challenges-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    .challenges-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    .challenges-list::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    .challenge-item {
+      padding: 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      background-color: var(--card-bg);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    
+    .challenge-item:hover {
+      border-color: #3F3F46;
+    }
+
+    .challenge-item.active {
+      border-color: var(--accent-color);
+      background-color: rgba(34, 197, 94, 0.05);
+    }
+
+    .challenge-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .challenge-status {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
-      margin-top: 15px;
+      gap: 6px;
     }
 
-    .checkbox-container input {
-      margin-right: 8px;
+    .challenge-websites {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-color);
+      opacity: 0.8;
     }
 
-    .checkbox-container label {
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 9999px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .status-active {
+      background-color: rgba(34, 197, 94, 0.2);
+      color: #4ADE80;
+    }
+
+    .status-paused {
+      background-color: rgba(245, 158, 11, 0.2);
+      color: #FBBF24;
+    }
+
+    .status-completed {
+      background-color: rgba(113, 113, 122, 0.2);
+      color: #A1A1AA;
+    }
+
+    .error-message {
+      color: var(--danger);
+      font-size: 12px;
+      margin-top: 12px;
+      text-align: center;
+      background-color: rgba(239, 68, 68, 0.1);
+      padding: 8px;
+      border-radius: 6px;
+    }
+
+    .loading {
+      text-align: center;
+      color: var(--text-secondary);
       font-size: 14px;
-      color: #444;
+      padding: 24px;
+    }
+
+    .no-challenges {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 14px;
+      padding: 40px 20px;
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      border: 1px dashed var(--border-color);
+    }
+
+    .connection-status {
+      font-size: 11px;
+      text-align: center;
+      margin-top: 16px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .connection-status.connected {
+      color: #4ADE80;
+    }
+
+    .connection-status.disconnected {
+      color: var(--danger);
     }
 
     /* Status message styling */
     .status-message {
       display: none;
-      margin-top: 10px;
-      padding: 8px;
-      border-radius: 4px;
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 8px;
       font-size: 12px;
       text-align: center;
     }
     
     .status-message.warning {
-      background-color: #fff3cd;
-      color: #856404;
-      border: 1px solid #ffeeba;
+      background-color: rgba(245, 158, 11, 0.1);
+      color: #FBBF24;
+      border: 1px solid rgba(245, 158, 11, 0.2);
     }
     
     .status-message.error {
-      background-color: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
+      background-color: rgba(239, 68, 68, 0.1);
+      color: #F87171;
+      border: 1px solid rgba(239, 68, 68, 0.2);
     }
     
     .status-message.success {
-      background-color: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
+      background-color: rgba(34, 197, 94, 0.1);
+      color: #4ADE80;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-content {
+      background-color: rgba(24, 24, 27, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .modal-title-section h2 {
+      margin: 0;
+      font-size: 18px;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .modal-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .modal-badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      border: 1px solid transparent;
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .modal-close-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .modal-section h3 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      margin: 0 0 8px 0;
+      font-weight: 600;
+    }
+
+    .modal-section p {
+      margin: 0;
+      font-size: 14px;
+      color: #E4E4E7;
+      line-height: 1.5;
+    }
+
+    .time-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .time-box, .toggle-box {
+      background-color: rgba(39, 39, 42, 0.5);
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .toggle-box {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .time-box .label, .toggle-box .label {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .time-box .value, .toggle-box .value-text {
+      font-size: 13px;
+      color: var(--text-primary);
+      font-family: monospace;
+    }
+
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .websites-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .website-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+    }
+
+    .website-icon {
+      width: 24px;
+      height: 24px;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    .website-url {
+      font-size: 13px;
+      color: #E4E4E7;
+      font-family: monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   </style>
 </head>
 <body>
-
   <div class="container">
-    <h1>Klariti OS</h1>
+    <h1>🎯 Klariti</h1>
+    
+    <!-- Auth Section (shown when not logged in) -->
+    <div id="authSection" class="auth-section" style="display: none;">
+      <div class="input-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="Enter username" />
+      </div>
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter password" />
+      </div>
+      <button id="loginBtn" class="btn btn-primary">Login</button>
+      <div id="authError" class="error-message" style="display: none;"></div>
+    </div>
 
-    <label class="switch">
-      <input type="checkbox" id="toggleSwitch">
-      <span class="slider"></span>
-    </label>
-    
-    <!-- Status message that can be shown when needed -->
-    <div class="status-message" id="statusMessage"></div>
-    
-    <div class="checkbox-container">
-      <input type="checkbox" id="strictModeCheckbox">
-      <label for="strictModeCheckbox">Strict Mode</label>
+    <!-- Challenges Section (shown when logged in) -->
+    <div id="challengesSection" class="challenges-section" style="display: none;">
+      <div class="user-info">
+        <span class="user-name" id="userName">Loading...</span>
+        <button id="logoutBtn" class="btn btn-secondary btn-logout" style="display: none;">Logout</button>
+      </div>
+      
+      <div id="challengesList" class="challenges-list">
+        <div class="loading">Loading challenges...</div>
+      </div>
+      
+      <div id="connectionStatus" class="connection-status">
+        Connecting...
+      </div>
+    </div>
+
+    <!-- Loading Section -->
+    <div id="loadingSection" class="loading">
+      Initializing...
+    </div>
+    <!-- Challenge Detail Modal -->
+    <div id="challengeModal" class="modal-overlay" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title-section">
+            <h2 id="modalTitle">Challenge Name</h2>
+            <div class="modal-badges" id="modalBadges">
+              <!-- Badges injected here -->
+            </div>
+          </div>
+          <button id="modalCloseBtn" class="modal-close-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <div id="modalDescription" class="modal-section">
+            <h3>Description</h3>
+            <p>Challenge description goes here.</p>
+          </div>
+          
+          <div id="modalTimeDetails" class="modal-section" style="display: none;">
+            <div class="time-grid">
+              <div class="time-box">
+                <span class="label">Start Date</span>
+                <span class="value" id="modalStartDate">Jan 1, 2024</span>
+              </div>
+              <div class="time-box">
+                <span class="label">End Date</span>
+                <span class="value" id="modalEndDate">Jan 31, 2024</span>
+              </div>
+            </div>
+          </div>
+          
+          <div id="modalToggleDetails" class="modal-section" style="display: none;">
+            <div class="toggle-box">
+              <div>
+                <span class="label">Current Status</span>
+                <p class="value-text" id="modalToggleStatus">Active</p>
+              </div>
+              <div id="modalToggleIndicator" class="status-indicator"></div>
+            </div>
+          </div>
+          
+          <div class="modal-section">
+            <h3>Blocked Websites (<span id="modalWebsiteCount">0</span>)</h3>
+            <div id="modalWebsites" class="websites-grid">
+              <!-- Websites injected here -->
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
+  <script src="config.js"></script>
   <script src="popup.js"></script>
-  
 </body>
 </html>
