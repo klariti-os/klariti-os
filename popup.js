@@ -34,16 +34,55 @@ const modalWebsites = document.getElementById('modalWebsites');
 // State
 let currentUser = null;
 let challenges = [];
-let wsConnection = null;
+// WebSocket handled by background script
+
 
 // Initialize popup
+// Initialize popup
+// Initialize popup
 async function init() {
-  // Check if user is already logged in
-  const { access_token, username } = await chrome.storage.local.get(['access_token', 'username']);
+  // Check if user is already logged in and load cached challenges and connection status
+  const { access_token, username, challenges: storedChallenges, connectionStatus: storedStatus } = await chrome.storage.local.get(['access_token', 'username', 'challenges', 'connectionStatus']);
   
+  // Update connection status immediately if available
+  if (storedStatus) {
+    updateConnectionStatusUI(storedStatus === 'connected');
+  }
+
   if (access_token && username) {
-    currentUser = { access_token, username };
-    await showChallengesView();
+    try {
+      // Verify user identity matches stored data
+      const response = await fetch(`${config.apiUrl}/me`, {
+        headers: {
+          'Authorization': `Bearer ${access_token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Token invalid or expired');
+      }
+
+      const userData = await response.json();
+      
+      // Verify username matches (case-insensitive)
+      if (userData.username.toLowerCase() !== username.toLowerCase()) {
+        console.warn('Stored username does not match authenticated user. Clearing session.');
+        await chrome.storage.local.remove(['access_token', 'username', 'challenges']);
+        showAuthView();
+        return;
+      }
+
+      currentUser = { access_token, username };
+      if (storedChallenges) {
+        challenges = storedChallenges;
+      }
+      await showChallengesView();
+    } catch (error) {
+      console.error('Session verification failed:', error);
+      // Clear invalid session
+      await chrome.storage.local.remove(['access_token', 'username', 'challenges']);
+      showAuthView();
+    }
   } else {
     showAuthView();
   }
@@ -57,6 +96,8 @@ function showAuthView() {
 }
 
 // Show challenges view
+// Show challenges view
+// Show challenges view
 async function showChallengesView() {
   loadingSection.style.display = 'none';
   authSection.style.display = 'none';
@@ -64,11 +105,41 @@ async function showChallengesView() {
   
   userName.textContent = currentUser.username;
   
-  // Fetch challenges
-  await fetchChallenges();
+  // Initial render with whatever we have
+  renderChallenges();
   
-  // Connect to WebSocket
-  connectWebSocket();
+  // Trigger connection check in background
+  chrome.runtime.sendMessage({ action: 'check_connection' }, (response) => {
+    if (response && response.status) {
+      updateConnectionStatusUI(response.status === 'connected');
+    }
+  });
+  
+  // Listen for updates from background script (via storage)
+  chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === 'local') {
+      if (changes.challenges) {
+        console.log('Challenges updated in storage, re-rendering...');
+        challenges = changes.challenges.newValue;
+        renderChallenges();
+      }
+      if (changes.connectionStatus) {
+        console.log('Connection status updated:', changes.connectionStatus.newValue);
+        updateConnectionStatusUI(changes.connectionStatus.newValue === 'connected');
+      }
+    }
+  });
+}
+
+// Helper to update connection status UI
+function updateConnectionStatusUI(isConnected) {
+  if (isConnected) {
+    connectionStatus.textContent = '🟢 Connected';
+    connectionStatus.className = 'connection-status connected';
+  } else {
+    connectionStatus.textContent = '🔴 Disconnected';
+    connectionStatus.className = 'connection-status disconnected';
+  }
 }
 
 // Handle login
@@ -136,11 +207,7 @@ logoutBtn.addEventListener('click', async () => {
     return;
   }
   
-  // Close WebSocket
-  if (wsConnection) {
-    wsConnection.close();
-    wsConnection = null;
-  }
+  // WebSocket handled by background script
   
   // Clear storage
   await chrome.storage.local.remove(['access_token', 'username', 'challenges']);
@@ -337,82 +404,14 @@ function hasActiveChallenges() {
 // Update logout button visibility based on active challenges
 function updateLogoutButtonVisibility() {
   if (hasActiveChallenges()) {
-    logoutBtn.style.display = 'none';
+    logoutBtn.style.display = 'flex';
   } else {
     logoutBtn.style.display = 'flex';
   }
 }
 
-// WebSocket connection
-function connectWebSocket() {
-  try    {
-    wsConnection = new WebSocket(config.wsUrl);
-    
-    wsConnection.onopen = () => {
-      console.log('WebSocket connected');
-      connectionStatus.textContent = '🟢 Connected';
-      connectionStatus.className = 'connection-status connected';
-    };
-    
-    wsConnection.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        console.log('WebSocket message:', data);
-        
-        if (data.type === 'challenge_toggled') {
-          // Update local state directly instead of re-fetching
-          // The server sends fields at top level, not in a payload object
-          const { challenge_id, is_active } = data;
-          
-          const challengeIndex = challenges.findIndex(c => c.id === challenge_id);
-          if (challengeIndex !== -1) {
-            // Update the specific challenge
-            if (challenges[challengeIndex].toggle_details) {
-              challenges[challengeIndex].toggle_details.is_active = is_active;
-            }
-            
-            // Re-render UI with updated data
-            renderChallenges();
-            
-            // Update storage
-            chrome.storage.local.set({ challenges });
-            
-            // Notify background script
-            chrome.runtime.sendMessage({ action: 'challenges_updated', challenges });
-          } else {
-            // If challenge not found (rare), fallback to fetch
-            fetchChallenges();
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-      }
-    };
-    
-    wsConnection.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      connectionStatus.textContent = '🔴 Connection Error';
-      connectionStatus.className = 'connection-status disconnected';
-    };
-    
-    wsConnection.onclose = () => {
-      console.log('WebSocket disconnected');
-      connectionStatus.textContent = '🔴 Disconnected';
-      connectionStatus.className = 'connection-status disconnected';
-      
-      // Attempt to reconnect after 3 seconds
-      setTimeout(() => {
-        if (currentUser) {
-          connectWebSocket();
-        }
-      }, 3000);
-    };
-  } catch (error) {
-    console.error('Error creating WebSocket:', error);
-    connectionStatus.textContent = '🔴 Connection Failed';
-    connectionStatus.className = 'connection-status disconnected';
-  }
-}
+// WebSocket connection handled by background script
+// Popup listens to storage changes for updates
 
 // Utility function to escape HTML
 function escapeHtml(text) {
