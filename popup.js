@@ -201,13 +201,26 @@ async function fetchChallenges() {
 function renderChallenges() {
   challengesList.innerHTML = '';
   
-  if (challenges.length === 0) {
+  // Filter to only show active challenges (not completed and currently active)
+  const activeChallenges = challenges.filter(challenge => {
+    if (challenge.completed) {
+      return false;
+    }
+    
+    const isActive = challenge.challenge_type === 'toggle' 
+      ? challenge.toggle_details?.is_active 
+      : isTimeBasedActive(challenge);
+    
+    return isActive;
+  });
+  
+  if (activeChallenges.length === 0) {
     challengesList.innerHTML = '<div class="no-challenges">No active challenges. Create one at klariti.so!</div>';
     updateLogoutButtonVisibility();
     return;
   }
   
-  challenges.forEach(challenge => {
+  activeChallenges.forEach(challenge => {
     const isActive = challenge.challenge_type === 'toggle' 
       ? challenge.toggle_details?.is_active 
       : isTimeBasedActive(challenge);
