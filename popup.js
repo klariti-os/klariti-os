@@ -162,8 +162,11 @@ function showAuthError(message) {
   authError.style.display = 'block';
 }
 
-// Fetch challenges
-async function fetchChallenges() {
+// Fetch challenges with retry logic
+async function fetchChallenges(retryCount = 0) {
+  const maxRetries = 3;
+  const retryDelay = 2000; // 2 seconds
+  
   try {
     challengesList.innerHTML = '<div class="loading">Loading challenges...</div>';
     
@@ -176,6 +179,19 @@ async function fetchChallenges() {
     });
     
     if (!response.ok) {
+      // Check if it's an authentication error (401 or 403)
+      if (response.status === 401 || response.status === 403) {
+        console.error('Authentication failed - token may be expired');
+        // Clear invalid credentials and force re-login
+        await chrome.storage.local.remove(['access_token', 'username', 'challenges']);
+        chrome.runtime.sendMessage({ action: 'user_logged_out' });
+        currentUser = null;
+        challenges = [];
+        showAuthView();
+        showAuthError('Session expired. Please login again.');
+        return;
+      }
+      
       const errorText = await response.text();
       console.error('Failed to fetch challenges:', response.status, errorText);
       throw new Error(`Failed to fetch challenges: ${response.status}`);
@@ -193,7 +209,41 @@ async function fetchChallenges() {
     chrome.runtime.sendMessage({ action: 'challenges_updated', challenges });
   } catch (error) {
     console.error('Error fetching challenges:', error);
-    challengesList.innerHTML = `<div class="error-message">Failed to load challenges: ${error.message}</div>`;
+    
+    // Try to load from local storage first
+    const storedData = await chrome.storage.local.get(['challenges']);
+    if (storedData.challenges && storedData.challenges.length > 0) {
+      console.log('Loading challenges from local storage');
+      challenges = storedData.challenges;
+      renderChallenges();
+      
+      // Still retry in background to get fresh data
+      if (retryCount < maxRetries) {
+        setTimeout(() => {
+          fetchChallenges(retryCount + 1);
+        }, retryDelay);
+      }
+      return;
+    }
+    
+    // Retry logic if no cached data
+    if (retryCount < maxRetries) {
+      console.log(`Retrying... (${retryCount + 1}/${maxRetries})`);
+      challengesList.innerHTML = `<div class="loading">Connection failed. Retrying... (${retryCount + 1}/${maxRetries})</div>`;
+      
+      setTimeout(() => {
+        fetchChallenges(retryCount + 1);
+      }, retryDelay);
+    } else {
+      // Max retries reached, show error but don't block UI
+      challengesList.innerHTML = `<div class="error-message">Failed to load challenges. Please check if the API is running at ${config.apiUrl}. <button id="retryBtn" style="margin-left: 10px; padding: 4px 8px; cursor: pointer;">Retry</button></div>`;
+      
+      // Add retry button listener
+      const retryBtn = document.getElementById('retryBtn');
+      if (retryBtn) {
+        retryBtn.addEventListener('click', () => fetchChallenges(0));
+      }
+    }
   }
 }
 
@@ -292,7 +342,7 @@ function updateLogoutButtonVisibility() {
 
 // WebSocket connection
 function connectWebSocket() {
-  try {
+  try    {
     wsConnection = new WebSocket(config.wsUrl);
     
     wsConnection.onopen = () => {
