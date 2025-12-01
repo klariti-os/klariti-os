@@ -490,7 +490,7 @@ export default function ChallengeList({
                 challenge={challenge}
                 onJoin={currentTab === "all" && !hasJoined ? handleJoinChallenge : undefined}
                 onToggle={
-                  currentTab === "created" || currentTab === "my-challenges" 
+                  currentTab === "created" || currentTab === "my-challenges" || hasJoined
                     ? handleToggleChallenge 
                     : undefined
                 }
