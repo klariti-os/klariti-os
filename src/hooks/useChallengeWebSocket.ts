@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { Challenge } from "@/services/challenges";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8081";
+import { API_BASE } from "@/config/api";
 
 // Convert http(s) URL to ws(s) URL
 const getWebSocketUrl = (apiUrl: string): string => {
