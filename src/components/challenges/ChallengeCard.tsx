@@ -167,6 +167,26 @@ export default function ChallengeCard({
           </span>
         )}
 
+        {/* Participants */}
+        {challenge.participants && challenge.participants.length > 0 && (
+          <div className="flex -space-x-2">
+            {challenge.participants.slice(0, 3).map((participant) => (
+              <div
+                key={participant.id}
+                className="h-6 w-6 rounded-full bg-zinc-700 border border-white/10 flex items-center justify-center text-[10px] font-medium text-white"
+                title={participant.username}
+              >
+                {participant.username.charAt(0).toUpperCase()}
+              </div>
+            ))}
+            {challenge.participants.length > 3 && (
+              <div className="h-6 w-6 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-[10px] font-medium text-zinc-400">
+                +{challenge.participants.length - 3}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Website Count */}
         {challenge.distracting_websites && challenge.distracting_websites.length > 0 && (
           <span className="flex items-center gap-1.5 text-xs text-zinc-500 font-mono ml-auto">

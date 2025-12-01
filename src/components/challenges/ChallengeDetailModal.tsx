@@ -143,6 +143,28 @@ export default function ChallengeDetailModal({
             </div>
           )}
 
+          {/* Participants */}
+          {challenge.participants && challenge.participants.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-400 mb-3 font-mono uppercase tracking-wider">
+                Participants ({challenge.participants.length})
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {challenge.participants.map((participant) => (
+                  <div 
+                    key={participant.id} 
+                    className="flex items-center gap-2 px-3 py-1.5 bg-[#27272A] rounded-full border border-[#3F3F46]"
+                  >
+                    <div className="w-5 h-5 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-bold text-white">
+                      {participant.username.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-xs text-gray-200 font-mono">{participant.username}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Blocked Websites */}
           <div>
             <h3 className="text-sm font-medium text-gray-400 mb-3 font-mono uppercase tracking-wider">

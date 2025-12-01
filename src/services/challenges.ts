@@ -34,6 +34,7 @@ export interface Challenge {
   time_based_details?: TimeBasedDetails;
   toggle_details?: ToggleDetails;
   distracting_websites?: DistractingWebsite[];
+  participants?: { id: number; username: string }[];
 }
 
 export interface CreateChallengeData {
