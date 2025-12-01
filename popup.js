@@ -312,8 +312,11 @@ function isTimeBasedActive(challenge) {
   }
   
   const now = new Date();
-  const start = new Date(challenge.time_based_details.start_date);
-  const end = new Date(challenge.time_based_details.end_date);
+  const startString = challenge.time_based_details.start_date;
+  const endString = challenge.time_based_details.end_date;
+  
+  const start = new Date(startString.endsWith("Z") ? startString : `${startString}Z`);
+  const end = new Date(endString.endsWith("Z") ? endString : `${endString}Z`);
   
   return now >= start && now <= end;
 }
@@ -489,8 +492,13 @@ function openModal(challenge) {
   
   // Time Details
   if (challenge.challenge_type === 'time_based' && challenge.time_based_details) {
-    modalStartDate.textContent = new Date(challenge.time_based_details.start_date).toLocaleString();
-    modalEndDate.textContent = new Date(challenge.time_based_details.end_date).toLocaleString();
+    const startString = challenge.time_based_details.start_date;
+    const endString = challenge.time_based_details.end_date;
+    const start = new Date(startString.endsWith("Z") ? startString : `${startString}Z`);
+    const end = new Date(endString.endsWith("Z") ? endString : `${endString}Z`);
+    
+    modalStartDate.textContent = start.toLocaleString();
+    modalEndDate.textContent = end.toLocaleString();
     modalTimeDetails.style.display = 'block';
     modalToggleDetails.style.display = 'none';
   } else if (challenge.challenge_type === 'toggle' && challenge.toggle_details) {

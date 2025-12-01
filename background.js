@@ -94,8 +94,11 @@ function updateBlockingRules(challenges) {
 function isTimeBasedActive(challenge) {
   if (challenge.challenge_type !== 'time_based' || !challenge.time_based_details) return false;
   const now = new Date();
-  const start = new Date(challenge.time_based_details.start_date);
-  const end = new Date(challenge.time_based_details.end_date);
+  const startString = challenge.time_based_details.start_date;
+  const endString = challenge.time_based_details.end_date;
+  
+  const start = new Date(startString.endsWith("Z") ? startString : `${startString}Z`);
+  const end = new Date(endString.endsWith("Z") ? endString : `${endString}Z`);
   return now >= start && now <= end;
 }
 
@@ -134,10 +137,10 @@ async function checkActiveTab() {
     const url = activeTab.url;
     if (url && isUrlBlocked(url)) {
       try {
-        await chrome.tabs.remove(activeTab.id);
-        console.log('Closed blocked active tab:', url);
+        await chrome.tabs.update(activeTab.id, { url: 'http://localhost:3000/lock' });
+        console.log('Redirected blocked active tab:', url);
       } catch (err) {
-        console.error('Error closing blocked active tab:', err);
+        console.error('Error redirecting blocked active tab:', err);
       }
     }
   } catch (error) {
@@ -258,7 +261,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
     const tab = await chrome.tabs.get(activeInfo.tabId);
     if (tab?.url && isUrlBlocked(tab.url)) {
-      await chrome.tabs.remove(tab.id);
+      await chrome.tabs.update(tab.id, { url: 'http://localhost:3000/lock' });
     }
   } catch (error) {
     console.error('Error in tab activation handler:', error);
@@ -276,7 +279,7 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
     if (!url) return;
     if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) return;
     if (isUrlBlocked(url)) {
-      chrome.tabs.remove(tab.id).catch(err => console.error('Error closing focused blocked tab:', err));
+      chrome.tabs.update(tab.id, { url: 'http://localhost:3000/lock' }).catch(err => console.error('Error redirecting focused blocked tab:', err));
     }
   });
 });
@@ -289,6 +292,6 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (!url) return;
   if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) return;
   if (isUrlBlocked(url)) {
-    chrome.tabs.remove(tabId).catch(err => console.error('Error closing updated blocked tab:', err));
+    chrome.tabs.update(tabId, { url: 'http://localhost:3000/lock' }).catch(err => console.error('Error redirecting updated blocked tab:', err));
   }
 });
