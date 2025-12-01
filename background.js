@@ -129,20 +129,30 @@ function isUrlBlocked(url) {
 }
 
 // Check only the active tab and close it if blocked
+// Helper to check a single tab and redirect if blocked
+async function checkAndRedirectTab(tab) {
+  if (!tab || !tab.url) return;
+  const url = tab.url;
+  
+  // Skip internal chrome pages
+  if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) return;
+  
+  if (isUrlBlocked(url)) {
+    try {
+      await chrome.tabs.update(tab.id, { url: 'http://localhost:3000/lock' });
+      console.log('Redirected blocked tab:', url);
+    } catch (err) {
+      console.error('Error redirecting blocked tab:', err);
+    }
+  }
+}
+
+// Check only the active tab and close it if blocked
 async function checkActiveTab() {
   try {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tabs || tabs.length === 0) return;
-    const activeTab = tabs[0];
-    const url = activeTab.url;
-    if (url && isUrlBlocked(url)) {
-      try {
-        await chrome.tabs.update(activeTab.id, { url: 'http://localhost:3000/lock' });
-        console.log('Redirected blocked active tab:', url);
-      } catch (err) {
-        console.error('Error redirecting blocked active tab:', err);
-      }
-    }
+    await checkAndRedirectTab(tabs[0]);
   } catch (error) {
     console.error('Error checking active tab:', error);
   }
@@ -257,30 +267,24 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 
 // Check when user switches tabs
+// Check when user switches tabs
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
     const tab = await chrome.tabs.get(activeInfo.tabId);
-    if (tab?.url && isUrlBlocked(tab.url)) {
-      await chrome.tabs.update(tab.id, { url: 'http://localhost:3000/lock' });
-    }
+    await checkAndRedirectTab(tab);
   } catch (error) {
     console.error('Error in tab activation handler:', error);
   }
 });
 
 // Check when Chrome window regains focus (immediate close if blocked)
+// Check when Chrome window regains focus (immediate close if blocked)
 chrome.windows.onFocusChanged.addListener((windowId) => {
   console.log('Window focus changed:', windowId);
   if (windowId === chrome.windows.WINDOW_ID_NONE) return;
   chrome.tabs.query({ active: true, windowId }, (tabs) => {
     if (!tabs || tabs.length === 0) return;
-    const tab = tabs[0];
-    const url = tab.url;
-    if (!url) return;
-    if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) return;
-    if (isUrlBlocked(url)) {
-      chrome.tabs.update(tab.id, { url: 'http://localhost:3000/lock' }).catch(err => console.error('Error redirecting focused blocked tab:', err));
-    }
+    checkAndRedirectTab(tabs[0]);
   });
 });
 
@@ -288,10 +292,7 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (!tab || !tab.active) return;
   if (!changeInfo.url && changeInfo.status !== 'loading') return;
-  const url = tab.url;
-  if (!url) return;
-  if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) return;
-  if (isUrlBlocked(url)) {
-    chrome.tabs.update(tabId, { url: 'http://localhost:3000/lock' }).catch(err => console.error('Error redirecting updated blocked tab:', err));
-  }
+  checkAndRedirectTab(tab);
 });
+
+
