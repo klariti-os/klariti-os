@@ -129,20 +129,30 @@ function isUrlBlocked(url) {
 }
 
 // Check only the active tab and close it if blocked
+// Helper to check a single tab and redirect if blocked
+async function checkAndRedirectTab(tab) {
+  if (!tab || !tab.url) return;
+  const url = tab.url;
+  
+  // Skip internal chrome pages
+  if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) return;
+  
+  if (isUrlBlocked(url)) {
+    try {
+      await chrome.tabs.update(tab.id, { url: 'http://localhost:3000/lock' });
+      console.log('Redirected blocked tab:', url);
+    } catch (err) {
+      console.error('Error redirecting blocked tab:', err);
+    }
+  }
+}
+
+// Check only the active tab and close it if blocked
 async function checkActiveTab() {
   try {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tabs || tabs.length === 0) return;
-    const activeTab = tabs[0];
-    const url = activeTab.url;
-    if (url && isUrlBlocked(url)) {
-      try {
-        await chrome.tabs.update(activeTab.id, { url: 'http://localhost:3000/lock' });
-        console.log('Redirected blocked active tab:', url);
-      } catch (err) {
-        console.error('Error redirecting blocked active tab:', err);
-      }
-    }
+    await checkAndRedirectTab(tabs[0]);
   } catch (error) {
     console.error('Error checking active tab:', error);
   }
@@ -154,6 +164,10 @@ async function fetchStateFromApi() {
     const { access_token } = await chrome.storage.local.get('access_token');
     if (access_token) {
       await updateChallengesAndBlocking();
+      // Ensure WebSocket is connected
+      if (!wsConnection || wsConnection.readyState !== WebSocket.OPEN) {
+        connectWebSocket();
+      }
     }
   } catch (error) {
     console.error('Error fetching state from API:', error);
@@ -161,14 +175,19 @@ async function fetchStateFromApi() {
 }
 
 // WebSocket connection for real-time challenge updates
-function connectWebSocket() {
+// WebSocket connection for real-time challenge updates
+function connectWebSocket(retryCount = 0) {
   try {
-    if (wsConnection) return;
+    if (wsConnection && wsConnection.readyState === WebSocket.OPEN) return;
+    if (wsConnection) wsConnection.close();
 
     wsConnection = new WebSocket(config.wsUrl);
 
     wsConnection.onopen = () => {
       console.log('Challenge WebSocket connected');
+      broadcastConnectionStatus(true);
+      // Reset retry count on successful connection
+      retryCount = 0;
     };
 
     wsConnection.onmessage = (event) => {
@@ -185,20 +204,38 @@ function connectWebSocket() {
 
     wsConnection.onerror = (error) => {
       console.error('Challenge WebSocket error:', error);
+      broadcastConnectionStatus(false);
     };
 
     wsConnection.onclose = () => {
+      console.log('WebSocket disconnected');
       wsConnection = null;
+      broadcastConnectionStatus(false);
+      
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      
+      // Exponential backoff with jitter: 2^retry * 1000 + random jitter
+      const baseDelay = Math.min(30000, Math.pow(2, retryCount) * 1000);
+      const jitter = Math.random() * 1000;
+      const delay = baseDelay + jitter;
+      
+      console.log(`Reconnecting in ${Math.round(delay)}ms...`);
+      
       reconnectTimeout = setTimeout(() => {
         chrome.storage.local.get('access_token', ({ access_token }) => {
-          if (access_token) connectWebSocket();
+          if (access_token) connectWebSocket(retryCount + 1);
         });
-      }, 5000);
+      }, delay);
     };
   } catch (error) {
     console.error('Error creating challenge WebSocket:', error);
+    broadcastConnectionStatus(false);
   }
+}
+
+// Broadcast connection status to storage for popup
+function broadcastConnectionStatus(isConnected) {
+  chrome.storage.local.set({ connectionStatus: isConnected ? 'connected' : 'disconnected' });
 }
 
 // Listen for minimal messages
@@ -233,20 +270,37 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     return true;
   }
 
+  if (request.action === 'check_connection') {
+    if (!wsConnection || wsConnection.readyState !== WebSocket.OPEN) {
+      connectWebSocket();
+    }
+    // Return current status immediately
+    const isConnected = wsConnection && wsConnection.readyState === WebSocket.OPEN;
+    sendResponse({ status: isConnected ? 'connected' : 'disconnected' });
+    return true;
+  }
+
   return false;
 });
 
 // Create light-weight alarms
-chrome.alarms.create('keepAlive', { periodInMinutes: 1 });
+chrome.alarms.create('keepAlive', { periodInMinutes: 0.075 });
 chrome.alarms.create('checkActiveTab', { periodInMinutes: 0.01 }); // ~15s
 chrome.alarms.create('checkTimedChallenges', { periodInMinutes: 1 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'keepAlive') {
+    console.log('Keep alive alarm triggered');
+    // print access token for debugging
+    chrome.storage.local.get('access_token', ({ access_token }) => {
+      console.log('Access token:', access_token);
+    });
     fetchStateFromApi();
   } else if (alarm.name === 'checkActiveTab') {
+    console.log('Check active tab alarm triggered');
     checkActiveTab();
   } else if (alarm.name === 'checkTimedChallenges') {
+    console.log('Check timed challenges alarm triggered');
     // Re-evaluate time-based challenge windows using cached challenges
     chrome.storage.local.get(['challenges'], ({ challenges }) => {
       if (Array.isArray(challenges)) {
@@ -257,30 +311,24 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 
 // Check when user switches tabs
+// Check when user switches tabs
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
     const tab = await chrome.tabs.get(activeInfo.tabId);
-    if (tab?.url && isUrlBlocked(tab.url)) {
-      await chrome.tabs.update(tab.id, { url: 'http://localhost:3000/lock' });
-    }
+    await checkAndRedirectTab(tab);
   } catch (error) {
     console.error('Error in tab activation handler:', error);
   }
 });
 
 // Check when Chrome window regains focus (immediate close if blocked)
+// Check when Chrome window regains focus (immediate close if blocked)
 chrome.windows.onFocusChanged.addListener((windowId) => {
   console.log('Window focus changed:', windowId);
   if (windowId === chrome.windows.WINDOW_ID_NONE) return;
   chrome.tabs.query({ active: true, windowId }, (tabs) => {
     if (!tabs || tabs.length === 0) return;
-    const tab = tabs[0];
-    const url = tab.url;
-    if (!url) return;
-    if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) return;
-    if (isUrlBlocked(url)) {
-      chrome.tabs.update(tab.id, { url: 'http://localhost:3000/lock' }).catch(err => console.error('Error redirecting focused blocked tab:', err));
-    }
+    checkAndRedirectTab(tabs[0]);
   });
 });
 
@@ -288,10 +336,7 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (!tab || !tab.active) return;
   if (!changeInfo.url && changeInfo.status !== 'loading') return;
-  const url = tab.url;
-  if (!url) return;
-  if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) return;
-  if (isUrlBlocked(url)) {
-    chrome.tabs.update(tabId, { url: 'http://localhost:3000/lock' }).catch(err => console.error('Error redirecting updated blocked tab:', err));
-  }
+  checkAndRedirectTab(tab);
 });
+
+
