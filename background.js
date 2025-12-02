@@ -291,6 +291,10 @@ chrome.alarms.create('checkTimedChallenges', { periodInMinutes: 1 });
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'keepAlive') {
     console.log('Keep alive alarm triggered');
+    // print access token for debugging
+    chrome.storage.local.get('access_token', ({ access_token }) => {
+      console.log('Access token:', access_token);
+    });
     fetchStateFromApi();
   } else if (alarm.name === 'checkActiveTab') {
     console.log('Check active tab alarm triggered');
