@@ -65,9 +65,9 @@ async function updateChallengesAndBlocking() {
 }
 
 // Update blocking rules based on challenges
-// Update blocking rules based on challenges
 function updateBlockingRules(challenges) {
   blockedUrls = StateManager.getBlockedUrls(challenges);
+  console.log(`Updated blocking rules: ${blockedUrls.size} URLs blocked from ${challenges.filter(shouldBlock).length} active challenges`);
   // After rules update, check the current active tab only
   checkActiveTab();
 }

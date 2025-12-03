@@ -303,10 +303,9 @@ function showChallengesView() {
     updateLogoutButtonVisibility();
   } else {
     activeChallenges.forEach(challenge => {
-      const isActive = StateManager.isChallengeActive(challenge);
-      
-      const statusClass = challenge.completed ? 'completed' : (isActive ? 'active' : 'paused');
-      const statusText = challenge.completed ? 'Completed' : (isActive ? 'Active' : 'Paused');
+      const status = getChallengeStatus(challenge);
+      const statusClass = getStatusClass(status);
+      const statusText = getStatusText(status);
       
       const websites = challenge.distracting_websites || [];
       const blockList = websites.length > 0 
@@ -314,12 +313,12 @@ function showChallengesView() {
         : 'No websites blocked';
       
       const item = document.createElement('div');
-      item.className = `challenge-item ${isActive && !challenge.completed ? 'active' : ''}`;
+      item.className = `challenge-item ${isActive(challenge) ? 'active' : ''}`;
       item.style.cursor = 'pointer';
       item.innerHTML = `
         <div class="challenge-name">  
           ${escapeHtml(challenge.name)}
-          <span class="status-badge status-${statusClass}">${statusText}</span>
+          ${getStatusBadge(challenge)}
         </div>
         <div class="challenge-status">
           ${challenge.strict_mode ? '🔒 Strict Mode' : ''}
@@ -381,12 +380,9 @@ function updateConnectionStatusUI(isConnected) {
   }
 }
 
-// Check if time-based challenge is active
-// Replaced by StateManager.isChallengeActive
-
 // Check if there are any active challenges
 function hasActiveChallenges() {
-  return StateManager.getActiveChallenges(challenges).length > 0;
+  return challenges.some(isActive);
 }
 
 // Update logout button visibility based on active challenges
@@ -426,26 +422,33 @@ function openModal(challenge) {
   modalTitle.textContent = challenge.name;
   
   // Badges
-  modalBadges.innerHTML = '';
-  
-  // Status Badge
-  const isActive = StateManager.isChallengeActive(challenge);
+  const status = getChallengeStatus(challenge);
+  const statusClass = getStatusClass(status);
+  const statusText = getStatusText(status);
   
   const statusBadge = document.createElement('span');
-  statusBadge.className = 'modal-badge';
-  if (challenge.completed) {
-    statusBadge.textContent = 'Completed';
+  statusBadge.className = `modal-badge ${statusClass}`;
+  statusBadge.textContent = statusText;
+  
+  // Apply status-specific styling
+  if (status === ChallengeStatus.ACTIVE) {
     statusBadge.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
     statusBadge.style.color = '#4ADE80';
-  } else if (isActive) {
-    statusBadge.textContent = 'Active';
-    statusBadge.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
-    statusBadge.style.color = '#4ADE80';
-  } else {
-    statusBadge.textContent = 'Paused';
+  } else if (status === ChallengeStatus.PAUSED) {
     statusBadge.style.backgroundColor = 'rgba(245, 158, 11, 0.1)';
     statusBadge.style.color = '#FBBF24';
+  } else if (status === ChallengeStatus.COMPLETED) {
+    statusBadge.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
+    statusBadge.style.color = '#4ADE80';
+  } else if (status === ChallengeStatus.SCHEDULED) {
+    statusBadge.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+    statusBadge.style.color = '#60A5FA';
+  } else if (status === ChallengeStatus.EXPIRED) {
+    statusBadge.style.backgroundColor = 'rgba(113, 113, 122, 0.1)';
+    statusBadge.style.color = '#A1A1AA';
   }
+  
+  modalBadges.innerHTML = '';
   modalBadges.appendChild(statusBadge);
   
   // Type Badge
