@@ -38,20 +38,27 @@ let challenges = [];
 
 
 // Initialize popup
-// Initialize popup
-// Initialize popup
 async function init() {
   // Check if user is already logged in and load cached challenges and connection status
-  const { access_token, username, challenges: storedChallenges, connectionStatus: storedStatus } = await chrome.storage.local.get(['access_token', 'username', 'challenges', 'connectionStatus']);
-  
+  const { access_token, username, challenges: storedChallenges, connectionStatus: storedStatus } = await StateManager.getState();
+
   // Update connection status immediately if available
   if (storedStatus) {
     updateConnectionStatusUI(storedStatus === 'connected');
   }
 
   if (access_token && username) {
+    // Optimistic render: Set state and show view immediately
+    currentUser = { access_token, username };
+    if (storedChallenges) {
+      challenges = storedChallenges;
+    }
+    
+    // Render immediately with what we have
+    showChallengesView();
+
     try {
-      // Verify user identity matches stored data
+      // Verify user identity matches stored data in background
       const response = await fetch(`${config.apiUrl}/me`, {
         headers: {
           'Authorization': `Bearer ${access_token}`
@@ -66,79 +73,24 @@ async function init() {
       
       // Verify username matches (case-insensitive)
       if (userData.username.toLowerCase() !== username.toLowerCase()) {
+        console.warn('Stored username:', username);
+        console.warn('Authenticating user:', userData.username);
         console.warn('Stored username does not match authenticated user. Clearing session.');
-        await chrome.storage.local.remove(['access_token', 'username', 'challenges']);
+        await StateManager.clearSession();
         showAuthView();
         return;
       }
 
-      currentUser = { access_token, username };
-      if (storedChallenges) {
-        challenges = storedChallenges;
-      }
-      await showChallengesView();
+      // If we're here, session is valid. 
+      
     } catch (error) {
       console.error('Session verification failed:', error);
       // Clear invalid session
-      await chrome.storage.local.remove(['access_token', 'username', 'challenges']);
+      await StateManager.clearSession();
       showAuthView();
     }
   } else {
     showAuthView();
-  }
-}
-
-// Show authentication view
-function showAuthView() {
-  loadingSection.style.display = 'none';
-  authSection.style.display = 'flex';
-  challengesSection.style.display = 'none';
-}
-
-// Show challenges view
-// Show challenges view
-// Show challenges view
-async function showChallengesView() {
-  loadingSection.style.display = 'none';
-  authSection.style.display = 'none';
-  challengesSection.style.display = 'flex';
-  
-  userName.textContent = currentUser.username;
-  
-  // Initial render with whatever we have
-  renderChallenges();
-  
-  // Trigger connection check in background
-  chrome.runtime.sendMessage({ action: 'check_connection' }, (response) => {
-    if (response && response.status) {
-      updateConnectionStatusUI(response.status === 'connected');
-    }
-  });
-  
-  // Listen for updates from background script (via storage)
-  chrome.storage.onChanged.addListener((changes, namespace) => {
-    if (namespace === 'local') {
-      if (changes.challenges) {
-        console.log('Challenges updated in storage, re-rendering...');
-        challenges = changes.challenges.newValue;
-        renderChallenges();
-      }
-      if (changes.connectionStatus) {
-        console.log('Connection status updated:', changes.connectionStatus.newValue);
-        updateConnectionStatusUI(changes.connectionStatus.newValue === 'connected');
-      }
-    }
-  });
-}
-
-// Helper to update connection status UI
-function updateConnectionStatusUI(isConnected) {
-  if (isConnected) {
-    connectionStatus.textContent = '🟢 Connected';
-    connectionStatus.className = 'connection-status connected';
-  } else {
-    connectionStatus.textContent = '🔴 Disconnected';
-    connectionStatus.className = 'connection-status disconnected';
   }
 }
 
@@ -178,17 +130,19 @@ loginBtn.addEventListener('click', async () => {
     const data = await response.json();
     
     // Store credentials
-    await chrome.storage.local.set({
-      access_token: data.access_token,
-      username: username,
-    });
+    await StateManager.setSession(data.access_token, username);
     
     currentUser = { access_token: data.access_token, username };
     
     // Notify background script
     chrome.runtime.sendMessage({ action: 'user_logged_in', username });
     
-    await showChallengesView();
+    // Show view immediately
+    showChallengesView();
+    
+    // Fetch challenges immediately to populate the list
+    await fetchChallenges();
+    
   } catch (error) {
     showAuthError(error.message);
   } finally {
@@ -210,7 +164,7 @@ logoutBtn.addEventListener('click', async () => {
   // WebSocket handled by background script
   
   // Clear storage
-  await chrome.storage.local.remove(['access_token', 'username', 'challenges']);
+  await StateManager.clearSession();
   
   // Notify background script
   chrome.runtime.sendMessage({ action: 'user_logged_out' });
@@ -235,7 +189,9 @@ async function fetchChallenges(retryCount = 0) {
   const retryDelay = 2000; // 2 seconds
   
   try {
-    challengesList.innerHTML = '<div class="loading">Loading challenges...</div>';
+    if (challenges.length === 0) {
+      challengesList.innerHTML = '<div class="loading">Loading challenges...</div>';
+    }
     
     // Use the correct endpoint that matches klariti.so frontend
     const response = await fetch(`${config.apiUrl}/challenges/my-challenges?skip=0&limit=100`, {
@@ -250,7 +206,7 @@ async function fetchChallenges(retryCount = 0) {
       if (response.status === 401 || response.status === 403) {
         console.error('Authentication failed - token may be expired');
         // Clear invalid credentials and force re-login
-        await chrome.storage.local.remove(['access_token', 'username', 'challenges']);
+        await StateManager.clearSession();
         chrome.runtime.sendMessage({ action: 'user_logged_out' });
         currentUser = null;
         challenges = [];
@@ -267,7 +223,7 @@ async function fetchChallenges(retryCount = 0) {
     challenges = await response.json();
     
     // Store challenges in local storage
-    await chrome.storage.local.set({ challenges });
+    await StateManager.setChallenges(challenges);
     
     // Update UI
     renderChallenges();
@@ -316,89 +272,121 @@ async function fetchChallenges(retryCount = 0) {
 
 // Render challenges
 function renderChallenges() {
+  showChallengesView();
+}
+
+// Show authentication view
+function showAuthView() {
+  loadingSection.style.display = 'none';
+  authSection.style.display = 'flex';
+  challengesSection.style.display = 'none';
+}
+
+// Show challenges view and render list
+function showChallengesView() {
+  loadingSection.style.display = 'none';
+  authSection.style.display = 'none';
+  challengesSection.style.display = 'flex';
+  
+  if (currentUser) {
+    userName.textContent = currentUser.username;
+  }
+  
+  // Render challenges list
   challengesList.innerHTML = '';
   
   // Filter to only show active challenges (not completed and currently active)
-  const activeChallenges = challenges.filter(challenge => {
-    if (challenge.completed) {
-      return false;
-    }
-    
-    const isActive = challenge.challenge_type === 'toggle' 
-      ? challenge.toggle_details?.is_active 
-      : isTimeBasedActive(challenge);
-    
-    return isActive;
-  });
+  const activeChallenges = StateManager.getActiveChallenges(challenges);
   
   if (activeChallenges.length === 0) {
     challengesList.innerHTML = '<div class="no-challenges">No active challenges. Create one at klariti.so!</div>';
     updateLogoutButtonVisibility();
-    return;
+  } else {
+    activeChallenges.forEach(challenge => {
+      const isActive = StateManager.isChallengeActive(challenge);
+      
+      const statusClass = challenge.completed ? 'completed' : (isActive ? 'active' : 'paused');
+      const statusText = challenge.completed ? 'Completed' : (isActive ? 'Active' : 'Paused');
+      
+      const websites = challenge.distracting_websites || [];
+      const blockList = websites.length > 0 
+        ? `${websites.map(w => w.name || w.url).join(', ')}`
+        : 'No websites blocked';
+      
+      const item = document.createElement('div');
+      item.className = `challenge-item ${isActive && !challenge.completed ? 'active' : ''}`;
+      item.style.cursor = 'pointer';
+      item.innerHTML = `
+        <div class="challenge-name">  
+          ${escapeHtml(challenge.name)}
+          <span class="status-badge status-${statusClass}">${statusText}</span>
+        </div>
+        <div class="challenge-status">
+          ${challenge.strict_mode ? '🔒 Strict Mode' : ''}
+        </div>
+        <div class="challenge-websites">Blocking: ${blockList}</div>
+      `;
+      
+      item.addEventListener('click', () => openModal(challenge));
+      challengesList.appendChild(item);
+    });
   }
-  
-  activeChallenges.forEach(challenge => {
-    const isActive = challenge.challenge_type === 'toggle' 
-      ? challenge.toggle_details?.is_active 
-      : isTimeBasedActive(challenge);
-    
-    const statusClass = challenge.completed ? 'completed' : (isActive ? 'active' : 'paused');
-    const statusText = challenge.completed ? 'Completed' : (isActive ? 'Active' : 'Paused');
-    
-    const websites = challenge.distracting_websites || [];
-    const websiteText = websites.length > 0 
-      ? `Blocking: ${websites.map(w => w.name || w.url).join(', ')}`
-      : 'No websites blocked';
-    
-    const item = document.createElement('div');
-    item.className = `challenge-item ${isActive && !challenge.completed ? 'active' : ''}`;
-    item.style.cursor = 'pointer';
-    item.innerHTML = `
-      <div class="challenge-name">
-        ${escapeHtml(challenge.name)}
-        <span class="status-badge status-${statusClass}">${statusText}</span>
-      </div>
-      <div class="challenge-status">
-        ${challenge.strict_mode ? '🔒 Strict Mode' : ''}
-      </div>
-      <div class="challenge-websites">${websiteText}</div>
-    `;
-    
-    item.addEventListener('click', () => openModal(challenge));
-    challengesList.appendChild(item);
-  });
   
   // Update logout button visibility based on active challenges
   updateLogoutButtonVisibility();
+  
+  // Trigger connection check in background if not already done
+  chrome.runtime.sendMessage({ action: 'check_connection' }, (response) => {
+    if (response && response.status) {
+      updateConnectionStatusUI(response.status === 'connected');
+    }
+  });
+  
+  // Setup storage listener if not already set up (idempotent check not strictly needed if we assume init runs once)
+  // But to be safe, we can leave the global listener or move it here. 
+  // The original code had it inside showChallengesView which is called multiple times?
+  // Actually showChallengesView is called on init and login.
+  // It's better to have the listener set up once globally or check if it exists.
+  // For now, I'll keep the listener logic but maybe move it out of this function to avoid duplicate listeners if called multiple times.
+  // However, since we don't have a way to check if listener is added, let's move it to init or global scope.
+  // I will move it to the global scope at the end of the file or just outside this function.
+}
+
+// Listen for updates from background script (via storage)
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'local') {
+    if (changes.challenges) {
+      console.log('Challenges updated in storage, re-rendering...');
+      challenges = changes.challenges.newValue;
+      // Only re-render if we are in the challenges view
+      if (challengesSection.style.display === 'flex') {
+        showChallengesView();
+      }
+    }
+    if (changes.connectionStatus) {
+      console.log('Connection status updated:', changes.connectionStatus.newValue);
+      updateConnectionStatusUI(changes.connectionStatus.newValue === 'connected');
+    }
+  }
+});
+
+// Helper to update connection status UI
+function updateConnectionStatusUI(isConnected) {
+  if (isConnected) {
+    connectionStatus.textContent = '🟢 Connected';
+    connectionStatus.className = 'connection-status connected';
+  } else {
+    connectionStatus.textContent = '🔴 Disconnected';
+    connectionStatus.className = 'connection-status disconnected';
+  }
 }
 
 // Check if time-based challenge is active
-function isTimeBasedActive(challenge) {
-  if (challenge.challenge_type !== 'time_based' || !challenge.time_based_details) {
-    return false;
-  }
-  
-  const now = new Date();
-  const startString = challenge.time_based_details.start_date;
-  const endString = challenge.time_based_details.end_date;
-  
-  const start = new Date(startString.endsWith("Z") ? startString : `${startString}Z`);
-  const end = new Date(endString.endsWith("Z") ? endString : `${endString}Z`);
-  
-  return now >= start && now <= end;
-}
+// Replaced by StateManager.isChallengeActive
 
 // Check if there are any active challenges
 function hasActiveChallenges() {
-  return challenges.some(challenge => {
-    if (challenge.completed) return false;
-    
-    const isActive = challenge.challenge_type === 'toggle' 
-      ? challenge.toggle_details?.is_active 
-      : isTimeBasedActive(challenge);
-    
-    return isActive;
-  });
+  return StateManager.getActiveChallenges(challenges).length > 0;
 }
 
 // Update logout button visibility based on active challenges
@@ -441,9 +429,7 @@ function openModal(challenge) {
   modalBadges.innerHTML = '';
   
   // Status Badge
-  const isActive = challenge.challenge_type === 'toggle' 
-    ? challenge.toggle_details?.is_active 
-    : isTimeBasedActive(challenge);
+  const isActive = StateManager.isChallengeActive(challenge);
   
   const statusBadge = document.createElement('span');
   statusBadge.className = 'modal-badge';

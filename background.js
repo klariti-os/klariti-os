@@ -1,6 +1,6 @@
 // background.js - Minimal blocker: close current tab if it matches blocked challenges
 
-importScripts('config.js');
+importScripts('config.js', 'shared-state.js');
 
 let blockedUrls = new Set();
 let wsConnection = null;
@@ -57,7 +57,7 @@ async function updateChallengesAndBlocking() {
     }
 
     const challenges = await response.json();
-    await chrome.storage.local.set({ challenges });
+    await StateManager.setChallenges(challenges);
     updateBlockingRules(challenges);
   } catch (error) {
     console.error('Error fetching challenges:', error);
@@ -65,67 +65,16 @@ async function updateChallengesAndBlocking() {
 }
 
 // Update blocking rules based on challenges
+// Update blocking rules based on challenges
 function updateBlockingRules(challenges) {
-  blockedUrls.clear();
-
-  challenges.forEach(challenge => {
-    if (challenge.completed) return;
-
-    const isActive = challenge.challenge_type === 'toggle'
-      ? (challenge.toggle_details?.is_active === true)
-      : isTimeBasedActive(challenge);
-
-    if (!isActive) return;
-
-    if (Array.isArray(challenge.distracting_websites)) {
-      challenge.distracting_websites.forEach(website => {
-        if (website?.url) {
-          blockedUrls.add(normalizeUrl(website.url));
-        }
-      });
-    }
-  });
-
+  blockedUrls = StateManager.getBlockedUrls(challenges);
   // After rules update, check the current active tab only
   checkActiveTab();
 }
 
-// Check if time-based challenge is active
-function isTimeBasedActive(challenge) {
-  if (challenge.challenge_type !== 'time_based' || !challenge.time_based_details) return false;
-  const now = new Date();
-  const startString = challenge.time_based_details.start_date;
-  const endString = challenge.time_based_details.end_date;
-  
-  const start = new Date(startString.endsWith("Z") ? startString : `${startString}Z`);
-  const end = new Date(endString.endsWith("Z") ? endString : `${endString}Z`);
-  return now >= start && now <= end;
-}
-
-// Normalize URL to match against
-function normalizeUrl(url) {
-  if (!url) return '';
-  let normalized = url.replace(/^https?:\/\//, ''); // strip protocol
-  normalized = normalized.replace(/^www\./, '');      // strip www
-  normalized = normalized.replace(/\/$/, '');        // strip trailing slash
-  return normalized.toLowerCase();
-}
-
 // Check if a URL is blocked
 function isUrlBlocked(url) {
-  if (!url) return false;
-  const normalized = normalizeUrl(url);
-
-  // Exact match
-  if (blockedUrls.has(normalized)) return true;
-
-  // Parent/contains match
-  for (const blocked of blockedUrls) {
-    if (normalized === blocked) return true;
-    if (normalized.startsWith(blocked)) return true;
-    if (normalized.includes(blocked)) return true;
-  }
-  return false;
+  return StateManager.isUrlBlocked(url, blockedUrls);
 }
 
 // Check only the active tab and close it if blocked
@@ -235,7 +184,7 @@ function connectWebSocket(retryCount = 0) {
 
 // Broadcast connection status to storage for popup
 function broadcastConnectionStatus(isConnected) {
-  chrome.storage.local.set({ connectionStatus: isConnected ? 'connected' : 'disconnected' });
+  StateManager.setConnectionStatus(isConnected);
 }
 
 // Listen for minimal messages
@@ -284,7 +233,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 });
 
 // Create light-weight alarms
-chrome.alarms.create('keepAlive', { periodInMinutes: 0.075 });
+chrome.alarms.create('keepAlive', { periodInMinutes: 6/60 });
 chrome.alarms.create('checkActiveTab', { periodInMinutes: 0.01 }); // ~15s
 chrome.alarms.create('checkTimedChallenges', { periodInMinutes: 1 });
 
