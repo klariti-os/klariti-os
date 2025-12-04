@@ -178,6 +178,7 @@ const StateManager = {
   },
 
   async setConnectionStatus(isConnected) {
+    console.log('Setting connection status to:', isConnected ? 'connected' : 'disconnected');
     await chrome.storage.local.set({ 
       [this.STORAGE_KEYS.CONNECTION_STATUS]: isConnected ? 'connected' : 'disconnected' 
     });
