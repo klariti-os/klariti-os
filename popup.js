@@ -31,6 +31,7 @@ const modalToggleIndicator = document.getElementById('modalToggleIndicator');
 const modalWebsiteCount = document.getElementById('modalWebsiteCount');
 const modalWebsites = document.getElementById('modalWebsites');
 
+
 // State
 let currentUser = null;
 let challenges = [];
@@ -39,7 +40,8 @@ let challenges = [];
 
 // Initialize popup
 async function init() {
-  // Check if user is already logged in and load cached challenges and connection status
+  // Load state from storage
+  console.warn('Initializing popup and checking session');
   const { access_token, username, challenges: storedChallenges, connectionStatus: storedStatus } = await StateManager.getState();
 
   // Update connection status immediately if available
@@ -48,47 +50,18 @@ async function init() {
   }
 
   if (access_token && username) {
-    // Optimistic render: Set state and show view immediately
+    // Set state and show view with cached data
     currentUser = { access_token, username };
     if (storedChallenges) {
       challenges = storedChallenges;
     }
     
-    // Render immediately with what we have
+    // Render immediately with cached data
     showChallengesView();
 
-    try {
-      // Verify user identity matches stored data in background
-      const response = await fetch(`${config.apiUrl}/me`, {
-        headers: {
-          'Authorization': `Bearer ${access_token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Token invalid or expired');
-      }
-
-      const userData = await response.json();
-      
-      // Verify username matches (case-insensitive)
-      if (userData.username.toLowerCase() !== username.toLowerCase()) {
-        console.warn('Stored username:', username);
-        console.warn('Authenticating user:', userData.username);
-        console.warn('Stored username does not match authenticated user. Clearing session.');
-        await StateManager.clearSession();
-        showAuthView();
-        return;
-      }
-
-      // If we're here, session is valid. 
-      
-    } catch (error) {
-      console.error('Session verification failed:', error);
-      // Clear invalid session
-      await StateManager.clearSession();
-      showAuthView();
-    }
+    // Trigger background script to fetch fresh data
+    // Background will update storage, which will trigger our storage listener
+    chrome.runtime.sendMessage({ action: 'refresh_challenges' });
   } else {
     showAuthView();
   }
@@ -134,14 +107,11 @@ loginBtn.addEventListener('click', async () => {
     
     currentUser = { access_token: data.access_token, username };
     
-    // Notify background script
-    chrome.runtime.sendMessage({ action: 'user_logged_in', username });
-    
     // Show view immediately
     showChallengesView();
     
-    // Fetch challenges immediately to populate the list
-    await fetchChallenges();
+    // Notify background script - it will fetch challenges and update storage
+    chrome.runtime.sendMessage({ action: 'user_logged_in', username });
     
   } catch (error) {
     showAuthError(error.message);
@@ -183,94 +153,7 @@ function showAuthError(message) {
   authError.style.display = 'block';
 }
 
-// Fetch challenges with retry logic
-async function fetchChallenges(retryCount = 0) {
-  const maxRetries = 3;
-  const retryDelay = 2000; // 2 seconds
-  
-  try {
-    if (challenges.length === 0) {
-      challengesList.innerHTML = '<div class="loading">Loading challenges...</div>';
-    }
-    
-    // Use the correct endpoint that matches klariti.so frontend
-    const response = await fetch(`${config.apiUrl}/challenges/my-challenges?skip=0&limit=100`, {
-      headers: {
-        'Authorization': `Bearer ${currentUser.access_token}`,
-        'Content-Type': 'application/json'
-      },
-    });
-    
-    if (!response.ok) {
-      // Check if it's an authentication error (401 or 403)
-      if (response.status === 401 || response.status === 403) {
-        console.error('Authentication failed - token may be expired');
-        // Clear invalid credentials and force re-login
-        await StateManager.clearSession();
-        chrome.runtime.sendMessage({ action: 'user_logged_out' });
-        currentUser = null;
-        challenges = [];
-        showAuthView();
-        showAuthError('Session expired. Please login again.');
-        return;
-      }
-      
-      const errorText = await response.text();
-      console.error('Failed to fetch challenges:', response.status, errorText);
-      throw new Error(`Failed to fetch challenges: ${response.status}`);
-    }
-    
-    challenges = await response.json();
-    
-    // Store challenges in local storage
-    await StateManager.setChallenges(challenges);
-    
-    // Update UI
-    renderChallenges();
-    
-    // Notify background script to update blocking rules
-    chrome.runtime.sendMessage({ action: 'challenges_updated', challenges });
-  } catch (error) {
-    console.error('Error fetching challenges:', error);
-    
-    // Try to load from local storage first
-    const storedData = await chrome.storage.local.get(['challenges']);
-    if (storedData.challenges && storedData.challenges.length > 0) {
-      console.log('Loading challenges from local storage');
-      challenges = storedData.challenges;
-      renderChallenges();
-      
-      // Still retry in background to get fresh data
-      if (retryCount < maxRetries) {
-        setTimeout(() => {
-          fetchChallenges(retryCount + 1);
-        }, retryDelay);
-      }
-      return;
-    }
-    
-    // Retry logic if no cached data
-    if (retryCount < maxRetries) {
-      console.log(`Retrying... (${retryCount + 1}/${maxRetries})`);
-      challengesList.innerHTML = `<div class="loading">Connection failed. Retrying... (${retryCount + 1}/${maxRetries})</div>`;
-      
-      setTimeout(() => {
-        fetchChallenges(retryCount + 1);
-      }, retryDelay);
-    } else {
-      // Max retries reached, show error but don't block UI
-      challengesList.innerHTML = `<div class="error-message">Failed to load challenges. Please check if the API is running at ${config.apiUrl}. <button id="retryBtn" style="margin-left: 10px; padding: 4px 8px; cursor: pointer;">Retry</button></div>`;
-      
-      // Add retry button listener
-      const retryBtn = document.getElementById('retryBtn');
-      if (retryBtn) {
-        retryBtn.addEventListener('click', () => fetchChallenges(0));
-      }
-    }
-  }
-}
-
-// Render challenges
+// Render challenges (called by storage listener when challenges update)
 function renderChallenges() {
   showChallengesView();
 }
@@ -303,10 +186,9 @@ function showChallengesView() {
     updateLogoutButtonVisibility();
   } else {
     activeChallenges.forEach(challenge => {
-      const isActive = StateManager.isChallengeActive(challenge);
-      
-      const statusClass = challenge.completed ? 'completed' : (isActive ? 'active' : 'paused');
-      const statusText = challenge.completed ? 'Completed' : (isActive ? 'Active' : 'Paused');
+      const status = getChallengeStatus(challenge);
+      const statusClass = getStatusClass(status);
+      const statusText = getStatusText(status);
       
       const websites = challenge.distracting_websites || [];
       const blockList = websites.length > 0 
@@ -314,12 +196,12 @@ function showChallengesView() {
         : 'No websites blocked';
       
       const item = document.createElement('div');
-      item.className = `challenge-item ${isActive && !challenge.completed ? 'active' : ''}`;
+      item.className = `challenge-item ${isActive(challenge) ? 'active' : ''}`;
       item.style.cursor = 'pointer';
       item.innerHTML = `
         <div class="challenge-name">  
           ${escapeHtml(challenge.name)}
-          <span class="status-badge status-${statusClass}">${statusText}</span>
+          ${getStatusBadge(challenge)}
         </div>
         <div class="challenge-status">
           ${challenge.strict_mode ? '🔒 Strict Mode' : ''}
@@ -367,6 +249,14 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
       console.log('Connection status updated:', changes.connectionStatus.newValue);
       updateConnectionStatusUI(changes.connectionStatus.newValue === 'connected');
     }
+    // Detect session invalidation (token removed by background)
+    if (changes.access_token && !changes.access_token.newValue && changes.access_token.oldValue) {
+      console.warn('Session cleared by background (likely auth failure)');
+      currentUser = null;
+      challenges = [];
+      showAuthView();
+      showAuthError('Session expired. Please login again.');
+    }
   }
 });
 
@@ -381,12 +271,9 @@ function updateConnectionStatusUI(isConnected) {
   }
 }
 
-// Check if time-based challenge is active
-// Replaced by StateManager.isChallengeActive
-
 // Check if there are any active challenges
 function hasActiveChallenges() {
-  return StateManager.getActiveChallenges(challenges).length > 0;
+  return challenges.some(isActive);
 }
 
 // Update logout button visibility based on active challenges
@@ -426,26 +313,33 @@ function openModal(challenge) {
   modalTitle.textContent = challenge.name;
   
   // Badges
-  modalBadges.innerHTML = '';
-  
-  // Status Badge
-  const isActive = StateManager.isChallengeActive(challenge);
+  const status = getChallengeStatus(challenge);
+  const statusClass = getStatusClass(status);
+  const statusText = getStatusText(status);
   
   const statusBadge = document.createElement('span');
-  statusBadge.className = 'modal-badge';
-  if (challenge.completed) {
-    statusBadge.textContent = 'Completed';
+  statusBadge.className = `modal-badge ${statusClass}`;
+  statusBadge.textContent = statusText;
+  
+  // Apply status-specific styling
+  if (status === ChallengeStatus.ACTIVE) {
     statusBadge.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
     statusBadge.style.color = '#4ADE80';
-  } else if (isActive) {
-    statusBadge.textContent = 'Active';
-    statusBadge.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
-    statusBadge.style.color = '#4ADE80';
-  } else {
-    statusBadge.textContent = 'Paused';
+  } else if (status === ChallengeStatus.PAUSED) {
     statusBadge.style.backgroundColor = 'rgba(245, 158, 11, 0.1)';
     statusBadge.style.color = '#FBBF24';
+  } else if (status === ChallengeStatus.COMPLETED) {
+    statusBadge.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
+    statusBadge.style.color = '#4ADE80';
+  } else if (status === ChallengeStatus.SCHEDULED) {
+    statusBadge.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+    statusBadge.style.color = '#60A5FA';
+  } else if (status === ChallengeStatus.EXPIRED) {
+    statusBadge.style.backgroundColor = 'rgba(113, 113, 122, 0.1)';
+    statusBadge.style.color = '#A1A1AA';
   }
+  
+  modalBadges.innerHTML = '';
   modalBadges.appendChild(statusBadge);
   
   // Type Badge

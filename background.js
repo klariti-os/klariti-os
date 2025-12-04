@@ -1,10 +1,23 @@
-// background.js - Minimal blocker: close current tab if it matches blocked challenges
-
-importScripts('config.js', 'shared-state.js');
+importScripts('config.js', 'challenge-utils.js');
 
 let blockedUrls = new Set();
 let wsConnection = null;
 let reconnectTimeout = null;
+
+
+// initialize when the service worker wakes up
+initializeExtension();
+
+
+chrome.runtime.onInstalled.addListener(() => {
+  console.log('Klariti extension installed');
+  initializeExtension();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  console.log('Klariti extension starting');
+  initializeExtension();
+});
 
 // Initialize extension
 async function initializeExtension() {
@@ -21,18 +34,6 @@ async function initializeExtension() {
   }
 }
 
-chrome.runtime.onInstalled.addListener(() => {
-  console.log('Klariti extension installed');
-  initializeExtension();
-});
-
-chrome.runtime.onStartup.addListener(() => {
-  console.log('Klariti extension starting');
-  initializeExtension();
-});
-
-// Also initialize when the service worker wakes up
-initializeExtension();
 
 // Fetch challenges and update blocking rules
 async function updateChallengesAndBlocking() {
@@ -53,6 +54,24 @@ async function updateChallengesAndBlocking() {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Failed to fetch challenges:', response.status, errorText);
+      
+      // Check if it's an authentication error (401 or 403)
+      if (response.status === 401 || response.status === 403) {
+        console.error('Authentication failed - token expired or invalid');
+      
+        // Clear invalid session
+        await StateManager.clearSession();
+        // Clear local state
+        if (wsConnection) {
+          wsConnection.close();
+          wsConnection = null;
+        }
+        if (reconnectTimeout) {
+          clearTimeout(reconnectTimeout);
+          reconnectTimeout = null;
+        }
+        blockedUrls.clear();
+      }
       return;
     }
 
@@ -65,9 +84,9 @@ async function updateChallengesAndBlocking() {
 }
 
 // Update blocking rules based on challenges
-// Update blocking rules based on challenges
 function updateBlockingRules(challenges) {
   blockedUrls = StateManager.getBlockedUrls(challenges);
+  console.log(`Updated blocking rules: ${blockedUrls.size} URLs blocked from ${challenges.filter(shouldBlock).length} active challenges`);
   // After rules update, check the current active tab only
   checkActiveTab();
 }
@@ -124,7 +143,6 @@ async function fetchStateFromApi() {
 }
 
 // WebSocket connection for real-time challenge updates
-// WebSocket connection for real-time challenge updates
 function connectWebSocket(retryCount = 0) {
   try {
     if (wsConnection && wsConnection.readyState === WebSocket.OPEN) return;
@@ -134,7 +152,7 @@ function connectWebSocket(retryCount = 0) {
 
     wsConnection.onopen = () => {
       console.log('Challenge WebSocket connected');
-      broadcastConnectionStatus(true);
+      StateManager.setConnectionStatus(true);
       // Reset retry count on successful connection
       retryCount = 0;
     };
@@ -153,13 +171,13 @@ function connectWebSocket(retryCount = 0) {
 
     wsConnection.onerror = (error) => {
       console.error('Challenge WebSocket error:', error);
-      broadcastConnectionStatus(false);
+      StateManager.setConnectionStatus(false);
     };
 
     wsConnection.onclose = () => {
       console.log('WebSocket disconnected');
       wsConnection = null;
-      broadcastConnectionStatus(false);
+      StateManager.setConnectionStatus(false);
       
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
       
@@ -178,13 +196,8 @@ function connectWebSocket(retryCount = 0) {
     };
   } catch (error) {
     console.error('Error creating challenge WebSocket:', error);
-    broadcastConnectionStatus(false);
+    StateManager.setConnectionStatus(false);
   }
-}
-
-// Broadcast connection status to storage for popup
-function broadcastConnectionStatus(isConnected) {
-  StateManager.setConnectionStatus(isConnected);
 }
 
 // Listen for minimal messages
@@ -219,6 +232,14 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     return true;
   }
 
+  if (request.action === 'refresh_challenges') {
+    // Popup is requesting fresh challenge data
+    updateChallengesAndBlocking().then(() => {
+      sendResponse({ success: true });
+    });
+    return true;
+  }
+
   if (request.action === 'check_connection') {
     if (!wsConnection || wsConnection.readyState !== WebSocket.OPEN) {
       connectWebSocket();
@@ -233,8 +254,8 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 });
 
 // Create light-weight alarms
-chrome.alarms.create('keepAlive', { periodInMinutes: 6/60 });
-chrome.alarms.create('checkActiveTab', { periodInMinutes: 0.01 }); // ~15s
+chrome.alarms.create('keepAlive', { periodInMinutes: 20/60 });
+chrome.alarms.create('checkActiveTab', { periodInMinutes: 10/60 }); // ~15s
 chrome.alarms.create('checkTimedChallenges', { periodInMinutes: 1 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
