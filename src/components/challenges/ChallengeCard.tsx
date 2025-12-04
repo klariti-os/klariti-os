@@ -3,6 +3,7 @@
 import React from "react";
 import { Challenge, ChallengeType } from "@/services/challenges";
 import { useAuth } from "@/contexts/AuthContext";
+import UserAvatar from "./UserAvatar";
 
 interface ChallengeCardProps {
   challenge: Challenge;
@@ -27,6 +28,15 @@ export default function ChallengeCard({
 }: ChallengeCardProps) {
   const { user } = useAuth();
   const isCreator = user?.id === challenge.creator_id;
+
+  // Debug: Check participants data
+  React.useEffect(() => {
+    if (challenge.participants) {
+      console.log(`Challenge "${challenge.name}" participants:`, challenge.participants);
+    } else {
+      console.log(`Challenge "${challenge.name}" has no participants`);
+    }
+  }, [challenge.name, challenge.participants]);
 
   const formatDate = (dateString: string) => {
     // Ensure the date string is treated as UTC if it doesn't have timezone info
@@ -101,12 +111,31 @@ export default function ChallengeCard({
       {/* Header: Title & Status */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             {getStatusBadge()}
             {isCreator && (
               <span className="px-1.5 py-0.5 text-[10px] font-medium bg-purple-500/10 text-purple-400 rounded border border-purple-500/20 font-mono">
                 YOU
               </span>
+            )}
+            
+            {/* Participant Avatars */}
+            {challenge.participants && challenge.participants.length > 0 && (
+              <div className="flex -space-x-2 ml-1" onClick={(e) => e.stopPropagation()}>
+                {challenge.participants.slice(0, 4).map((participant) => (
+                  <UserAvatar
+                    key={participant.id}
+                    user={participant}
+                    size="sm"
+                    showPopover={true}
+                  />
+                ))}
+                {challenge.participants.length > 4 && (
+                  <div className="h-6 w-6 rounded-full bg-[#27272A] border-2 border-white/20 flex items-center justify-center text-[9px] font-bold text-gray-400 font-mono">
+                    +{challenge.participants.length - 4}
+                  </div>
+                )}
+              </div>
             )}
           </div>
           <h3 className="font-bold text-lg text-white truncate tracking-tight group-hover:text-green-400 transition-colors">
@@ -175,26 +204,6 @@ export default function ChallengeCard({
             <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
             Strict
           </span>
-        )}
-
-        {/* Participants */}
-        {challenge.participants && challenge.participants.length > 0 && (
-          <div className="flex -space-x-2">
-            {challenge.participants.slice(0, 3).map((participant) => (
-              <div
-                key={participant.id}
-                className="h-6 w-6 rounded-full bg-zinc-700 border border-white/10 flex items-center justify-center text-[10px] font-medium text-white"
-                title={participant.username}
-              >
-                {participant.username.charAt(0).toUpperCase()}
-              </div>
-            ))}
-            {challenge.participants.length > 3 && (
-              <div className="h-6 w-6 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-[10px] font-medium text-zinc-400">
-                +{challenge.participants.length - 3}
-              </div>
-            )}
-          </div>
         )}
 
         {/* Website Count */}
