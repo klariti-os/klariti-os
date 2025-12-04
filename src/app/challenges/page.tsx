@@ -6,7 +6,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { NextPage } from "next";
 import ChallengeList from "@/components/challenges/ChallengeList";
 import CreateChallengeForm from "@/components/challenges/CreateChallengeForm";
-import ChallengeStats from "@/components/challenges/ChallengeStats";
 
 const ChallengesPage: NextPage = () => {
   const { user } = useAuth();
@@ -22,28 +21,15 @@ const ChallengesPage: NextPage = () => {
     <ProtectedRoute>
       <div className="px-6 pb-20">
         <main className="w-full max-w-6xl mx-auto mt-10">
-          {/* Header with integrated stats */}
+          {/* Header */}
           <div className="mb-8 p-6 bg-[#18181B]/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg">
-            <div className="flex items-center justify-between">
-              {/* Welcome Section */}
-              <div>
-                <h1 className="text-2xl font-bold text-white mb-1 font-mono">
-                  Welcome back, {user?.username || 'User'}
-                </h1>
-                <p className="text-gray-400 text-sm font-mono">
-                  Track your productivity challenges
-                </p>
-              </div>
-              
-              {/* Stats Section */}
-              <div className="hidden md:block">
-                <ChallengeStats key={refreshKey} />
-              </div>
-            </div>
-            
-            {/* Mobile Stats */}
-            <div className="md:hidden mt-4 pt-4 border-t border-white/10">
-              <ChallengeStats key={refreshKey} />
+            <div>
+              <h1 className="text-2xl font-bold text-white mb-1 font-mono">
+                Welcome back, {user?.username || 'User'}
+              </h1>
+              <p className="text-gray-400 text-sm font-mono">
+                Track your productivity challenges
+              </p>
             </div>
           </div>
 

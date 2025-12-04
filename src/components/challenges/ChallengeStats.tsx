@@ -68,17 +68,11 @@ export default function ChallengeStats() {
 
   if (isLoading) {
     return (
-      <div className="flex gap-4">
+      <div className="flex-col">
         {[...Array(3)].map((_, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-2 px-3 py-2 bg-[#27272A]/50 rounded-lg border border-[#27272A] animate-pulse"
-          >
-            <div className="w-4 h-4 bg-white/10 rounded"></div>
-            <div className="flex flex-col gap-1">
-              <div className="h-4 w-8 bg-white/10 rounded"></div>
-              <div className="h-3 w-16 bg-white/10 rounded"></div>
-            </div>
+          <div key={i} className="flex items-center gap-1.5 animate-pulse">
+            <div className="w-3 h-3 bg-white/10 rounded"></div>
+            <div className="h-4 w-6 bg-white/10 rounded"></div>
           </div>
         ))}
       </div>
@@ -86,50 +80,38 @@ export default function ChallengeStats() {
   }
 
   return (
-    <div className="flex gap-3">
-      <StatCard
-        value={stats.totalCreated}
-        label="Created"
-        icon="create"
-      />
-      <StatCard
-        value={stats.activeCreated}
-        label="Active"
-        icon="active"
-      />
-      <StatCard
-        value={stats.completedJoined}
-        label="Completed"
-        icon="completed"
-      />
+    <div className="flex-col">
+      <StatItem value={stats.totalCreated} label="Created" icon="create" />
+      <StatItem value={stats.activeCreated} label="Active" icon="active" />
+      <StatItem value={stats.completedJoined} label="Completed" icon="completed" />
     </div>
   );
 }
 
-interface StatCardProps {
+interface StatItemProps {
   value: number;
   label: string;
   icon: "create" | "active" | "completed";
 }
 
-function StatCard({ value, label, icon }: StatCardProps) {
+function StatItem({ value, label, icon }: StatItemProps) {
   const renderIcon = () => {
     switch (icon) {
       case "create":
         return (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
         );
       case "active":
         return (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         );
       case "completed":
         return (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         );
@@ -137,14 +119,12 @@ function StatCard({ value, label, icon }: StatCardProps) {
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-[#27272A]/50 backdrop-blur-sm rounded-lg border border-[#27272A] transition-all duration-200 hover:bg-[#27272A]/70">
-      <div className="text-white/60">
+    <div className="flex items-center gap-2">
+      <div className="text-white/40">
         {renderIcon()}
       </div>
-      <div className="flex flex-col">
-        <div className="text-base font-bold text-white font-mono">{value}</div>
-        <div className="text-[10px] text-gray-400 font-mono uppercase tracking-wider">{label}</div>
-      </div>
+      <span className="text-lg font-bold text-white font-mono">{value}</span>
+      <span className="text-xs text-white/40 font-mono">{label}</span>
     </div>
   );
 }
