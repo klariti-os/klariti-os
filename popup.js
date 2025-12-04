@@ -190,7 +190,7 @@ function showChallengesView() {
       const statusClass = getStatusClass(status);
       const statusText = getStatusText(status);
       
-      const websites = challenge.distracting_websites || [];
+      const websites = challenge.distractions || [];
       const blockList = websites.length > 0 
         ? `${websites.map(w => w.name || w.url).join(', ')}`
         : 'No websites blocked';
@@ -392,7 +392,7 @@ function openModal(challenge) {
   }
   
   // Websites
-  const websites = challenge.distracting_websites || [];
+  const websites = challenge.distractions || [];
   modalWebsiteCount.textContent = websites.length;
   modalWebsites.innerHTML = '';
   
