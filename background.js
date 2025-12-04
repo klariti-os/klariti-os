@@ -124,7 +124,6 @@ async function fetchStateFromApi() {
 }
 
 // WebSocket connection for real-time challenge updates
-// WebSocket connection for real-time challenge updates
 function connectWebSocket(retryCount = 0) {
   try {
     if (wsConnection && wsConnection.readyState === WebSocket.OPEN) return;
@@ -134,7 +133,7 @@ function connectWebSocket(retryCount = 0) {
 
     wsConnection.onopen = () => {
       console.log('Challenge WebSocket connected');
-      broadcastConnectionStatus(true);
+      StateManager.setConnectionStatus(true);
       // Reset retry count on successful connection
       retryCount = 0;
     };
@@ -153,13 +152,13 @@ function connectWebSocket(retryCount = 0) {
 
     wsConnection.onerror = (error) => {
       console.error('Challenge WebSocket error:', error);
-      broadcastConnectionStatus(false);
+      StateManager.setConnectionStatus(false);
     };
 
     wsConnection.onclose = () => {
       console.log('WebSocket disconnected');
       wsConnection = null;
-      broadcastConnectionStatus(false);
+      StateManager.setConnectionStatus(false);
       
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
       
@@ -178,13 +177,8 @@ function connectWebSocket(retryCount = 0) {
     };
   } catch (error) {
     console.error('Error creating challenge WebSocket:', error);
-    broadcastConnectionStatus(false);
+    StateManager.setConnectionStatus(false);
   }
-}
-
-// Broadcast connection status to storage for popup
-function broadcastConnectionStatus(isConnected) {
-  StateManager.setConnectionStatus(isConnected);
 }
 
 // Listen for minimal messages
