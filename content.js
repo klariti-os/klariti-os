@@ -1,6 +1,3 @@
-// content.js - Content script for Klariti extension
-// Blocking is now handled by background.js closing tabs
-
 console.log('Klariti content script loaded');
 
 // Listen for messages from background script (for YouTube features)

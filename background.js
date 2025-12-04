@@ -1,6 +1,6 @@
 // background.js - Minimal blocker: close current tab if it matches blocked challenges
 
-importScripts('config.js', 'shared-state.js');
+importScripts('config.js', 'challenge-utils.js');
 
 let blockedUrls = new Set();
 let wsConnection = null;

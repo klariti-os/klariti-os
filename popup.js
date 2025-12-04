@@ -40,6 +40,7 @@ let challenges = [];
 // Initialize popup
 async function init() {
   // Check if user is already logged in and load cached challenges and connection status
+  console.warn('Initializing popup and checking session');
   const { access_token, username, challenges: storedChallenges, connectionStatus: storedStatus } = await StateManager.getState();
 
   // Update connection status immediately if available
