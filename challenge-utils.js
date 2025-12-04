@@ -219,8 +219,8 @@ const StateManager = {
     const activeChallenges = this.getActiveChallenges(challenges);
 
     activeChallenges.forEach(challenge => {
-      if (Array.isArray(challenge.distracting_websites)) {
-        challenge.distracting_websites.forEach(website => {
+      if (Array.isArray(challenge.distractions)) {
+        challenge.distractions.forEach(website => {
           if (website?.url) {
             blockedUrls.add(this.normalizeUrl(website.url));
           }
