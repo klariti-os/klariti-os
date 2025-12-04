@@ -22,38 +22,30 @@ const ChallengesPage: NextPage = () => {
     <ProtectedRoute>
       <div className="px-6 pb-20">
         <main className="w-full max-w-6xl mx-auto mt-10">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">
-              Challenges
-            </h1>
-            <p className="text-slate-600">
-              Create, join, and manage your productivity challenges
-            </p>
-          </div>
-
-          {/* Stats Widget */}
-          <div className="mb-8">
-            <ChallengeStats key={refreshKey} />
-          </div>
-
-          {/* Create Challenge Section */}
-          {showCreateForm ? (
-            <div className="mb-8 p-6 bg-white border border-slate-200 rounded-lg shadow-lg">
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold text-slate-900">
-                  Create New Challenge
-                </h2>
-                <p className="text-sm text-slate-600 mt-1">
-                  Set up a new challenge to improve your focus and productivity
+          {/* Header with integrated stats */}
+          <div className="mb-8 p-6 bg-[#18181B]/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg">
+            <div className="flex items-center justify-between">
+              {/* Welcome Section */}
+              <div>
+                <h1 className="text-2xl font-bold text-white mb-1 font-mono">
+                  Welcome back, {user?.username || 'User'}
+                </h1>
+                <p className="text-gray-400 text-sm font-mono">
+                  Track your productivity challenges
                 </p>
               </div>
-              <CreateChallengeForm
-                onSuccess={handleCreateSuccess}
-                onCancel={() => setShowCreateForm(false)}
-              />
+              
+              {/* Stats Section */}
+              <div className="hidden md:block">
+                <ChallengeStats key={refreshKey} />
+              </div>
             </div>
-          ) : null}
+            
+            {/* Mobile Stats */}
+            <div className="md:hidden mt-4 pt-4 border-t border-white/10">
+              <ChallengeStats key={refreshKey} />
+            </div>
+          </div>
 
           {/* Challenge List */}
           <ChallengeList

@@ -11,6 +11,8 @@ interface ChallengeCardProps {
   onClick?: (challenge: Challenge) => void;
   showActions?: boolean;
   variant?: "default" | "compact";
+  className?: string;
+  style?: React.CSSProperties;
 }
 
 export default function ChallengeCard({
@@ -20,6 +22,8 @@ export default function ChallengeCard({
   onClick,
   showActions = true,
   variant = "default",
+  className = "",
+  style,
 }: ChallengeCardProps) {
   const { user } = useAuth();
   const isCreator = user?.id === challenge.creator_id;
@@ -90,8 +94,9 @@ export default function ChallengeCard({
 
   return (
     <div 
+      style={style}
       onClick={() => onClick && onClick(challenge)}
-      className={`group relative flex flex-col p-5 bg-[#18181B]/60 backdrop-blur-xl border border-white/5 rounded-2xl hover:border-white/10 hover:bg-[#18181B]/80 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 ${onClick ? 'cursor-pointer' : ''}`}
+      className={`group relative flex flex-col p-5 bg-[#18181B]/60 backdrop-blur-xl border border-white/5 rounded-2xl hover:border-white/10 hover:bg-[#18181B]/80 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
       {/* Header: Title & Status */}
       <div className="flex items-start justify-between gap-4 mb-4">

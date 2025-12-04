@@ -12,6 +12,7 @@ import {
 } from "@/services/challenges";
 import ChallengeCard from "./ChallengeCard";
 import ChallengeDetailModal from "./ChallengeDetailModal";
+import CreateChallengeForm from "./CreateChallengeForm";
 import { useChallengeWebSocket } from "@/hooks/useChallengeWebSocket";
 
 type TabType = "all" | "my-challenges" | "created";
@@ -20,6 +21,62 @@ interface ChallengeListProps {
   activeTab?: TabType;
   onCreateClick?: () => void;
 }
+
+// Helper to sort challenges
+const sortChallenges = (challenges: Challenge[]) => {
+  return [...challenges].sort((a, b) => {
+    // Helper to determine challenge status rank
+    // 0: Active (Top priority)
+    // 1: Upcoming
+    // 2: Paused (Toggle OFF)
+    // 3: Ended (Lowest priority)
+    const getStatusRank = (c: Challenge) => {
+      if (c.completed) return 3;
+      
+      if (c.challenge_type === ChallengeType.TOGGLE) {
+        return c.toggle_details?.is_active ? 0 : 2;
+      }
+      
+      if (c.challenge_type === ChallengeType.TIME_BASED && c.time_based_details) {
+        const now = new Date();
+        // Ensure UTC handling matches other components
+        const startString = c.time_based_details.start_date;
+        const endString = c.time_based_details.end_date;
+        const start = new Date(startString.endsWith("Z") ? startString : `${startString}Z`);
+        const end = new Date(endString.endsWith("Z") ? endString : `${endString}Z`);
+        
+        if (now > end) return 3; // Ended
+        if (now < start) return 1; // Upcoming
+        return 0; // Active
+      }
+      
+      return 2; // Default fallback
+    };
+
+    const rankA = getStatusRank(a);
+    const rankB = getStatusRank(b);
+
+    if (rankA !== rankB) {
+      return rankA - rankB; // Lower rank (higher priority) first
+    }
+
+    // Secondary sort:
+    // For Ended challenges (Rank 3), sort by end date descending (most recently ended first)
+    if (rankA === 3) {
+      const getEndDate = (c: Challenge) => {
+        if (c.time_based_details) {
+           const endString = c.time_based_details.end_date;
+           return new Date(endString.endsWith("Z") ? endString : `${endString}Z`).getTime();
+        }
+        return 0;
+      };
+      return getEndDate(b) - getEndDate(a);
+    }
+
+    // For others, sort by ID descending (newest created first)
+    return b.id - a.id;
+  });
+};
 
 export default function ChallengeList({
   activeTab = "all",
@@ -46,7 +103,10 @@ export default function ChallengeList({
       const newCache = { ...prevCache };
       (Object.keys(newCache) as TabType[]).forEach(tab => {
         if (newCache[tab]) {
-          newCache[tab] = updater(newCache[tab]!);
+          const updatedData = updater(newCache[tab]!);
+          newCache[tab] = updatedData;
+          // Update localStorage for this tab
+          localStorage.setItem(`challenges_cache_${tab}`, JSON.stringify(updatedData));
         }
       });
       return newCache;
@@ -77,19 +137,57 @@ export default function ChallengeList({
   // Connect to WebSocket for real-time updates
   const { isConnected } = useChallengeWebSocket({
     onChallengeToggled: handleChallengeUpdate,
-    onConnect: () => console.log("Connected to challenge updates"),
+    onConnect: () => {
+      console.log("Connected to challenge updates");
+      // Refresh data on connection to ensure sync across sessions
+      loadChallenges(true);
+    },
     onDisconnect: () => console.log("Disconnected from challenge updates"),
   });
 
   const loadChallenges = async (forceRefresh = false) => {
+    const cacheKey = `challenges_cache_${currentTab}`;
+    const joinedCacheKey = `challenges_joined_ids`;
+    let hasCachedData = false;
+
     // If we have cached data and not forcing refresh, use it
-    if (!forceRefresh && challengesCache[currentTab]) {
-      setChallenges(challengesCache[currentTab]!);
-      setIsLoading(false);
-      return;
+    if (!forceRefresh) {
+      // Check in-memory cache first
+      if (challengesCache[currentTab]) {
+        setChallenges(challengesCache[currentTab]!);
+        hasCachedData = true;
+        setIsLoading(false);
+      } else {
+        // Check localStorage
+        try {
+          const cachedData = localStorage.getItem(cacheKey);
+          if (cachedData) {
+            const parsedData = JSON.parse(cachedData);
+            setChallenges(parsedData);
+            setChallengesCache(prev => ({
+              ...prev,
+              [currentTab]: parsedData
+            }));
+            hasCachedData = true;
+            setIsLoading(false); // Show cached data immediately
+            
+            // Also load joined IDs from cache
+            const cachedJoinedIds = localStorage.getItem(joinedCacheKey);
+            if (cachedJoinedIds) {
+              setJoinedChallengeIds(new Set(JSON.parse(cachedJoinedIds)));
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to load from localStorage", e);
+        }
+      }
     }
 
-    setIsLoading(true);
+    // If we didn't find cache or are forcing refresh, show loading only if we don't have data displayed
+    // This prevents the spinner from showing if we already have data (silent refresh)
+    if (!hasCachedData && !challenges.length && !challengesCache[currentTab]) {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -110,20 +208,30 @@ export default function ChallengeList({
             const myJoinedChallenges = await getMyChallenges();
             const joinedIds = new Set(myJoinedChallenges.map(c => c.id));
             setJoinedChallengeIds(joinedIds);
+            // Cache joined IDs
+            localStorage.setItem(joinedCacheKey, JSON.stringify(Array.from(joinedIds)));
           } catch (err) {
             console.error("Failed to fetch joined challenges:", err);
           }
       }
       
       // Update cache and current view
+      const sortedData = sortChallenges(data);
       setChallengesCache(prev => ({
         ...prev,
-        [currentTab]: data
+        [currentTab]: sortedData
       }));
-      setChallenges(data);
+      setChallenges(sortedData);
+      
+      // Save to localStorage
+      localStorage.setItem(cacheKey, JSON.stringify(sortedData));
+      
     } catch (err: any) {
       console.error("Error loading challenges:", err);
-      setError(err.message || "Failed to load challenges");
+      // Only show error if we don't have cached data
+      if (challenges.length === 0) {
+        setError(err.message || "Failed to load challenges");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -133,6 +241,11 @@ export default function ChallengeList({
     loadChallenges();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTab]);
+
+  const handleCreateSuccess = () => {
+    setShowCreateForm(false);
+    loadChallenges(true);
+  };
 
   const handleJoinChallenge = async (challengeId: number) => {
     try {
@@ -193,8 +306,9 @@ export default function ChallengeList({
   const [showUnindexed, setShowUnindexed] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
-  // Filter and sort challenges
+  // Filter challenges
   const filteredChallenges = challenges
     .filter((challenge) => {
       const query = searchQuery.toLowerCase();
@@ -220,62 +334,16 @@ export default function ChallengeList({
       if (!showUnindexed && !hasWebsites) return false;
 
       return true;
-    })
-    .sort((a, b) => {
-      // Helper to determine challenge status rank
-      // 0: Active (Top priority)
-      // 1: Upcoming
-      // 2: Paused (Toggle OFF)
-      // 3: Ended (Lowest priority)
-      const getStatusRank = (c: Challenge) => {
-        if (c.completed) return 3;
-        
-        if (c.challenge_type === ChallengeType.TOGGLE) {
-          return c.toggle_details?.is_active ? 0 : 2;
-        }
-        
-        if (c.challenge_type === ChallengeType.TIME_BASED && c.time_based_details) {
-          const now = new Date();
-          // Ensure UTC handling matches other components
-          const startString = c.time_based_details.start_date;
-          const endString = c.time_based_details.end_date;
-          const start = new Date(startString.endsWith("Z") ? startString : `${startString}Z`);
-          const end = new Date(endString.endsWith("Z") ? endString : `${endString}Z`);
-          
-          if (now > end) return 3; // Ended
-          if (now < start) return 1; // Upcoming
-          return 0; // Active
-        }
-        
-        return 2; // Default fallback
-      };
-
-      const rankA = getStatusRank(a);
-      const rankB = getStatusRank(b);
-
-      if (rankA !== rankB) {
-        return rankA - rankB; // Lower rank (higher priority) first
-      }
-
-      // Secondary sort:
-      // For Ended challenges (Rank 3), sort by end date descending (most recently ended first)
-      if (rankA === 3) {
-        const getEndDate = (c: Challenge) => {
-          if (c.time_based_details) {
-             const endString = c.time_based_details.end_date;
-             return new Date(endString.endsWith("Z") ? endString : `${endString}Z`).getTime();
-          }
-          return 0;
-        };
-        return getEndDate(b) - getEndDate(a);
-      }
-
-      // For others, sort by ID descending (newest created first)
-      return b.id - a.id;
     });
 
   return (
     <div className="space-y-6">
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
       {/* Connection Status Indicator */}
       {isConnected && (
         <div className="flex items-center gap-2 text-xs text-green-600 font-mono">
@@ -287,9 +355,10 @@ export default function ChallengeList({
         </div>
       )}
 
+    
+
       {/* Controls Header: Tabs & Search */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Tabs */}
         {/* Left Side: Filters Dropdown */}
         <div className="relative z-30">
           <button
@@ -424,11 +493,21 @@ export default function ChallengeList({
             </>
           )}
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
 
+        {/* Center: New Challenge Button */}
+        {onCreateClick && (
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="px-6 py-2 bg-green-600/80 backdrop-blur-sm hover:bg-green-700/80 text-white font-medium font-mono rounded-lg transition-all duration-300 shadow-md border border-white/20 whitespace-nowrap"
+          >
+            + New Challenge
+          </button>
+        )}
 
+        {/* Right Side: Search */}
+        <div className="flex items-center gap-3">
           {/* Search Input */}
-          <div className="relative flex-1 md:w-64 min-w-[200px]">
+          <div className="relative md:w-64">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg
                 className="h-4 w-4 text-white/50"
@@ -453,20 +532,11 @@ export default function ChallengeList({
               className="w-full pl-10 pr-4 py-2 bg-[#18181B]/40 backdrop-blur-sm border border-white/10 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-transparent font-mono text-sm transition-all"
             />
           </div>
-
-          {onCreateClick && (
-            <button
-              onClick={onCreateClick}
-              className="px-4 py-2 bg-green-600/80 backdrop-blur-sm hover:bg-green-700/80 text-white font-medium font-mono rounded-lg transition-all duration-300 shadow-md border border-white/20 whitespace-nowrap"
-            >
-              + New
-            </button>
-          )}
         </div>
       </div>
 
       {/* Loading State */}
-      {isLoading && (
+      {isLoading && filteredChallenges.length === 0 && (
         <div className="text-center py-12">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-white/20 border-r-white/80"></div>
           <p className="mt-4 text-gray-400 font-mono">Loading challenges...</p>
@@ -474,7 +544,7 @@ export default function ChallengeList({
       )}
 
       {/* Error State - Glass Card */}
-      {error && (
+      {error && filteredChallenges.length === 0 && (
         <div className="p-4 bg-red-500/10 backdrop-blur-sm border border-red-500/20 rounded-lg text-red-400 shadow-md">
           <p className="font-medium font-mono">Error loading challenges</p>
           <p className="text-sm mt-1 font-mono">{error}</p>
@@ -511,21 +581,34 @@ export default function ChallengeList({
               ? "Join a challenge to start tracking your progress"
               : "Be the first to create a challenge!"}
           </p>
-          {onCreateClick && !searchQuery && (
-            <button
-              onClick={onCreateClick}
-              className="px-6 py-3 bg-green-600/80 hover:bg-green-600 text-white font-medium font-mono rounded-lg transition-all duration-300 shadow-lg shadow-green-900/20 border border-white/10"
-            >
-              Create Challenge
-            </button>
-          )}
+        </div>
+      )}
+
+      {/* Create Challenge Modal */}
+      {showCreateForm && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+          onClick={() => setShowCreateForm(false)}
+        >
+          <div 
+            className="w-full max-w-lg bg-[#18181B]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <CreateChallengeForm
+                isOpen={showCreateForm}
+                onSuccess={handleCreateSuccess}
+                onCancel={() => setShowCreateForm(false)}
+              />
+            </div>
+          </div>
         </div>
       )}
 
       {/* Challenge Grid - Responsive Grid Layout */}
-      {!isLoading && !error && filteredChallenges.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredChallenges.map((challenge) => {
+      {(filteredChallenges.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" key={currentTab}>
+          {filteredChallenges.map((challenge, index) => {
             const hasJoined = joinedChallengeIds.has(challenge.id);
             return (
               <ChallengeCard
@@ -539,6 +622,11 @@ export default function ChallengeList({
                 }
                 onClick={handleCardClick}
                 showActions={true}
+                style={{
+                  animation: `fadeIn 0.5s ease-out ${index * 0.05}s forwards`,
+                  opacity: 0 // Start invisible for animation
+                }}
+                className="h-full"
               />
             );
           })}

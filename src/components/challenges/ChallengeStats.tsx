@@ -57,7 +57,7 @@ export default function ChallengeStats() {
         activeJoined,
         completedJoined,
         totalCreated: created.length,
-        activeCreated,
+        activeCreated: activeCreated,
       });
     } catch (error) {
       console.error("Failed to load stats:", error);
@@ -68,14 +68,17 @@ export default function ChallengeStats() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {[...Array(5)].map((_, i) => (
+      <div className="flex gap-4">
+        {[...Array(3)].map((_, i) => (
           <div
             key={i}
-            className="p-4 bg-white/40 backdrop-blur-sm border border-white/20 rounded-lg animate-pulse shadow-md"
+            className="flex items-center gap-2 px-3 py-2 bg-[#27272A]/50 rounded-lg border border-[#27272A] animate-pulse"
           >
-            <div className="h-8 bg-slate-300/50 rounded mb-2"></div>
-            <div className="h-4 bg-slate-200/50 rounded"></div>
+            <div className="w-4 h-4 bg-white/10 rounded"></div>
+            <div className="flex flex-col gap-1">
+              <div className="h-4 w-8 bg-white/10 rounded"></div>
+              <div className="h-3 w-16 bg-white/10 rounded"></div>
+            </div>
           </div>
         ))}
       </div>
@@ -83,36 +86,21 @@ export default function ChallengeStats() {
   }
 
   return (
-    <div className="display grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div className="flex gap-3">
       <StatCard
-        value={stats.totalJoined}
-        label="Challenges Joined"
-        color="blue"
-        icon="🎯"
+        value={stats.totalCreated}
+        label="Created"
+        icon="create"
       />
       <StatCard
-        value={stats.activeJoined}
+        value={stats.activeCreated}
         label="Active"
-        color="green"
-        icon="🔥"
+        icon="active"
       />
       <StatCard
         value={stats.completedJoined}
         label="Completed"
-        color="purple"
-        icon="✅"
-      />
-      <StatCard
-        value={stats.totalCreated}
-        label="Created"
-        color="orange"
-        icon="⭐"
-      />
-      <StatCard
-        value={stats.activeCreated}
-        label="Active Created"
-        color="pink"
-        icon="🚀"
+        icon="completed"
       />
     </div>
   );
@@ -121,28 +109,42 @@ export default function ChallengeStats() {
 interface StatCardProps {
   value: number;
   label: string;
-  color: "blue" | "green" | "purple" | "orange" | "pink";
-  icon: string;
+  icon: "create" | "active" | "completed";
 }
 
-function StatCard({ value, label, color, icon }: StatCardProps) {
-  const colorClasses = {
-    blue: "from-blue-100/60 to-blue-200/60 border-blue-300/40 text-blue-800",
-    green: "from-green-100/60 to-green-200/60 border-green-300/40 text-green-800",
-    purple: "from-purple-100/60 to-purple-200/60 border-purple-300/40 text-purple-800",
-    orange: "from-orange-100/60 to-orange-200/60 border-orange-300/40 text-orange-800",
-    pink: "from-pink-100/60 to-pink-200/60 border-pink-300/40 text-pink-800",
+function StatCard({ value, label, icon }: StatCardProps) {
+  const renderIcon = () => {
+    switch (icon) {
+      case "create":
+        return (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+        );
+      case "active":
+        return (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        );
+      case "completed":
+        return (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
+    }
   };
 
   return (
-    <div
-      className={`p-4 bg-gradient-to-br backdrop-blur-md ${colorClasses[color]} border rounded-xl transition-all duration-300 hover:scale-105 shadow-md`}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-2xl font-bold font-mono">{value}</div>
-        <div className="text-2xl">{icon}</div>
+    <div className="flex items-center gap-2 px-3 py-2 bg-[#27272A]/50 backdrop-blur-sm rounded-lg border border-[#27272A] transition-all duration-200 hover:bg-[#27272A]/70">
+      <div className="text-white/60">
+        {renderIcon()}
       </div>
-      <div className="text-sm font-medium opacity-90 font-mono">{label}</div>
+      <div className="flex flex-col">
+        <div className="text-base font-bold text-white font-mono">{value}</div>
+        <div className="text-[10px] text-gray-400 font-mono uppercase tracking-wider">{label}</div>
+      </div>
     </div>
   );
 }
