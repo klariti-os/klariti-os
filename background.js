@@ -54,6 +54,24 @@ async function updateChallengesAndBlocking() {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Failed to fetch challenges:', response.status, errorText);
+      
+      // Check if it's an authentication error (401 or 403)
+      if (response.status === 401 || response.status === 403) {
+        console.error('Authentication failed - token expired or invalid');
+      
+        // Clear invalid session
+        await StateManager.clearSession();
+        // Clear local state
+        if (wsConnection) {
+          wsConnection.close();
+          wsConnection = null;
+        }
+        if (reconnectTimeout) {
+          clearTimeout(reconnectTimeout);
+          reconnectTimeout = null;
+        }
+        blockedUrls.clear();
+      }
       return;
     }
 
@@ -236,8 +254,8 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 });
 
 // Create light-weight alarms
-chrome.alarms.create('keepAlive', { periodInMinutes: 6/60 });
-chrome.alarms.create('checkActiveTab', { periodInMinutes: 0.01 }); // ~15s
+chrome.alarms.create('keepAlive', { periodInMinutes: 20/60 });
+chrome.alarms.create('checkActiveTab', { periodInMinutes: 10/60 }); // ~15s
 chrome.alarms.create('checkTimedChallenges', { periodInMinutes: 1 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
