@@ -1,10 +1,23 @@
-// background.js - Minimal blocker: close current tab if it matches blocked challenges
-
 importScripts('config.js', 'challenge-utils.js');
 
 let blockedUrls = new Set();
 let wsConnection = null;
 let reconnectTimeout = null;
+
+
+// initialize when the service worker wakes up
+initializeExtension();
+
+
+chrome.runtime.onInstalled.addListener(() => {
+  console.log('Klariti extension installed');
+  initializeExtension();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  console.log('Klariti extension starting');
+  initializeExtension();
+});
 
 // Initialize extension
 async function initializeExtension() {
@@ -21,18 +34,6 @@ async function initializeExtension() {
   }
 }
 
-chrome.runtime.onInstalled.addListener(() => {
-  console.log('Klariti extension installed');
-  initializeExtension();
-});
-
-chrome.runtime.onStartup.addListener(() => {
-  console.log('Klariti extension starting');
-  initializeExtension();
-});
-
-// Also initialize when the service worker wakes up
-initializeExtension();
 
 // Fetch challenges and update blocking rules
 async function updateChallengesAndBlocking() {
@@ -210,6 +211,14 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     updateBlockingRules(request.challenges);
     checkActiveTab();
     sendResponse({ success: true });
+    return true;
+  }
+
+  if (request.action === 'refresh_challenges') {
+    // Popup is requesting fresh challenge data
+    updateChallengesAndBlocking().then(() => {
+      sendResponse({ success: true });
+    });
     return true;
   }
 
