@@ -254,7 +254,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 });
 
 // Create light-weight alarms
-chrome.alarms.create('keepAlive', { periodInMinutes: 20/60 });
+chrome.alarms.create('keepAlive', { periodInMinutes: 5/60 });
 chrome.alarms.create('checkActiveTab', { periodInMinutes: 10/60 }); // ~15s
 chrome.alarms.create('checkTimedChallenges', { periodInMinutes: 1 });
 
