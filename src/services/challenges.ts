@@ -7,11 +7,9 @@ export enum ChallengeType {
   TOGGLE = "toggle",
 }
 
-export interface DistractingWebsite {
-  id?: number;
+export interface Distraction {
   url: string;
   name?: string;
-  challenge_id?: number;
 }
 
 export interface TimeBasedDetails {
@@ -33,7 +31,7 @@ export interface Challenge {
   creator_id: number;
   time_based_details?: TimeBasedDetails;
   toggle_details?: ToggleDetails;
-  distracting_websites?: DistractingWebsite[];
+  distractions?: Distraction[];
   participants?: { id: number; username: string }[];
 }
 
@@ -45,7 +43,7 @@ export interface CreateChallengeData {
   start_date?: string;
   end_date?: string;
   is_active?: boolean;
-  distracting_websites?: { url: string; name?: string }[];
+  distractions?: { url: string; name?: string }[];
 }
 
 export interface UpdateChallengeData {

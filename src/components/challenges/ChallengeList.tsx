@@ -216,19 +216,62 @@ export default function ChallengeList({
       }
 
       // Filter out unindexed challenges (no websites) unless showUnindexed is true
-      const hasWebsites = challenge.distracting_websites && challenge.distracting_websites.length > 0;
+      const hasWebsites = challenge.distractions && challenge.distractions.length > 0;
       if (!showUnindexed && !hasWebsites) return false;
 
       return true;
     })
     .sort((a, b) => {
-      // Sort unindexed challenges to the bottom
-      const aHasWebsites = a.distracting_websites && a.distracting_websites.length > 0;
-      const bHasWebsites = b.distracting_websites && b.distracting_websites.length > 0;
+      // Helper to determine challenge status rank
+      // 0: Active (Top priority)
+      // 1: Upcoming
+      // 2: Paused (Toggle OFF)
+      // 3: Ended (Lowest priority)
+      const getStatusRank = (c: Challenge) => {
+        if (c.completed) return 3;
+        
+        if (c.challenge_type === ChallengeType.TOGGLE) {
+          return c.toggle_details?.is_active ? 0 : 2;
+        }
+        
+        if (c.challenge_type === ChallengeType.TIME_BASED && c.time_based_details) {
+          const now = new Date();
+          // Ensure UTC handling matches other components
+          const startString = c.time_based_details.start_date;
+          const endString = c.time_based_details.end_date;
+          const start = new Date(startString.endsWith("Z") ? startString : `${startString}Z`);
+          const end = new Date(endString.endsWith("Z") ? endString : `${endString}Z`);
+          
+          if (now > end) return 3; // Ended
+          if (now < start) return 1; // Upcoming
+          return 0; // Active
+        }
+        
+        return 2; // Default fallback
+      };
 
-      if (aHasWebsites && !bHasWebsites) return -1;
-      if (!aHasWebsites && bHasWebsites) return 1;
-      return 0;
+      const rankA = getStatusRank(a);
+      const rankB = getStatusRank(b);
+
+      if (rankA !== rankB) {
+        return rankA - rankB; // Lower rank (higher priority) first
+      }
+
+      // Secondary sort:
+      // For Ended challenges (Rank 3), sort by end date descending (most recently ended first)
+      if (rankA === 3) {
+        const getEndDate = (c: Challenge) => {
+          if (c.time_based_details) {
+             const endString = c.time_based_details.end_date;
+             return new Date(endString.endsWith("Z") ? endString : `${endString}Z`).getTime();
+          }
+          return 0;
+        };
+        return getEndDate(b) - getEndDate(a);
+      }
+
+      // For others, sort by ID descending (newest created first)
+      return b.id - a.id;
     });
 
   return (

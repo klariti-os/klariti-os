@@ -170,11 +170,11 @@ export default function ChallengeDetailModal({
           {/* Blocked Websites */}
           <div>
             <h3 className="text-sm font-medium text-gray-400 mb-3 font-mono uppercase tracking-wider">
-              Blocked Websites ({challenge.distracting_websites?.length || 0})
+              Blocked Websites ({challenge.distractions?.length || 0})
             </h3>
-            {challenge.distracting_websites && challenge.distracting_websites.length > 0 ? (
+            {challenge.distractions && challenge.distractions.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {challenge.distracting_websites.map((site, index) => (
+                {challenge.distractions.map((site, index) => (
                   <div key={index} className="flex items-center gap-2 p-2 bg-[#27272A] rounded border border-[#3F3F46]">
                     <div className="w-6 h-6 rounded-full bg-[#18181B] flex items-center justify-center text-xs text-gray-400 border border-[#3F3F46]">
                       {site.url.charAt(0).toUpperCase()}

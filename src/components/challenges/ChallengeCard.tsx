@@ -193,9 +193,9 @@ export default function ChallengeCard({
         )}
 
         {/* Website Count */}
-        {challenge.distracting_websites && challenge.distracting_websites.length > 0 && (
+        {challenge.distractions && challenge.distractions.length > 0 && (
           <span className="flex items-center gap-1.5 text-xs text-zinc-500 font-mono ml-auto">
-            {challenge.distracting_websites.length} sites
+            {challenge.distractions.length} sites
           </span>
         )}
       </div>

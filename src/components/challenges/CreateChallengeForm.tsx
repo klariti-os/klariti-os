@@ -24,7 +24,7 @@ export default function CreateChallengeForm({
     start_date: "",
     end_date: "",
     is_active: true,
-    distracting_websites: [],
+    distractions: [],
   });
 
   const [timeMode, setTimeMode] = useState<"duration" | "dates">("duration");
@@ -44,7 +44,7 @@ export default function CreateChallengeForm({
     try {
       const dataToSubmit: CreateChallengeData = {
         ...formData,
-        distracting_websites: websites.length > 0 ? websites : undefined,
+        distractions: websites.length > 0 ? websites : undefined,
       };
 
       // Handle Time Based logic
