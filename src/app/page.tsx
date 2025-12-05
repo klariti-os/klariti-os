@@ -68,7 +68,7 @@ const HomePage: NextPage = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-[#fdfbf7] via-transparent to-transparent" />
             </div>
 
-            <div className="relative z-10 w-full max-w-5xl mx-auto px-6 text-center pt-20 pb-32">
+            <div className="relative z-10 w-full max-w-5xl mx-auto px-6 text-center pt-32 pb-32">
             <div className="mb-8 animate-fade-in-up">
                 <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 dark:text-gray-100 font-sans mb-4">
                 The new standard <br />
