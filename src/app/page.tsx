@@ -78,7 +78,7 @@ const HomePage: NextPage = () => {
       </Head>
       <main className="pb-32">
         <div className="px-6">
-          <section className="w-full  max-w-xl mx-auto mt-44">
+          <section className="w-full  max-w-xl mx-auto mt-20">
             <h1 className="italic font-bold text-zinc-800 font-mono text-2xl">
               Klariti OS{" "}
             </h1>

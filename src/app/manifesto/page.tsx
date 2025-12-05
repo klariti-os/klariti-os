@@ -70,7 +70,7 @@ const Manifesto: NextPage = () => {
       </Head>
       <main className="pb-32">
         <div className="px-6">
-          <section className="w-full  max-w-xl mx-auto mt-44">
+          <section className="w-full  max-w-xl mx-auto mt-12">
 
             <h1 className="font-pp-editorial-italic text-slate-300 text-2xl font-bold">
               Manifesto

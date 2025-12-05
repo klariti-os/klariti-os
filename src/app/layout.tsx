@@ -11,7 +11,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
-      <body className="font-mono antialiased bg-[#d9d9d9] selection:bg-white/10">
+      <body className="antialiased bg-[#2a2828] selection:bg-white/10 -z-10">
         <AuthProvider>
           <BaseLayout>{children}</BaseLayout>
         </AuthProvider>
