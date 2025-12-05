@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Challenge, ChallengeType } from "@/services/challenges";
 import { useAuth } from "@/contexts/AuthContext";
+import UserAvatar from "./UserAvatar";
 
 interface ChallengeCardProps {
   challenge: Challenge;
@@ -27,6 +28,76 @@ export default function ChallengeCard({
 }: ChallengeCardProps) {
   const { user } = useAuth();
   const isCreator = user?.id === challenge.creator_id;
+  const [timeRemaining, setTimeRemaining] = useState<string>("");
+
+  // Debug: Check participants data
+  React.useEffect(() => {
+    if (challenge.participants) {
+      console.log(`Challenge "${challenge.name}" participants:`, challenge.participants);
+    } else {
+      console.log(`Challenge "${challenge.name}" has no participants`);
+    }
+  }, [challenge.name, challenge.participants]);
+
+  // Calculate time remaining for time-based challenges
+  useEffect(() => {
+    if (challenge.challenge_type === ChallengeType.TIME_BASED && challenge.time_based_details) {
+      const updateTimeRemaining = () => {
+        const now = new Date();
+        const startString = challenge.time_based_details!.start_date;
+        const endString = challenge.time_based_details!.end_date;
+        const start = new Date(startString.endsWith("Z") ? startString : `${startString}Z`);
+        const end = new Date(endString.endsWith("Z") ? endString : `${endString}Z`);
+
+        // Check if challenge hasn't started yet
+        if (now < start) {
+          const diff = start.getTime() - now.getTime();
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+          if (days > 0) {
+            setTimeRemaining(`Starts in ${days}d ${hours}h`);
+          } else if (hours > 0) {
+            setTimeRemaining(`Starts in ${hours}h ${minutes}m`);
+          } else if (minutes > 0) {
+            setTimeRemaining(`Starts in ${minutes}m ${seconds}s`);
+          } else {
+            setTimeRemaining(`Starts in ${seconds}s`);
+          }
+          return;
+        }
+
+        // Challenge is active - show time until end
+        const diff = end.getTime() - now.getTime();
+
+        if (diff <= 0) {
+          setTimeRemaining("Ended");
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        if (days > 0) {
+          setTimeRemaining(`${days}d ${hours}h`);
+        } else if (hours > 0) {
+          setTimeRemaining(`${hours}h ${minutes}m`);
+        } else if (minutes > 0) {
+          setTimeRemaining(`${minutes}m ${seconds}s`);
+        } else {
+          setTimeRemaining(`${seconds}s`);
+        }
+      };
+
+      updateTimeRemaining();
+      const interval = setInterval(updateTimeRemaining, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [challenge.challenge_type, challenge.time_based_details]);
 
   const formatDate = (dateString: string) => {
     // Ensure the date string is treated as UTC if it doesn't have timezone info
@@ -39,58 +110,6 @@ export default function ChallengeCard({
     });
   };
 
-  const getStatusBadge = () => {
-    if (challenge.completed) {
-      return (
-        <span className="px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold bg-green-500/10 text-green-400 rounded border border-green-500/20 font-mono">
-          Completed
-        </span>
-      );
-    }
-
-    if (challenge.challenge_type === ChallengeType.TOGGLE) {
-      return challenge.toggle_details?.is_active ? (
-        <span className="px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold bg-blue-500/10 text-blue-400 rounded border border-blue-500/20 font-mono">
-          Active
-        </span>
-      ) : (
-        <span className="px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold bg-zinc-500/10 text-zinc-400 rounded border border-zinc-500/20 font-mono">
-          Off
-        </span>
-      );
-    }
-
-    if (challenge.challenge_type === ChallengeType.TIME_BASED && challenge.time_based_details) {
-      const now = new Date();
-      // Ensure server dates are treated as UTC
-      const startString = challenge.time_based_details.start_date;
-      const endString = challenge.time_based_details.end_date;
-      const start = new Date(startString.endsWith("Z") ? startString : `${startString}Z`);
-      const end = new Date(endString.endsWith("Z") ? endString : `${endString}Z`);
-
-      if (now < start) {
-        return (
-          <span className="px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold bg-yellow-500/10 text-yellow-400 rounded border border-yellow-500/20 font-mono">
-            Soon
-          </span>
-        );
-      }
-      if (now > end) {
-        return (
-          <span className="px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold bg-zinc-500/10 text-zinc-400 rounded border border-zinc-500/20 font-mono">
-            Ended
-          </span>
-        );
-      }
-      return (
-        <span className="px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold bg-green-500/10 text-green-400 rounded border border-green-500/20 font-mono">
-          Live
-        </span>
-      );
-    }
-
-    return null;
-  };
 
   return (
     <div 
@@ -101,12 +120,30 @@ export default function ChallengeCard({
       {/* Header: Title & Status */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
-            {getStatusBadge()}
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+        
             {isCreator && (
               <span className="px-1.5 py-0.5 text-[10px] font-medium bg-purple-500/10 text-purple-400 rounded border border-purple-500/20 font-mono">
                 YOU
               </span>
+            )}
+            
+            {/* Participant Avatars */}
+            {challenge.participants && challenge.participants.length > 0 && (
+              <div className="flex -space-x-2 ml-1" onClick={(e) => e.stopPropagation()}>
+                {challenge.participants.slice(0, 4).map((participant) => (
+                  <UserAvatar
+                    key={participant.id}
+                    user={participant}
+                    size="sm"
+                  />
+                ))}
+                {challenge.participants.length > 4 && (
+                  <div className="h-6 w-6 rounded-full bg-[#27272A] border-2 border-white/20 flex items-center justify-center text-[9px] font-bold text-gray-400 font-mono">
+                    +{challenge.participants.length - 4}
+                  </div>
+                )}
+              </div>
             )}
           </div>
           <h3 className="font-bold text-lg text-white truncate tracking-tight group-hover:text-green-400 transition-colors">
@@ -117,6 +154,13 @@ export default function ChallengeCard({
         {/* Actions */}
         {showActions && (
           <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            {/* Time Remaining for Time-Based Challenges */}
+            {challenge.challenge_type === ChallengeType.TIME_BASED && timeRemaining && (
+              <div className="px-3 py-1.5 bg-[#27272A]/80 border border-white/10 rounded-lg">
+                <span className="text-xs font-bold text-white font-mono">{timeRemaining}</span>
+              </div>
+            )}
+            
             {/* Toggle Switch */}
             {challenge.challenge_type === ChallengeType.TOGGLE && onToggle && (
               <button
@@ -175,26 +219,6 @@ export default function ChallengeCard({
             <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
             Strict
           </span>
-        )}
-
-        {/* Participants */}
-        {challenge.participants && challenge.participants.length > 0 && (
-          <div className="flex -space-x-2">
-            {challenge.participants.slice(0, 3).map((participant) => (
-              <div
-                key={participant.id}
-                className="h-6 w-6 rounded-full bg-zinc-700 border border-white/10 flex items-center justify-center text-[10px] font-medium text-white"
-                title={participant.username}
-              >
-                {participant.username.charAt(0).toUpperCase()}
-              </div>
-            ))}
-            {challenge.participants.length > 3 && (
-              <div className="h-6 w-6 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-[10px] font-medium text-zinc-400">
-                +{challenge.participants.length - 3}
-              </div>
-            )}
-          </div>
         )}
 
         {/* Website Count */}

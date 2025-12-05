@@ -8,7 +8,6 @@ import { NextPage } from "next";
 import Link from "next/link";
 import ChallengeList from "@/components/challenges/ChallengeList";
 import CreateChallengeForm from "@/components/challenges/CreateChallengeForm";
-import ChallengeStats from "@/components/challenges/ChallengeStats";
 
 const DashboardPage: NextPage = () => {
   const { user } = useAuth();
@@ -26,20 +25,20 @@ const DashboardPage: NextPage = () => {
         <main className="w-full max-w-6xl mx-auto mt-10">
           {/* Welcome Section - Glassmorphism Style */}
           {user && (
-            <div className="mb-8 p-6 bg-slate-100 bg-opacity-[30%] backdrop-blur-sm rounded-xl border border-slate-300/20 shadow-[0_0_12px_rgba(90,94,82,0.3)]">
-              <h1 className="text-2xl font-bold text-slate-900 mb-2 font-mono">
-                Welcome back, {user.username}! 👋
-              </h1>
-              <p className="text-slate-700 font-mono text-sm">
-                Manage your challenges and track your progress
-              </p>
+            <div className="flex justify-between p-6 bg-slate-100 bg-opacity-[30%] backdrop-blur-sm rounded-xl border border-slate-300/20 shadow-[0_0_12px_rgba(90,94,82,0.3)]">
+              
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2 font-mono">
+                  Welcome back, {user.username}! 👋
+                </h1>
+                <p className="text-slate-700 font-mono text-sm">
+                  Manage your challenges and track your progress
+                </p>
+              </div>
+
+  
             </div>
           )}
-
-          {/* Challenge Stats - Glassmorphism Cards */}
-          <div className="mb-8">
-            <ChallengeStats key={refreshKey} />
-          </div>
 
           {/* Create Challenge Section - Glass Card */}
           {showCreateForm && (
@@ -70,21 +69,8 @@ const DashboardPage: NextPage = () => {
           {/* Divider with Glass Effect */}
           <div className="my-12 h-px bg-gradient-to-r from-transparent via-slate-300/50 to-transparent"></div>
 
-          {/* Developer Tools Section - Glass Card */}
-          <div className="p-6 bg-slate-100 bg-opacity-[30%] backdrop-blur-sm rounded-xl border border-slate-300/20 shadow-[0_0_12px_rgba(90,94,82,0.3)]">
-            <h2 className="text-xl font-semibold text-slate-900 mb-2 font-mono">
-              Developer Playground
-            </h2>
-            <p className="text-slate-700 mb-6 font-mono text-sm">
-              Testing and viewing demos and prototypes
-            </p>
 
-            <div className="flex flex-col max-w-3xl space-y-2">
-              <Link legacyBehavior href="playground/ios">
-                <PillButton>Klariti iOS app mockup</PillButton>
-              </Link>
-            </div>
-          </div>
+          
         </main>
       </div>
     </ProtectedRoute>
