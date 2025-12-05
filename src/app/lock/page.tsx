@@ -73,10 +73,10 @@ export default function LockPage() {
     <div className={`flex flex-col items-center justify-center min-h-screen p-4 text-center ${ppEditorialUltralight.variable} ${ppEditorialRegular.variable} ${ppEditorialUltralightItalic.variable}`}>
       <div className="max-w-2xl mx-auto">
         <div className="mb-16">
-          <h1 className="font-pp-editorial-ultralight text-4xl md:text-6xl mb-8 tracking-wider leading-relaxed">
+          <h1 className="font-pp-editorial-ultralight text-white text-4xl md:text-6xl mb-8 tracking-wider leading-relaxed">
             Klariti mode has been activated
           </h1>
-          <p className="font-pp-editorial-regular text-xl md:text-2xl">
+          <p className="text-white font-pp-editorial-regular text-xl md:text-2xl">
             Go touch grass!
           </p>  
         </div>
