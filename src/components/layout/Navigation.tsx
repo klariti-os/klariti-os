@@ -3,6 +3,7 @@
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import Image from "next/image";
 
 const NavItem: React.FC<{ href: string; title: string }> = ({
   href,
@@ -25,7 +26,7 @@ const NavItem: React.FC<{ href: string; title: string }> = ({
   );
 };
 
-import Image from "next/image";
+
 
 const Navigation: React.FC = () => {
   const { user, logout, isLoading } = useAuth();
