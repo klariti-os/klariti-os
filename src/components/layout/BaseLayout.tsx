@@ -3,8 +3,7 @@ import Navigation from "./Navigation";
 
 const BaseLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <div className="relative flex flex-col justify-center min-h-screen pt-20">
-  
+    <div className="relative flex flex-col min-h-screen">
       {children}
       <Navigation />
     </div>
