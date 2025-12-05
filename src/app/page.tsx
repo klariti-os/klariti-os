@@ -146,14 +146,15 @@ const HomePage: NextPage = () => {
             <section className="py-24 bg-[#fdfbf7]">
                 <div className="max-w-5xl mx-auto px-6">
                     <div className="mb-20 text-left">
-                        <h2 className="text-4xl md:text-5xl font-pp-editorial text-gray-900 mb-6 tracking-tight">Designed to convert. Built to scale.</h2>
-                        <p className="text-lg text-gray-600 dark:text-gray-400">Built to scale with your digital habits.</p>
+                        <h2 className="text-4xl md:text-5xl font-pp-editorial text-gray-900 mb-6 tracking-tight">Designed to improve outcomes. <br/>Built to scale across campuses.</h2>
+                        <p className="text-lg text-gray-600 dark:text-gray-400">A privacy-safe attention layer for learning and wellbeing.</p>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-12">
                         <FeatureCard
-                            title="Drive revenue"
-                            description="Klariti's platform is built to help enterprises grow. Optimised to eliminate friction and instantly deliver higher conversion."
+                            title="Improve learning outcomes"
+                            description="Klariti “tap-in” focus sessions and LMS-aware nudges increase time-on-task and participation—without locking devices."
+                            kpi="+18% time-on-task (pilot)"
                             icon={
                                 <svg className="w-8 h-8 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -161,8 +162,9 @@ const HomePage: NextPage = () => {
                             }
                         />
                         <FeatureCard
-                            title="Future-proof compliance"
-                            description="A powerful policy engine translates compliance into code — enabling the industry's most detailed audit trails."
+                            title="Privacy by design"
+                            description="Local processing, least-privilege scopes, aggregate dashboards. SOC 2/ISO roadmap; FERPA/HITRUST-aligned where needed."
+                            kpi="Aggregate-only • No ad-tech"
                             icon={
                                 <svg className="w-8 h-8 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -170,11 +172,12 @@ const HomePage: NextPage = () => {
                             }
                         />
                         <FeatureCard
-                            title="Reduce costs"
-                            description="Eliminate manual checks, endless emails and lengthy reviews — by automating analyst tasks and compliance workflows."
+                            title="Peer networks amplify results"
+                            description="Focus groups, class challenges, and streaks turn healthy tech use into a shared norm. As more classes join, network effects boost adoption."
+                            kpi="+25% weekly retention in groups"
                             icon={
                                 <svg className="w-8 h-8 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
                             }
                         />
