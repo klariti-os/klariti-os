@@ -3,6 +3,7 @@ import Head from "next/head";
 import Image from "next/image";
 
 const heroImage = "/images/pc-land2.png";
+
 import clsx from "clsx";
 import { Card } from "@/components/Card";
 import PillButton from "@/components/PillButton";
