@@ -4,8 +4,6 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
-import { ROUTES } from "@/config/constants";
-
 export default function ProtectedRoute({
   children,
 }: {
@@ -16,7 +14,7 @@ export default function ProtectedRoute({
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push(ROUTES.AUTH_REDIRECT);
+      router.push('/auth');
     }
   }, [user, isLoading, router]);
 
