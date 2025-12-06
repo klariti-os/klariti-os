@@ -4,7 +4,6 @@
 # env vars
 .env
 .env.local
-src/config/constants.ts
 
 # dependencies
 /node_modules
