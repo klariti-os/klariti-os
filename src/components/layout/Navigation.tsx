@@ -38,7 +38,6 @@ const Navigation: React.FC = () => {
           <Image src="/logo.svg" alt="Klariti Logo" width={24} height={24} className="w-6 h-6" />
         </NextLink>
         <NavItem href="/" title="Home" />
-        <NavItem href="/flashcards" title="Flashcards" />
         
         
         {!isLoading && user && (
