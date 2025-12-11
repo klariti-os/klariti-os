@@ -20,6 +20,8 @@ interface WebSocketMessage {
 
 interface UseChallengeWebSocketOptions {
   onChallengeToggled?: (challengeId: number, isActive: boolean, challenge: Challenge) => void;
+  onParticipantJoined?: (challengeId: number, challenge: Challenge) => void;
+  onChallengeCreated?: (challenge: Challenge) => void;
   onError?: (error: Event) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
@@ -38,7 +40,7 @@ export function useChallengeWebSocket(options: UseChallengeWebSocketOptions = {}
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isConnectedRef = useRef(false);
 
-  const { onChallengeToggled, onError, onConnect, onDisconnect } = options;
+  const { onChallengeToggled, onParticipantJoined, onChallengeCreated, onError, onConnect, onDisconnect } = options;
 
   const connect = useCallback((retryCount = 0) => {
     try {
@@ -93,6 +95,16 @@ export function useChallengeWebSocket(options: UseChallengeWebSocketOptions = {}
                 onChallengeToggled?.(data.challenge_id, data.is_active, data.challenge);
               }
               break;
+            case "participant_joined":
+              if (data.challenge_id !== undefined && data.challenge) {
+                onParticipantJoined?.(data.challenge_id, data.challenge);
+              }
+              break;
+            case "challenge_created":
+              if (data.challenge) {
+                onChallengeCreated?.(data.challenge);
+              }
+              break;
             case "pong":
               // Connection alive confirmation
               break;
@@ -144,7 +156,7 @@ export function useChallengeWebSocket(options: UseChallengeWebSocketOptions = {}
       console.error("Error creating WebSocket connection:", err);
       isConnectedRef.current = false;
     }
-  }, [onChallengeToggled, onError, onConnect, onDisconnect]);
+  }, [onChallengeToggled, onParticipantJoined, onChallengeCreated, onError, onConnect, onDisconnect]);
 
   useEffect(() => {
     // Only connect if in browser environment
