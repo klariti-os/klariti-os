@@ -11,7 +11,7 @@ const BaseLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div
       className={`relative flex flex-col min-h-screen ${
-        !isHomePage ? "pt-20" : ""
+        !isHomePage ? "pb-20 md:pt-20 md:pb-0" : ""
       }`}
     >
       {children}

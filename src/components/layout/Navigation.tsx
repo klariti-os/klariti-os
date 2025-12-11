@@ -32,7 +32,7 @@ const Navigation: React.FC = () => {
   const { user, logout, isLoading } = useAuth();
 
   return (
-    <div className="h-fit  fixed inset-x-2 text-gray-900 z-50 flex justify-center bottom-4 md:top-4 ">
+    <div className="h-fit   fixed inset-x-2 text-gray-900 z-50 flex justify-center bottom-4 md:top-4 ">
       <nav className="h-fit transition-[box-shadow_background-color_border-color] duration-300 motion-reduce:transition-none shadow-[0_0_12px_rgba(90,94,82,0.5)] text-sm bg-zinc-400 bg-opacity-[40%] w-[100%] md:w-[80%] backdrop-blur-[10px] border uppercase border-slate-700/20 p-1 font-mono  rounded-lg flex justify-start items-center">
         <NextLink href="/" className="px-4 py-2.5 hover:opacity-80 transition-opacity">
           <Image src="/logo.svg" alt="Klariti Logo" width={24} height={24} className="w-6 h-6" />

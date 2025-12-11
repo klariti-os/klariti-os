@@ -64,7 +64,7 @@ const Footer: React.FC = () => {
         </div>
 
         {/* Bottom Section */}
-        <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-white/20 text-sm text-gray-300 font-mono">
+        <div className="flex flex-col pb-16 md:pb-0 md:flex-row justify-between items-center pt-8 border-t border-white/20 text-sm text-gray-300 font-mono">
           <div>
             © {currentYear} Klariti OS.
           </div>
