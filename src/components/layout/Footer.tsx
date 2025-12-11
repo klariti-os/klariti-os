@@ -10,7 +10,7 @@ const Footer: React.FC = () => {
       <div 
         className="absolute inset-0 z-0"
         style={{
-          backgroundImage: 'url(/images/pc-land2.png)',
+          backgroundImage: 'url(/images/klariti-dusk.jpg)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}

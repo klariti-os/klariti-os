@@ -2,7 +2,7 @@ import type { Metadata, NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 
-const heroImage = "/images/pc-land2.png";
+const heroImage = "/images/klariti-dusk.jpg";
 
 import clsx from "clsx";
 import { Card } from "@/components/Card";
