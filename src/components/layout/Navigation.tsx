@@ -48,7 +48,7 @@ const Navigation: React.FC = () => {
             <NavItem href="/dashboard" title="Dashboard" />
           )}
         </div>
-
+ 
         {/* Right: Actions */}
         <div className="flex items-center gap-2 ml-2 md:ml-auto shrink-0">
           {!isLoading && user ? (
