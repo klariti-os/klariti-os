@@ -3,6 +3,7 @@ import { type Metadata } from "next"
 import "@/styles/globals.css"
 import BaseLayout from "@/components/layout/BaseLayout"
 import { AuthProvider } from "@/contexts/AuthContext"
+import QueryProvider from "@/components/providers/QueryProvider"
 
 import localFont from "next/font/local";
 
@@ -50,9 +51,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`h-full antialiased ${ppEditorial.variable}`} suppressHydrationWarning>
       <body className="antialiased bg-zinc-950 text-zinc-100 selection:bg-emerald-500/30 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-900/40 to-zinc-950 min-h-screen">
-        <AuthProvider>
-          <BaseLayout>{children}</BaseLayout>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <BaseLayout>{children}</BaseLayout>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   )
