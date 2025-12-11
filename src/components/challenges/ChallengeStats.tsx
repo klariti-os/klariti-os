@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getMyChallenges, getMyCreatedChallenges } from "@/services/challenges";
+import { useMyChallenges, useMyCreatedChallenges } from "@/hooks/useChallenges";
 
 interface ChallengeStats {
   totalJoined: number;
@@ -12,59 +12,50 @@ interface ChallengeStats {
 }
 
 export default function ChallengeStats() {
-  const [stats, setStats] = useState<ChallengeStats>({
-    totalJoined: 0,
-    activeJoined: 0,
-    completedJoined: 0,
-    totalCreated: 0,
-    activeCreated: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: myChallenges, isLoading: isLoadingJoined } = useMyChallenges();
+  const { data: createdChallenges, isLoading: isLoadingCreated } = useMyCreatedChallenges();
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
-    try {
-      const [joined, created] = await Promise.all([
-        getMyChallenges(),
-        getMyCreatedChallenges(),
-      ]);
-
-      const activeJoined = joined.filter(
-        (c) =>
-          !c.completed &&
-          (c.toggle_details?.is_active ||
-            (c.time_based_details &&
-              new Date(c.time_based_details.start_date) <= new Date() &&
-              new Date(c.time_based_details.end_date) >= new Date()))
-      ).length;
-
-      const completedJoined = joined.filter((c) => c.completed).length;
-
-      const activeCreated = created.filter(
-        (c) =>
-          !c.completed &&
-          (c.toggle_details?.is_active ||
-            (c.time_based_details &&
-              new Date(c.time_based_details.start_date) <= new Date() &&
-              new Date(c.time_based_details.end_date) >= new Date()))
-      ).length;
-
-      setStats({
-        totalJoined: joined.length,
-        activeJoined,
-        completedJoined,
-        totalCreated: created.length,
-        activeCreated: activeCreated,
-      });
-    } catch (error) {
-      console.error("Failed to load stats:", error);
-    } finally {
-      setIsLoading(false);
+  const stats = React.useMemo(() => {
+    if (!myChallenges || !createdChallenges) {
+      return {
+        totalJoined: 0,
+        activeJoined: 0,
+        completedJoined: 0,
+        totalCreated: 0,
+        activeCreated: 0,
+      };
     }
-  };
+
+    const activeJoined = myChallenges.filter(
+      (c) =>
+        !c.completed &&
+        (c.toggle_details?.is_active ||
+          (c.time_based_details &&
+            new Date(c.time_based_details.start_date) <= new Date() &&
+            new Date(c.time_based_details.end_date) >= new Date()))
+    ).length;
+
+    const completedJoined = myChallenges.filter((c) => c.completed).length;
+
+    const activeCreated = createdChallenges.filter(
+      (c) =>
+        !c.completed &&
+        (c.toggle_details?.is_active ||
+          (c.time_based_details &&
+            new Date(c.time_based_details.start_date) <= new Date() &&
+            new Date(c.time_based_details.end_date) >= new Date()))
+    ).length;
+
+    return {
+      totalJoined: myChallenges.length,
+      activeJoined,
+      completedJoined,
+      totalCreated: createdChallenges.length,
+      activeCreated,
+    };
+  }, [myChallenges, createdChallenges]);
+
+  const isLoading = isLoadingJoined || isLoadingCreated;
 
   if (isLoading) {
     return (
