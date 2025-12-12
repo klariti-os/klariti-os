@@ -2,18 +2,23 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  getAllChallenges,
-  getMyChallenges,
-  getMyCreatedChallenges,
-  joinChallenge,
-  toggleChallengeStatus,
   Challenge,
   ChallengeType,
 } from "@/services/challenges";
 import ChallengeCard from "./ChallengeCard";
+import ChallengeCardSkeleton from "./ChallengeCardSkeleton";
 import ChallengeDetailModal from "./ChallengeDetailModal";
 import CreateChallengeForm from "./CreateChallengeForm";
 import { useChallengeWebSocket } from "@/hooks/useChallengeWebSocket";
+import { 
+  useChallenges, 
+  useMyChallenges, 
+  useMyCreatedChallenges, 
+  useJoinChallenge, 
+  useToggleChallenge,
+  challengeKeys
+} from "@/hooks/useChallenges";
+import { useQueryClient } from "@tanstack/react-query";
 
 type TabType = "all" | "my-challenges" | "created";
 
@@ -34,7 +39,10 @@ const sortChallenges = (challenges: Challenge[]) => {
       if (c.completed) return 3;
       
       if (c.challenge_type === ChallengeType.TOGGLE) {
-        return c.toggle_details?.is_active ? 0 : 2;
+        // Treat all toggle challenges as equal rank (0) regardless of active status
+        // so they don't jump around when toggled.
+        // We handle "Paused" simply by the visual switch state, not list position.
+        return 0;
       }
       
       if (c.challenge_type === ChallengeType.TIME_BASED && c.time_based_details) {
@@ -82,261 +90,179 @@ export default function ChallengeList({
   activeTab = "all",
   onCreateClick,
 }: ChallengeListProps) {
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [currentTab, setCurrentTab] = useState<TabType>(activeTab);
-  const [joinedChallengeIds, setJoinedChallengeIds] = useState<Set<number>>(new Set());
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // Cache state to store challenges for each tab
-  const [challengesCache, setChallengesCache] = useState<Record<TabType, Challenge[] | null>>({
-    "all": null,
-    "my-challenges": null,
-    "created": null
-  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showEnded, setShowEnded] = useState(false);
+  const [showUnindexed, setShowUnindexed] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
-  // Helper to update cache for all tabs when a challenge changes
-  const updateAllCaches = useCallback((updater: (challenges: Challenge[]) => Challenge[]) => {
-    setChallengesCache(prevCache => {
-      const newCache = { ...prevCache };
-      (Object.keys(newCache) as TabType[]).forEach(tab => {
-        if (newCache[tab]) {
-          const updatedData = updater(newCache[tab]!);
-          newCache[tab] = updatedData;
-          // Update localStorage for this tab
-          localStorage.setItem(`challenges_cache_${tab}`, JSON.stringify(updatedData));
-        }
-      });
-      return newCache;
-    });
-    
-    // Also update current view
-    setChallenges(prev => updater(prev));
-  }, []);
+  const queryClient = useQueryClient();
 
-  // Handle real-time challenge updates via WebSocket
+  // Queries
+  // We fetch myChallenges always if we are on 'all' or 'my-challenges' to check joined status
+  const { 
+    data: allChallenges, 
+    isLoading: isLoadingAll,
+    error: errorAll
+  } = useChallenges(false, 0, 100);
+
+  const { 
+    data: myChallenges, 
+    isLoading: isLoadingMy,
+    error: errorMy
+  } = useMyChallenges(0, 100);
+
+  const { 
+    data: createdChallenges, 
+    isLoading: isLoadingCreated,
+    error: errorCreated
+  } = useMyCreatedChallenges(0, 100);
+
+  // Mutations
+  const joinMutation = useJoinChallenge();
+  const toggleMutation = useToggleChallenge();
+
+  // Derived state
+  const joinedChallengeIds = React.useMemo(() => {
+    if (!myChallenges) return new Set<number>();
+    return new Set(myChallenges.map(c => c.id));
+  }, [myChallenges]);
+
+  // Determine current list and state
+  let challenges: Challenge[] = [];
+  let isLoading = false;
+  let error: string | null = null;
+
+  switch (currentTab) {
+    case "all":
+      challenges = allChallenges || [];
+      isLoading = isLoadingAll || isLoadingMy;
+      if (errorAll) error = (errorAll as Error).message;
+      break;
+    case "my-challenges":
+      challenges = myChallenges || [];
+      isLoading = isLoadingMy;
+      if (errorMy) error = (errorMy as Error).message;
+      break;
+    case "created":
+      challenges = createdChallenges || [];
+      isLoading = isLoadingCreated;
+      if (errorCreated) error = (errorCreated as Error).message;
+      break;
+  }
+
+  // Handle real-time updates
   const handleChallengeUpdate = useCallback((challengeId: number, isActive: boolean, updatedChallenge: Challenge) => {
     console.log("WebSocket update received:", challengeId, isActive);
     
-    // Update without re-sorting to prevent rearrangement
-    setChallenges(currentList => 
-      currentList.map(challenge => {
-        if (challenge.id === challengeId) {
-          return {
-            ...challenge,
-            ...updatedChallenge,
-            toggle_details: updatedChallenge.toggle_details || challenge.toggle_details,
-          };
-        }
-        return challenge;
-      })
-    );
-    
-    // Update cache without re-sorting
-    setChallengesCache(prevCache => {
-      const newCache = { ...prevCache };
-      (Object.keys(newCache) as TabType[]).forEach(tab => {
-        if (newCache[tab]) {
-          const updatedData = newCache[tab]!.map(challenge => {
-            if (challenge.id === challengeId) {
-              return {
-                ...challenge,
-                ...updatedChallenge,
-                toggle_details: updatedChallenge.toggle_details || challenge.toggle_details,
-              };
-            }
-            return challenge;
-          });
-          newCache[tab] = updatedData;
-          localStorage.setItem(`challenges_cache_${tab}`, JSON.stringify(updatedData));
-        }
+    // Helper to update a specific list in cache
+    const updateList = (queryKey: any) => {
+      queryClient.setQueryData(queryKey, (oldData: Challenge[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map(c => {
+          if (c.id === challengeId) {
+            return {
+              ...c,
+              ...updatedChallenge,
+              // specific toggle logic if needed, but updatedChallenge usually has new state
+              toggle_details: updatedChallenge.toggle_details || c.toggle_details
+            };
+          }
+          return c;
+        });
       });
-      return newCache;
-    });
-  }, []);
+    };
 
-  // Connect to WebSocket for real-time updates
+    updateList(challengeKeys.list(false, 0, 100));
+    updateList(challengeKeys.myChallenges(0, 100));
+    updateList(challengeKeys.myCreated(0, 100));
+    // Also update detail view if relevant
+    queryClient.setQueryData(challengeKeys.detail(challengeId), (old: Challenge | undefined) => {
+      if (!old) return old;
+      return { ...old, ...updatedChallenge };
+    });
+  }, [queryClient]);
+
+  const handleParticipantJoined = useCallback((challengeId: number, updatedChallenge: Challenge) => {
+    console.log("WebSocket participant joined:", challengeId);
+    
+    // We update the challenge in all lists to reflect the new participant count/avatars
+    const updateList = (queryKey: any) => {
+      queryClient.setQueryData(queryKey, (oldData: Challenge[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map(c => {
+          if (c.id === challengeId) {
+            // Merge the updated challenge data which contains the new participant list
+            return {
+              ...c,
+              ...updatedChallenge
+            };
+          }
+          return c;
+        });
+      });
+    };
+
+    updateList(challengeKeys.list(false, 0, 100));
+    updateList(challengeKeys.myChallenges(0, 100));
+    updateList(challengeKeys.myCreated(0, 100));
+    
+    // Also update detail
+    queryClient.setQueryData(challengeKeys.detail(challengeId), (old: Challenge | undefined) => {
+      if (!old) return old;
+      return { ...old, ...updatedChallenge };
+    });
+  }, [queryClient]);
+  
+  const handleChallengeCreated = useCallback((newChallenge: Challenge) => {
+    console.log("WebSocket challenge created:", newChallenge.id);
+
+    // Add to 'all' list
+    queryClient.setQueryData(challengeKeys.list(false, 0, 100), (oldData: Challenge[] | undefined) => {
+      // Logic: Add to top of list if it doesn't exist
+      if (!oldData) return [newChallenge];
+      if (oldData.some(c => c.id === newChallenge.id)) return oldData;
+      return [newChallenge, ...oldData];
+    });
+
+    // We don't necessarily add to 'my-challenges' or 'my-created' here because 
+    // those usually imply current user context which we can't fully guarantee from global broadcast 
+    // unless we check IDs. But for 'all' public feed, it's safe.
+  }, [queryClient]);
+
+  // Connect to WebSocket
   const { isConnected } = useChallengeWebSocket({
     onChallengeToggled: handleChallengeUpdate,
-    onConnect: () => {
-      console.log("Connected to challenge updates");
-      // Don't force refresh on connect - just update the connection state
-      // The handleChallengeUpdate will handle individual challenge updates
-    },
-    onDisconnect: () => {
-      console.log("Disconnected from challenge updates");
-    },
+    onParticipantJoined: handleParticipantJoined,
+    onChallengeCreated: handleChallengeCreated,
+    onConnect: () => console.log("Connected to challenge updates"),
+    onDisconnect: () => console.log("Disconnected from challenge updates"),
   });
-
-  const loadChallenges = async (forceRefresh = false) => {
-    const cacheKey = `challenges_cache_${currentTab}`;
-    const joinedCacheKey = `challenges_joined_ids`;
-    let hasCachedData = false;
-
-    // If we have cached data and not forcing refresh, use it
-    if (!forceRefresh) {
-      // Check in-memory cache first
-      if (challengesCache[currentTab]) {
-        setChallenges(challengesCache[currentTab]!);
-        hasCachedData = true;
-        setIsLoading(false);
-      } else {
-        // Check localStorage
-        try {
-          const cachedData = localStorage.getItem(cacheKey);
-          if (cachedData) {
-            const parsedData = JSON.parse(cachedData);
-            setChallenges(parsedData);
-            setChallengesCache(prev => ({
-              ...prev,
-              [currentTab]: parsedData
-            }));
-            hasCachedData = true;
-            setIsLoading(false); // Show cached data immediately
-            
-            // Also load joined IDs from cache
-            const cachedJoinedIds = localStorage.getItem(joinedCacheKey);
-            if (cachedJoinedIds) {
-              setJoinedChallengeIds(new Set(JSON.parse(cachedJoinedIds)));
-            }
-          }
-        } catch (e) {
-          console.warn("Failed to load from localStorage", e);
-        }
-      }
-    }
-
-    // If we didn't find cache or are forcing refresh, show loading only if we don't have data displayed
-    // This prevents the spinner from showing if we already have data (silent refresh)
-    if (!hasCachedData && !challenges.length && !challengesCache[currentTab]) {
-      setIsLoading(true);
-    }
-    setError(null);
-
-    try {
-      let data: Challenge[];
-      console.log("Loading challenges for tab:", currentTab);
-      switch (currentTab) {
-        case "my-challenges":
-          data = await getMyChallenges();
-          break;
-        case "created":
-          data = await getMyCreatedChallenges();
-          break;
-        default:
-          data = await getAllChallenges();
-          
-          // Also fetch user's joined challenges to know which ones to hide Join button for
-          try {
-            const myJoinedChallenges = await getMyChallenges();
-            const joinedIds = new Set(myJoinedChallenges.map(c => c.id));
-            setJoinedChallengeIds(joinedIds);
-            // Cache joined IDs
-            localStorage.setItem(joinedCacheKey, JSON.stringify(Array.from(joinedIds)));
-          } catch (err) {
-            console.error("Failed to fetch joined challenges:", err);
-          }
-      }
-      
-      // Update cache and current view
-      const sortedData = sortChallenges(data);
-      setChallengesCache(prev => ({
-        ...prev,
-        [currentTab]: sortedData
-      }));
-      setChallenges(sortedData);
-      
-      // Save to localStorage
-      localStorage.setItem(cacheKey, JSON.stringify(sortedData));
-      
-    } catch (err: any) {
-      console.error("Error loading challenges:", err);
-      // Only show error if we don't have cached data
-      if (challenges.length === 0) {
-        setError(err.message || "Failed to load challenges");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadChallenges();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTab]);
 
   const handleCreateSuccess = () => {
     setShowCreateForm(false);
-    loadChallenges(true);
+    // React Query handles invalidation automatically in the mutation, but if CreateForm doesn't use the hook:
+    queryClient.invalidateQueries({ queryKey: challengeKeys.all });
   };
 
   const handleJoinChallenge = async (challengeId: number) => {
-    try {
-      await joinChallenge(challengeId);
-      // Force reload to get fresh state including the new join
-      await loadChallenges(true);
-      
-      // Also invalidate other tabs since join status changed
-      setChallengesCache(prev => ({
-        ...prev,
-        "my-challenges": null // Will force refresh when visiting this tab
-      }));
-    } catch (err: any) {
-      alert(err.message || "Failed to join challenge");
-    }
+    joinMutation.mutate(challengeId, {
+      onError: (err: any) => alert(err.message || "Failed to join challenge"),
+    });
   };
 
   const handleToggleChallenge = async (challengeId: number) => {
-    try {
-      // Optimistically update the UI without re-sorting
-      setChallenges(currentList => 
-        currentList.map(challenge => {
-          if (challenge.id === challengeId && challenge.toggle_details) {
-            return {
-              ...challenge,
-              toggle_details: {
-                ...challenge.toggle_details,
-                is_active: !challenge.toggle_details.is_active,
-              },
-            };
-          }
-          return challenge;
-        })
-      );
-      
-      // Update cache without re-sorting
-      setChallengesCache(prevCache => {
-        const newCache = { ...prevCache };
-        (Object.keys(newCache) as TabType[]).forEach(tab => {
-          if (newCache[tab]) {
-            const updatedData = newCache[tab]!.map(challenge => {
-              if (challenge.id === challengeId && challenge.toggle_details) {
-                return {
-                  ...challenge,
-                  toggle_details: {
-                    ...challenge.toggle_details,
-                    is_active: !challenge.toggle_details.is_active,
-                  },
-                };
-              }
-              return challenge;
-            });
-            newCache[tab] = updatedData;
-            localStorage.setItem(`challenges_cache_${tab}`, JSON.stringify(updatedData));
-          }
-        });
-        return newCache;
-      });
-
-      // Then make the API call
-      await toggleChallengeStatus(challengeId);
-    } catch (err: any) {
-      // On error, revert by reloading
-      alert(err.message || "Failed to toggle challenge");
-      await loadChallenges(true);
-    }
+    // Optimistic update is already tricky with just mutation hook unless we implement onMutate
+    // But since we use WebSocket for real-time, the toggle trigger typically also comes back via WS if implemented right,
+    // or we just wait for mutation success which invalidates.
+    // For now, let's rely on standard mutation flow + invalidation. 
+    // If we want optimistic UI:
+    toggleMutation.mutate(challengeId, {
+      onError: (err: any) => alert(err.message || "Failed to toggle challenge"),
+    });
   };
 
   const handleCardClick = (challenge: Challenge) => {
@@ -346,19 +272,13 @@ export default function ChallengeList({
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setTimeout(() => setSelectedChallenge(null), 300); // Clear after animation
+    setTimeout(() => setSelectedChallenge(null), 300); 
   };
 
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showEnded, setShowEnded] = useState(false);
-  const [showUnindexed, setShowUnindexed] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-
   // Filter challenges
-  const filteredChallenges = challenges
+  const sortedChallenges = sortChallenges(challenges);
+  
+  const filteredChallenges = sortedChallenges
     .filter((challenge) => {
       const query = searchQuery.toLowerCase();
       const matchesSearch = 
@@ -587,11 +507,12 @@ export default function ChallengeList({
         </div>
       </div>
 
-      {/* Loading State */}
-      {isLoading && filteredChallenges.length === 0 && (
-        <div className="text-center py-12">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-white/20 border-r-white/80"></div>
-          <p className="mt-4 text-gray-400 font-mono">Loading challenges...</p>
+      {/* Loading State - Skeletons */}
+      {isLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <ChallengeCardSkeleton key={i} />
+          ))}
         </div>
       )}
 
@@ -601,7 +522,7 @@ export default function ChallengeList({
           <p className="font-medium font-mono">Error loading challenges</p>
           <p className="text-sm mt-1 font-mono">{error}</p>
           <button
-            onClick={() => loadChallenges(true)}
+            onClick={() => queryClient.invalidateQueries({ queryKey: challengeKeys.all })}
             className="mt-3 text-sm text-red-400 hover:text-red-300 underline font-mono"
           >
             Try again
@@ -658,7 +579,7 @@ export default function ChallengeList({
       )}
 
       {/* Challenge Grid - Responsive Grid Layout */}
-      {(filteredChallenges.length > 0) && (
+      {!isLoading && (filteredChallenges.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" key={currentTab}>
           {filteredChallenges.map((challenge, index) => {
             const hasJoined = joinedChallengeIds.has(challenge.id);
