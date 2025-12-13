@@ -1,10 +1,10 @@
 // API Configuration
 // Update this URL when deploying to production
-const API_BASE_URL = "http://127.0.0.1:8081"; // Change to your deployed API URL
+const API_BASE_URL = "https://api-klariti.onrender.com"; // Change to your deployed API URL
 
 // Convert http(s) to ws(s) for WebSocket
 const getWebSocketUrl = (apiUrl) => {
-  const wsUrl = apiUrl.replace(/^http/, "ws");
+  const wsUrl = apiUrl.replace(/^https/, "wss");
   return `${wsUrl}/challenges/ws`;
   // ws://127.0.0.1:8081/challenges/ws
 };
