@@ -107,7 +107,7 @@ async function checkAndRedirectTab(tab) {
   
   if (isUrlBlocked(url)) {
     try {
-      await chrome.tabs.update(tab.id, { url: 'http://localhost:3000/lock' });
+      await chrome.tabs.update(tab.id, { url: 'http://klariti.so/lock' });
       console.log('Redirected blocked tab:', url);
     } catch (err) {
       console.error('Error redirecting blocked tab:', err);
