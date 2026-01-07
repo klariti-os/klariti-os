@@ -376,16 +376,15 @@ export default function App() {
     });
   }, []);
 
-  // Listen for storage changes
   useEffect(() => {
     const handleStorageChange = (
-      changes: { [key: string]: browser.Storage.StorageChange },
+      changes: { [key: string]: { oldValue?: unknown; newValue?: unknown } },
       area: string
     ) => {
       if (area !== "local") return;
 
       if (changes.challenges?.newValue) {
-        setChallenges(changes.challenges.newValue);
+        setChallenges(changes.challenges.newValue as Challenge[]);
       }
       if (changes.connectionStatus?.newValue) {
         setConnectionStatus(
