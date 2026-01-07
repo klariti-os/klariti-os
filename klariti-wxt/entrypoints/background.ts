@@ -201,7 +201,9 @@ function isUrlBlocked(url: string) {
 }
 
 // Helper to check a single tab and redirect if blocked
-async function checkAndRedirectTab(tab: browser.Tabs.Tab) {
+// async function checkAndRedirectTab(tab: browser.Tabs.Tab) {
+
+async function checkAndRedirectTab(tab: { id?: number; url?: string }) {
   if (!tab || !tab.url) return;
   const url = tab.url;
 
