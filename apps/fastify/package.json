@@ -1,4 +1,6 @@
 {
+  "name" : "fastify",
+  
   "dependencies": {
     "fastify": "^5.7.2"
   },
