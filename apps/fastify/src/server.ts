@@ -8,16 +8,16 @@ const fastify = Fastify({
   },
 });
 
-fastify.get("/", function (request, reply) {
-  reply.send({ Message: "hello from Klariti" });
+fastify.get("/", async (request, reply) => {
+  reply.send({ message: "hello from Klariti" });
 });
 
 async function main() {
   try {
-    await fastify.listen({ port: 4269, host: "localhost" });
+    await fastify.listen({ port: 5001, host: "0.0.0.0" });
   } catch (err) {
-    fastify.log.error(err);
-    process.exit(1);
+    fastify.log.error(err); 
+    process.exit(1); 
   }
 }
 
