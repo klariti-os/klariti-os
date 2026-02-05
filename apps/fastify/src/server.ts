@@ -1,20 +1,24 @@
-import Fastify from 'fastify'
+import Fastify from "fastify";
 
 const fastify = Fastify({
-  logger: true
-})
+  logger: {
+    transport: {
+      target: "pino-pretty",
+    },
+  },
+});
 
-// Declare a route
-fastify.get('/', function (request, reply) {
-  reply.send({ "Message" : "hello from Klariti" })
-})
+fastify.get("/", function (request, reply) {
+  reply.send({ Message: "hello from Klariti" });
+});
 
-// Run the server!
-fastify.listen({ port: 3000 }, function (err, address) {
-  if (err) {
-    fastify.log.error(err)
-    process.exit(1)
+async function main() {
+  try {
+    await fastify.listen({ port: 4269, host: "localhost" });
+  } catch (err) {
+    fastify.log.error(err);
+    process.exit(1);
   }
-  // Server is now listening on ${address}
-})
+}
 
+main();
