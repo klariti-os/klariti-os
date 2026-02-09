@@ -40,7 +40,7 @@ const Navigation: React.FC = () => {
         {/* Logo */}
         <NextLink
           href="/"
-          className="focus-ring rounded-sm font-editorial text-base font-normal tracking-tight text-foreground transition-opacity hover:opacity-70"
+          className="focus-ring rounded-sm font-serif text-base font-normal tracking-tight text-foreground transition-opacity hover:opacity-70"
           aria-label="Klariti home"
         >
           Klariti
