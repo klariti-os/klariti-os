@@ -1,129 +1,66 @@
 import type { Metadata, NextPage } from "next";
-import Head from "next/head";
-import Image from "next/image";
-import localFont from 'next/font/local';
-
-import image1 from "@/images/photos/image-1.jpg";
-import image2 from "@/images/photos/image-2.jpg";
-import image3 from "@/images/photos/image-3.jpg";
-import image4 from "@/images/photos/image-4.jpg";
-import image5 from "@/images/photos/image-5.jpg";
-import clsx from "clsx";
-import { Card } from "@/components/Card";
-import PillButton from "@/components/PillButton";
-import Kline from "@/components/kline";
-
-// Using PP Editorial New Regular for manifesto content
-const ppEditorialRegular = localFont({
-  src: [
-    {
-      path: '../../../public/fonts/editorial-new/PPEditorialNew-Regular.otf',
-      weight: '400',
-      style: 'normal',
-    }
-  ],
-  variable: '--font-pp-editorial-regular',
-  display: 'swap',
-});
-
-// Using PP Editorial New Italic for emphasis
-const ppEditorialItalic = localFont({
-  src: [
-    {
-      path: '../../../public/fonts/editorial-new/PPEditorialNew-Italic.otf',
-      weight: '400',
-      style: 'italic',
-    }
-  ],
-  variable: '--font-pp-editorial-italic',
-  display: 'swap',
-});
+import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Klariti OS",
-  description:
-    "Reklaim your time — develop a healthy relationship with technology",
-  openGraph: {
-    title: "Reklaim your time",
-    description: "Fight digital addiction",
-  },
+  title: "Manifesto",
+  description: "Why we are building Klariti — our fight for digital wellness.",
 };
 
 const Manifesto: NextPage = () => {
-  const jsonSchema = JSON.stringify([
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      name: "Klariti OS",
-      url: "https://klariti.org",
-    },
-  ]);
   return (
-    <div className={`${ppEditorialRegular.variable} ${ppEditorialItalic.variable}`}>
-      <Head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: jsonSchema,
-          }}
-        />
-      </Head>
-      <main className="pb-32">
-        <div className="px-6">
-          <section className="w-full  max-w-xl mx-auto mt-12">
+    <div className="mx-auto max-w-content px-6 pb-32 pt-12">
+      <p className="mb-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+        Manifesto
+      </p>
 
-            <h1 className="font-pp-editorial-italic text-slate-300 text-2xl font-bold">
-              Manifesto
-            </h1>
-            <br />
-            <p className="p-4 bg-slate-100 text-gray-900 text-2xl bg-opacity-[30%] backdrop-blur-sm rounded-xl font-pp-editorial-regular flex flex-col gap-4">
-              <span>
-                Technology was supposed to be a tool to enhance our lives, a
-                tool to help us communicate with our loved ones, a tool to help
-                us learn new things, a tool to help us grow as individuals.
-              </span>
+      <article className="space-y-6 font-editorial text-xl font-light leading-relaxed text-foreground md:text-2xl">
+        <p>
+          Technology was supposed to be a tool to enhance our lives&mdash;to
+          help us communicate with our loved ones, learn new things, and grow
+          as individuals.
+        </p>
 
-              <span>
-                But let&apos;s face it... Uncle Zuckerburger doesn&apos;t care
-                about you, the tech-billionaires doesn&apos;t care about you!
-              </span>
+        <p>
+          But somewhere along the way, what was meant to empower us became an
+          addictive machine optimized to keep us hooked.
+        </p>
 
-              <span>
-                They have instead turned what was suppposed to be a a tool to
-                enhance our lives, into an addictive machine optimized to keep
-                us hooked!
-              </span>
+        <p>
+          We&apos;ve been turned into products&mdash;data points sold to the
+          highest bidder. All at the expense of our mental health and our
+          precious time.
+        </p>
 
-              <span>
-                They have turned us into a product, a data point to be sold to
-                the highest bidder. All these at the expense of our mental
-                health and our precious time.
-              </span>
+        <p>
+          Billions of dollars have been invested into creating the most
+          sophisticated algorithmic systems to ensure we are never
+          free&mdash;no matter how disciplined we are.
+        </p>
 
-              <span>
-                The have invested billions of dollars into creating the most
-                sophisticated algorithmic systems to make sure that we are never
-                free no matter how disciplined we are!
-              </span>
-              <span>
-                Just quitting using digital tools is almost impossible since
-                they have become an essential part of our lives.
-              </span>
-              <span>
-                So <Kline>this is our attempt to fight back</Kline>. <br /> <br /> We are
-                building a suite of tools that empower our generation to enjoy
-                technology&apos;s benefits while fostering a healthy
-                relationship with it.
-              </span>
-            </p>
-            <div className="uppercase mt-8 ">
-              <PillButton className="mb-3 uppercase bg-gradient-to-r from-gray-800 via-pink-700 to-slate-900 text-white font-bold py-2 px-4 rounded-full shadow-[0_0_5px_rgba(255,25,25,0.9)] hover:shadow-[0_0_20px_rgba(255,255,255,1)] transition-all duration-300"  href="/join">Join US</PillButton>
-            </div>
-        
-           
-          </section>
-        </div>
-      </main>
+        <p>
+          Just quitting digital tools is almost impossible since they have
+          become an essential part of our lives.
+        </p>
+
+        <p className="border-l-2 border-foreground pl-6">
+          <em>This is our attempt to fight back.</em>
+        </p>
+
+        <p>
+          We are building a suite of tools that empower our generation to
+          enjoy technology&apos;s benefits while fostering a healthy
+          relationship with it.
+        </p>
+      </article>
+
+      <div className="mt-12">
+        <Link
+          href="/join"
+          className="focus-ring inline-block rounded-full bg-primary px-6 py-2.5 font-mono text-xs text-primary-foreground transition-opacity hover:opacity-80"
+        >
+          Join Us
+        </Link>
+      </div>
     </div>
   );
 };
