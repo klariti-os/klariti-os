@@ -35,15 +35,15 @@ export default function LockPage() {
   return (
     <div className="flex min-h-[80vh] flex-col items-center justify-center px-6 text-center">
       <div className="max-w-lg">
-        <h1 className="mb-4 font-editorial text-4xl font-extralight tracking-tight text-foreground md:text-5xl" style={{ textWrap: "balance" }}>
+        <h1 className="mb-4 font-serif text-4xl font-extralight tracking-tight text-foreground md:text-5xl" style={{ textWrap: "balance" }}>
           Focus Mode Active
         </h1>
-        <p className="mb-16 font-editorial text-xl font-light text-muted-foreground">
+        <p className="mb-16 font-serif text-xl font-light text-muted-foreground">
           Go touch grass.
         </p>
 
         <blockquote className="rounded-xl border border-border bg-card p-6 text-left">
-          <p className="mb-3 font-editorial text-lg font-extralight leading-relaxed text-foreground">
+          <p className="mb-3 font-serif text-lg font-extralight leading-relaxed text-foreground">
             &ldquo;{quote.text}&rdquo;
           </p>
           <cite className="block text-right font-mono text-xs uppercase tracking-widest text-muted-foreground not-italic">

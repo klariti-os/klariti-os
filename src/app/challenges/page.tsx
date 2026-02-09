@@ -22,7 +22,7 @@ const ChallengesPage: NextPage = () => {
       <div className="mx-auto max-w-content px-6 pb-32 pt-8">
         {/* Header */}
         <div className="mb-8 rounded-xl border border-border bg-card p-6">
-          <h1 className="mb-1 font-editorial text-xl font-normal text-foreground">
+          <h1 className="mb-1 font-serif text-xl font-normal text-foreground">
             Welcome back, {user?.username || "User"}
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -33,7 +33,7 @@ const ChallengesPage: NextPage = () => {
         {/* Create form */}
         {showCreateForm && (
           <div className="mb-8 rounded-xl border border-border bg-card p-6">
-            <h2 className="mb-1 font-editorial text-lg font-normal text-foreground">
+            <h2 className="mb-1 font-serif text-lg font-normal text-foreground">
               Create New Challenge
             </h2>
             <p className="mb-4 text-sm text-muted-foreground">

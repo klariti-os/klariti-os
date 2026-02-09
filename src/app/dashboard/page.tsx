@@ -19,40 +19,35 @@ const DashboardPage: NextPage = () => {
 
   return (
     <ProtectedRoute>
-      <div className="mx-auto max-w-content px-6 pb-32 pt-8">
-        {/* Welcome */}
-        {user && (
-          <div className="mb-8 rounded-xl border border-border bg-card p-6">
-            <h1 className="mb-1 font-editorial text-xl font-normal text-foreground">
-              Welcome back, {user.username}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Manage your challenges and track your progress.
-            </p>
-          </div>
-        )}
+      <div className="mx-auto max-w-content px-6 pb-32 pt-16">
+        <header className="mb-12">
+          <p className="mb-2 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Dashboard
+          </p>
+          <h1
+            className="mb-2 font-serif text-3xl font-light tracking-tight text-foreground"
+            style={{ textWrap: "balance" }}
+          >
+            Welcome back{user ? `, ${user.username}` : ""}
+          </h1>
+          <p className="max-w-md text-sm text-muted-foreground leading-relaxed">
+            Manage your focus challenges and track your digital wellness
+            progress.
+          </p>
+        </header>
 
-        {/* Create form */}
-        {showCreateForm && (
-          <div className="mb-8 rounded-xl border border-border bg-card p-6">
-            <h2 className="mb-1 font-editorial text-lg font-normal text-foreground">
-              Create New Challenge
-            </h2>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Set up a new challenge to improve your focus and productivity.
-            </p>
-            <CreateChallengeForm
-              onSuccess={handleCreateSuccess}
-              onCancel={() => setShowCreateForm(false)}
-            />
-          </div>
-        )}
-
-        {/* Challenge list */}
-        <ChallengeList
-          key={refreshKey}
-          onCreateClick={() => setShowCreateForm(true)}
-        />
+        <section>
+          <h2
+            className="mb-6 font-serif text-2xl font-light text-foreground"
+            style={{ textWrap: "balance" }}
+          >
+            Your Challenges
+          </h2>
+          <ChallengeList
+            key={refreshKey}
+            onCreateClick={() => setShowCreateForm(true)}
+          />
+        </section>
       </div>
     </ProtectedRoute>
   );

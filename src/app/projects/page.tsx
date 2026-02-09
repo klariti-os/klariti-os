@@ -11,7 +11,7 @@ const ProjectsPage: NextPage = () => {
       <p className="mb-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">
         Projects
       </p>
-      <h1 className="mb-4 font-editorial text-3xl font-light tracking-tight text-foreground">
+      <h1 className="mb-4 font-serif text-3xl font-light tracking-tight text-foreground">
         Projects
       </h1>
       <p className="text-sm text-muted-foreground">
