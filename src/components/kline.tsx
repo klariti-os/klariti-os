@@ -6,7 +6,7 @@ const Kline: React.FC<{ children: React.ReactNode; className?: string }> = ({
 }) => {
   return (
     <span
-      className={`border-b border-foreground/30 font-editorial font-normal ${className || ""}`}
+      className={`border-b border-foreground/30 font-serif font-normal ${className || ""}`}
     >
       {children}
     </span>

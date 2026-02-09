@@ -19,7 +19,7 @@ const EmbedSection: React.FC<EmbedSectionProps> = ({
 }) => {
   return (
     <div className="mb-16">
-      <h2 className="mb-2 font-editorial text-xl font-normal text-foreground">
+      <h2 className="mb-2 font-serif text-xl font-normal text-foreground">
         {title}
       </h2>
       <p className="mb-6 text-sm leading-relaxed text-muted-foreground">

@@ -30,107 +30,78 @@ export default function ChallengeCard({
   const isCreator = user?.id === challenge.creator_id;
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
-  // Debug: Check participants data
-  React.useEffect(() => {
-    if (challenge.participants) {
-      console.log(`Challenge "${challenge.name}" participants:`, challenge.participants);
-    } else {
-      console.log(`Challenge "${challenge.name}" has no participants`);
-    }
-  }, [challenge.name, challenge.participants]);
-
-  // Calculate time remaining for time-based challenges
   useEffect(() => {
-    if (challenge.challenge_type === ChallengeType.TIME_BASED && challenge.time_based_details) {
+    if (
+      challenge.challenge_type === ChallengeType.TIME_BASED &&
+      challenge.time_based_details
+    ) {
       const updateTimeRemaining = () => {
         const now = new Date();
         const startString = challenge.time_based_details!.start_date;
         const endString = challenge.time_based_details!.end_date;
-        const start = new Date(startString.endsWith("Z") ? startString : `${startString}Z`);
-        const end = new Date(endString.endsWith("Z") ? endString : `${endString}Z`);
-
-        // Check if challenge hasn't started yet
+        const start = new Date(
+          startString.endsWith("Z") ? startString : `${startString}Z`,
+        );
+        const end = new Date(
+          endString.endsWith("Z") ? endString : `${endString}Z`,
+        );
         if (now < start) {
           const diff = start.getTime() - now.getTime();
           const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const hours = Math.floor(
+            (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+          );
           const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
           const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-          if (days > 0) {
-            setTimeRemaining(`Starts in ${days}d ${hours}h`);
-          } else if (hours > 0) {
+          if (days > 0) setTimeRemaining(`Starts in ${days}d ${hours}h`);
+          else if (hours > 0)
             setTimeRemaining(`Starts in ${hours}h ${minutes}m`);
-          } else if (minutes > 0) {
+          else if (minutes > 0)
             setTimeRemaining(`Starts in ${minutes}m ${seconds}s`);
-          } else {
-            setTimeRemaining(`Starts in ${seconds}s`);
-          }
+          else setTimeRemaining(`Starts in ${seconds}s`);
           return;
         }
-
-        // Challenge is active - show time until end
         const diff = end.getTime() - now.getTime();
-
         if (diff <= 0) {
           setTimeRemaining("Ended");
           return;
         }
-
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const hours = Math.floor(
+          (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+        );
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-        if (days > 0) {
-          setTimeRemaining(`${days}d ${hours}h`);
-        } else if (hours > 0) {
-          setTimeRemaining(`${hours}h ${minutes}m`);
-        } else if (minutes > 0) {
-          setTimeRemaining(`${minutes}m ${seconds}s`);
-        } else {
-          setTimeRemaining(`${seconds}s`);
-        }
+        if (days > 0) setTimeRemaining(`${days}d ${hours}h`);
+        else if (hours > 0) setTimeRemaining(`${hours}h ${minutes}m`);
+        else if (minutes > 0) setTimeRemaining(`${minutes}m ${seconds}s`);
+        else setTimeRemaining(`${seconds}s`);
       };
-
       updateTimeRemaining();
       const interval = setInterval(updateTimeRemaining, 1000);
       return () => clearInterval(interval);
     }
   }, [challenge.challenge_type, challenge.time_based_details]);
 
-  const formatDate = (dateString: string) => {
-    // Ensure the date string is treated as UTC if it doesn't have timezone info
-    const utcString = dateString.endsWith("Z") ? dateString : `${dateString}Z`;
-    const date = new Date(utcString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
+  const isToggleActive = challenge.toggle_details?.is_active;
 
   return (
-    <div 
+    <div
       style={style}
       onClick={() => onClick && onClick(challenge)}
-      className={`group relative flex flex-col p-5 bg-[#18181B]/60 backdrop-blur-xl border border-white/5 rounded-2xl hover:border-white/10 hover:bg-[#18181B]/80 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`group relative flex flex-col rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:border-foreground/30 hover:bg-muted/40 ${onClick ? "cursor-pointer" : ""} ${className}`}
     >
       {/* Header: Title & Status */}
-      <div className="flex items-start justify-between gap-4 mb-4">
+      <div className="flex items-start justify-between gap-4 mb-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-        
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             {isCreator && (
-              <span className="px-1.5 py-0.5 text-[10px] font-medium bg-purple-500/10 text-purple-400 rounded border border-purple-500/20 font-mono">
+              <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-accent text-accent-foreground border border-border">
                 YOU
               </span>
             )}
-            
-            {/* Participant Avatars */}
             {challenge.participants && challenge.participants.length > 0 && (
-              <div className="flex -space-x-2 ml-1" onClick={(e) => e.stopPropagation()}>
+              <div className="flex -space-x-2 ml-1">
                 {challenge.participants.slice(0, 4).map((participant) => (
                   <UserAvatar
                     key={participant.id}
@@ -139,57 +110,65 @@ export default function ChallengeCard({
                   />
                 ))}
                 {challenge.participants.length > 4 && (
-                  <div className="h-6 w-6 rounded-full bg-[#27272A] border-2 border-white/20 flex items-center justify-center text-[9px] font-bold text-gray-400 font-mono">
+                  <div className="h-6 w-6 rounded-full bg-muted border-2 border-card flex items-center justify-center text-[10px] font-bold text-muted-foreground font-mono">
                     +{challenge.participants.length - 4}
                   </div>
                 )}
               </div>
             )}
           </div>
-          <h3 className="font-bold text-lg text-white truncate tracking-tight group-hover:text-green-400 transition-colors">
+          <h3
+            className="font-serif text-lg font-normal text-foreground truncate tracking-tight group-hover:text-primary transition-colors"
+            style={{ textWrap: "balance" }}
+          >
             {challenge.name}
           </h3>
         </div>
-        
-        {/* Actions */}
         {showActions && (
-          <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-            {/* Time Remaining for Time-Based Challenges */}
-            {challenge.challenge_type === ChallengeType.TIME_BASED && timeRemaining && (
-              <div className="px-3 py-1.5 bg-[#27272A]/80 border border-white/10 rounded-lg">
-                <span className="text-xs font-bold text-white font-mono">{timeRemaining}</span>
-              </div>
-            )}
-            
-            {/* Toggle Switch */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {challenge.challenge_type === ChallengeType.TIME_BASED &&
+              timeRemaining && (
+                <div className="px-3 py-1.5 bg-muted border border-border rounded-full">
+                  <span className="text-xs font-mono text-muted-foreground">
+                    {timeRemaining}
+                  </span>
+                </div>
+              )}
             {challenge.challenge_type === ChallengeType.TOGGLE && onToggle && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onToggle(challenge.id);
                 }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:ring-offset-2 focus:ring-offset-[#18181B] ${
-                  challenge.toggle_details?.is_active
-                    ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]"
-                    : "bg-zinc-700"
-                }`}
+                className={`focus-ring relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 border-2
+                  ${
+                    isToggleActive
+                      ? "bg-success border-success"
+                      : "bg-muted border-border hover:border-muted-foreground"
+                  }
+                `}
+                aria-label={
+                  isToggleActive ? "Pause challenge" : "Start challenge"
+                }
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${
-                    challenge.toggle_details?.is_active ? "translate-x-6" : "translate-x-1"
-                  }`}
+                  className={`inline-block h-5 w-5 transform rounded-full shadow-sm transition-all duration-300
+                    ${
+                      isToggleActive
+                        ? "translate-x-[22px] bg-background"
+                        : "translate-x-[3px] bg-muted-foreground border border-border"
+                    }
+                  `}
                 />
               </button>
             )}
-            
-            {/* Join Button */}
             {onJoin && !isCreator && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onJoin(challenge.id);
                 }}
-                className="px-3 py-1.5 text-xs font-medium bg-white/5 hover:bg-white/10 text-white rounded-lg transition-all duration-200 border border-white/10 hover:border-white/20 font-mono uppercase tracking-wide"
+                className="focus-ring px-4 py-1.5 text-xs font-mono rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-80"
               >
                 Join
               </button>
@@ -197,33 +176,26 @@ export default function ChallengeCard({
           </div>
         )}
       </div>
-
-      {/* Description */}
       {challenge.description && (
-        <p className="text-sm text-zinc-400 line-clamp-2 mb-4 font-sans leading-relaxed">
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-4 font-sans leading-relaxed">
           {challenge.description}
         </p>
       )}
-
-      {/* Footer: Metadata */}
-      <div className="mt-auto pt-4 border-t border-white/5 flex items-center gap-3 flex-wrap">
-        {/* Type Badge */}
-        <span className="flex items-center gap-1.5 text-xs text-zinc-500 font-mono">
-          <span className="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
-          {challenge.challenge_type === ChallengeType.TIME_BASED ? "Time Based" : "Toggle"}
+      <div className="mt-auto pt-4 border-t border-border flex items-center gap-3 flex-wrap">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
+          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"></span>
+          {challenge.challenge_type === ChallengeType.TIME_BASED
+            ? "Time Based"
+            : "Toggle"}
         </span>
-
-        {/* Strict Mode */}
         {challenge.strict_mode && (
-          <span className="flex items-center gap-1.5 text-xs text-orange-400/80 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+          <span className="flex items-center gap-1.5 text-xs text-destructive font-mono">
+            <span className="w-1.5 h-1.5 rounded-full bg-destructive"></span>
             Strict
           </span>
         )}
-
-        {/* Website Count */}
         {challenge.distractions && challenge.distractions.length > 0 && (
-          <span className="flex items-center gap-1.5 text-xs text-zinc-500 font-mono ml-auto">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono ml-auto">
             {challenge.distractions.length} sites
           </span>
         )}

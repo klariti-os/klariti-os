@@ -44,7 +44,7 @@ Card.Title = function CardTitle({
   children: React.ReactNode;
 }) {
   return (
-    <Component className="font-editorial text-base font-normal text-foreground">
+    <Component className="font-serif text-base font-normal text-foreground">
       {href ? <Card.Link href={href}>{children}</Card.Link> : children}
     </Component>
   );

@@ -16,11 +16,11 @@ interface UserAvatarProps {
   showHover?: boolean;
 }
 
-export default function UserAvatar({ 
-  user, 
+export default function UserAvatar({
+  user,
   size = "md",
   variant = "circle",
-  showHover = true
+  showHover = true,
 }: UserAvatarProps) {
   const [isHovered, setIsHovered] = useState(false);
   const { user: currentUser } = useAuth();
@@ -47,24 +47,18 @@ export default function UserAvatar({
     return username.charAt(0).toUpperCase();
   };
 
-  const getAvatarColor = (username: string) => {
-    // Generate a consistent color based on username
-    const colors = [
-      "bg-blue-500",
-      "bg-purple-500",
-      "bg-green-500",
-      "bg-yellow-500",
-      "bg-red-500",
-      "bg-pink-500",
-      "bg-indigo-500",
-      "bg-teal-500",
-    ];
-    
+  // Generate a muted, theme-consistent color based on username
+  const getAvatarStyle = (username: string) => {
+    // Use warm, muted earth tones that work with the design system
+    const hueOffsets = [0, 30, 60, 90, 120, 180, 210, 270];
     const hash = username.split("").reduce((acc, char) => {
       return char.charCodeAt(0) + ((acc << 5) - acc);
     }, 0);
-    
-    return colors[Math.abs(hash) % colors.length];
+    const hue = hueOffsets[Math.abs(hash) % hueOffsets.length];
+
+    return {
+      backgroundColor: `hsl(${hue}, 25%, 45%)`,
+    };
   };
 
   // Check if this user is the current logged-in user
@@ -72,18 +66,25 @@ export default function UserAvatar({
 
   if (variant === "rectangle") {
     return (
-      <div 
+      <div
         className="relative inline-block group"
-        onMouseEnter={() => showHover ? setIsHovered(true) : null}
-        onMouseLeave={() => showHover ? setIsHovered(false) : null}
+        onMouseEnter={() => (showHover ? setIsHovered(true) : null)}
+        onMouseLeave={() => (showHover ? setIsHovered(false) : null)}
       >
-        <div className={`flex items-center ${rectangleSizeClasses[size]} bg-[#27272A] border border-white/10 rounded-lg hover:border-white/20 transition-all duration-200 cursor-pointer`}>
-          <div className={`${avatarSizeClasses[size]} ${getAvatarColor(user.username)} rounded-full flex items-center justify-center font-bold text-white border border-white/20 flex-shrink-0`}>
+        <div
+          className={`flex items-center ${rectangleSizeClasses[size]} bg-muted border border-border rounded-lg hover:border-muted-foreground transition-all duration-200 cursor-pointer`}
+        >
+          <div
+            className={`${avatarSizeClasses[size]} rounded-full flex items-center justify-center font-bold text-white border border-background/20 flex-shrink-0`}
+            style={getAvatarStyle(user.username)}
+          >
             {getInitials(user.username)}
           </div>
-          <span className="text-white font-medium truncate">{user.username}</span>
+          <span className="text-foreground font-medium truncate">
+            {user.username}
+          </span>
           {isCurrentUser && (
-            <span className="ml-auto px-1.5 py-0.5 text-[9px] font-medium bg-purple-500/10 text-purple-400 rounded border border-purple-500/20 font-mono">
+            <span className="ml-auto px-1.5 py-0.5 text-[9px] font-medium bg-accent text-accent-foreground rounded-full border border-border font-mono">
               YOU
             </span>
           )}
@@ -91,13 +92,16 @@ export default function UserAvatar({
 
         {/* Hover Card */}
         {showHover && isHovered && (
-          <div className="absolute z-50 top-full mt-2 left-0 w-64 bg-[#27272A] border border-white/10 rounded-lg shadow-2xl overflow-hidden pointer-events-none">
+          <div className="absolute z-50 top-full mt-2 left-0 w-64 bg-card border border-border rounded-xl shadow-lg overflow-hidden pointer-events-none">
             <div className="p-4 flex items-center gap-3">
-              <div className={`h-16 w-16 ${getAvatarColor(user.username)} rounded-full flex items-center justify-center font-bold text-2xl text-white border-2 border-white/20 shadow-lg flex-shrink-0`}>
+              <div
+                className="h-14 w-14 rounded-full flex items-center justify-center font-bold text-xl text-white border-2 border-background/20 shadow-sm flex-shrink-0"
+                style={getAvatarStyle(user.username)}
+              >
                 {getInitials(user.username)}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-white font-semibold text-base truncate">
+                <h3 className="text-foreground font-medium text-sm truncate">
                   {user.username} {isCurrentUser ? "(You)" : ""}
                 </h3>
               </div>
@@ -110,13 +114,14 @@ export default function UserAvatar({
 
   // Circle variant (default)
   return (
-    <div 
+    <div
       className="relative inline-block group"
-      onMouseEnter={() => showHover ? setIsHovered(true) : null}
-      onMouseLeave={() => showHover ? setIsHovered(false) : null}
+      onMouseEnter={() => (showHover ? setIsHovered(true) : null)}
+      onMouseLeave={() => (showHover ? setIsHovered(false) : null)}
     >
       <div
-        className={`${circleSizeClasses[size]} ${getAvatarColor(user.username)} rounded-full border-2 border-white/20 flex items-center justify-center font-bold text-white cursor-pointer group-hover:border-white/40 transition-all duration-200 shadow-md`}
+        className={`${circleSizeClasses[size]} rounded-full border-2 border-card flex items-center justify-center font-bold text-white cursor-pointer group-hover:border-muted transition-all duration-200 shadow-sm`}
+        style={getAvatarStyle(user.username)}
         title={user.username}
       >
         {getInitials(user.username)}
@@ -124,20 +129,18 @@ export default function UserAvatar({
 
       {/* Hover Card */}
       {showHover && isHovered && (
-        <div className="absolute z-50 top-full mt-2 left-1/2 -translate-x-1/2 w-64 bg-[#27272A] border border-white/10 rounded-lg shadow-2xl overflow-hidden pointer-events-none">
-          {/* User Info */}
+        <div className="absolute z-50 top-full mt-2 left-1/2 -translate-x-1/2 w-64 bg-card border border-border rounded-xl shadow-lg overflow-hidden pointer-events-none">
           <div className="p-4 flex items-center gap-3">
-            <div className={`h-16 w-16 ${getAvatarColor(user.username)} rounded-full flex items-center justify-center font-bold text-2xl text-white border-2 border-white/20 shadow-lg flex-shrink-0`}>
+            <div
+              className="h-14 w-14 rounded-full flex items-center justify-center font-bold text-xl text-white border-2 border-background/20 shadow-sm flex-shrink-0"
+              style={getAvatarStyle(user.username)}
+            >
               {getInitials(user.username)}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-white font-semibold text-base truncate">
+              <h3 className="text-foreground font-medium text-sm truncate">
                 {user.username} {isCurrentUser ? "(You)" : ""}
               </h3>
-          
-              {/* <p className="text-white/50 text-xs mt-1">
-                Joined {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} at {new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}
-              </p> */}
             </div>
           </div>
         </div>

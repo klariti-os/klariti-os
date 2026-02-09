@@ -18,7 +18,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
       <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
         {icon}
       </div>
-      <h3 className="mb-2 font-editorial text-lg font-normal text-foreground">
+      <h3 className="mb-2 font-serif text-lg font-normal text-foreground">
         {title}
       </h3>
       <p className="mb-6 flex-1 text-sm leading-relaxed text-muted-foreground">
