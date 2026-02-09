@@ -18,50 +18,31 @@ const EmbedSection: React.FC<EmbedSectionProps> = ({
   allowAttributes = "fullscreen",
 }) => {
   return (
-    <div className="mt-16 first:mt-0">
-      <h1 className="text-xl font-medium">{title}</h1>
-      <p className="mt-4">{description}</p>
+    <div className="mb-16">
+      <h2 className="mb-2 font-editorial text-xl font-normal text-foreground">
+        {title}
+      </h2>
+      <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
+        {description}
+      </p>
 
-      <div className="flex flex-col max-w-3xl space-y-2">
-        <div
-          style={{
-            position: "relative",
-            width: "100%",
-            height: 0,
-            paddingTop: "56.25%",
-            paddingBottom: 0,
-            boxShadow: "0 2px 20px 20px rgba(137, 156, 173, 0.16)",
-            marginTop: "1.6em",
-            marginBottom: "0.9em",
-            overflow: "hidden",
-            borderRadius: "8px",
-            willChange: "transform",
-          }}
-        >
+      <div className="overflow-hidden rounded-xl border border-border">
+        <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
           <iframe
             loading="lazy"
-            style={{
-              position: "absolute",
-              width: "100%",
-              height: "100%",
-              top: 0,
-              left: 0,
-              border: "none",
-              padding: 0,
-              margin: 0,
-            }}
+            className="absolute inset-0 h-full w-full"
             src={embedSrc}
             allowFullScreen
             allow={allowAttributes}
-          ></iframe>
+            title={title}
+          />
         </div>
-        <a
-          href={buttonHref}
-          target="_blank"
-          rel="noopener"
-        >
-          <PillButton>{buttonText}</PillButton>
-        </a>
+      </div>
+
+      <div className="mt-4">
+        <PillButton href={buttonHref} target="_blank">
+          {buttonText}
+        </PillButton>
       </div>
     </div>
   );
