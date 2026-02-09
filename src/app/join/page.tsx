@@ -11,7 +11,7 @@ const JoinPage = () => {
       <p className="mb-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">
         Join Us
       </p>
-      <h1 className="mb-8 font-editorial text-3xl font-light tracking-tight text-foreground">
+      <h1 className="mb-8 font-serif text-3xl font-light tracking-tight text-foreground">
         Be Part of the Movement
       </h1>
 

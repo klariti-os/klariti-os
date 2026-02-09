@@ -12,7 +12,7 @@ const ResourcesPage: NextPage = () => {
       <p className="mb-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">
         Resources
       </p>
-      <h1 className="mb-12 font-editorial text-3xl font-light tracking-tight text-foreground">
+      <h1 className="mb-12 font-serif text-3xl font-light tracking-tight text-foreground">
         Learn More About Klariti
       </h1>
 

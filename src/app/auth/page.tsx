@@ -64,7 +64,7 @@ export default function AuthPage() {
 
   return (
     <div className="mx-auto max-w-sm px-6 pt-24 pb-32 md:pt-32">
-      <h1 className="mb-2 font-editorial text-2xl font-light text-foreground">
+      <h1 className="mb-2 font-serif text-2xl font-light text-foreground">
         {mode === "signin" ? "Welcome Back" : "Create Account"}
       </h1>
       <p className="mb-8 text-sm text-muted-foreground">

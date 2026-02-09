@@ -4,44 +4,7 @@ import "@/styles/globals.css"
 import BaseLayout from "@/components/layout/BaseLayout"
 import { AuthProvider } from "@/contexts/AuthContext"
 import QueryProvider from "@/components/providers/QueryProvider"
-
-import localFont from "next/font/local";
-
-const ppEditorial = localFont({
-  src: [
-    {
-      path: "../../public/fonts/editorial-new/PPEditorialNew-Regular.otf",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/editorial-new/PPEditorialNew-Italic.otf",
-      weight: "400",
-      style: "italic",
-    },
-    {
-      path: "../../public/fonts/editorial-new/PPEditorialNew-Ultrabold.otf",
-      weight: "800",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/editorial-new/PPEditorialNew-Ultralight.otf",
-      weight: "200",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/editorial-new/PPEditorialNew-UltralightItalic.otf",
-      weight: "200",
-      style: "italic",
-    },
-    {
-      path: "../../public/fonts/editorial-new/PPEditorialNew-UltraboldItalic.otf",
-      weight: "800",
-      style: "italic",
-    },
-  ],
-  variable: "--font-pp-editorial",
-});
+import { fontSerif, fontMono, fontSans } from "@/lib/fonts"
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://klariti.so"),
@@ -80,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={ppEditorial.variable} suppressHydrationWarning>
+    <html lang="en" className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable}`} suppressHydrationWarning>
       <body className="min-h-screen antialiased selection:bg-primary/10">
         {/* Skip link for keyboard navigation */}
         <a

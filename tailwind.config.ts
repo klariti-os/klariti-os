@@ -28,15 +28,10 @@ const config: Config = {
         success: "var(--success)",
       },
       fontFamily: {
-        sans: [
-          "var(--font-pp-editorial)",
-          "ui-sans-serif",
-          "system-ui",
-          "-apple-system",
-          "sans-serif",
-        ],
-        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
-        editorial: ["var(--font-pp-editorial)", "Georgia", "serif"],
+        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        serif: ["var(--font-serif)", "Georgia", "serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+        brand: ["var(--font-brand)", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       maxWidth: {
         content: "680px",

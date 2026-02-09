@@ -37,6 +37,7 @@
   "exclude": [
     "node_modules",
     "chanhdai.com",
-    "muqsit-labs"
+    "muqsit-labs",
+    "klariti-os-design"
   ]
 }

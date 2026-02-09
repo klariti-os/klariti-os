@@ -40,7 +40,7 @@ function TanstackDemo() {
   return (
     <div className="min-h-screen bg-zinc-950 p-8 pt-24">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 font-editorial text-zinc-100">
+        <h1 className="text-3xl font-bold mb-8 font-serif text-zinc-100">
           Challenges Demo
         </h1>
         <ul className="space-y-3">
