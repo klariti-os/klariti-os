@@ -1,31 +1,24 @@
-import PillButton from "@/components/PillButton"
-import { Metadata, NextPage } from "next"
-import Head from "next/head"
+import { Metadata, NextPage } from "next";
 
-const metadata: Metadata = {
-  title: "Projects — ignasxv.com",
-}
+export const metadata: Metadata = {
+  title: "Projects",
+  description: "Things we have built or attempted to build.",
+};
 
 const ProjectsPage: NextPage = () => {
   return (
-    <>
-      <div className="px-6">
-        <main className="w-full max-w-2xl mx-auto mt-10 mb-20">
-          <h1 className="text-xl font-medium">Projects</h1>
-          <p className="mt-4">Things I have built or attempted to</p>
-          
-          {/* <div className="mt-6">
-            <div className="flex flex-col max-w-3xl space-y-3">
-            <PillButton href="https://teksafari.org">teKsafari .ORG</PillButton>
-            <PillButton href="https://floracc.vercel.app">Flora Systems</PillButton>
-            <PillButton href="https://klariti.org">Klariti OS</PillButton>
-            <PillButton href="https://math.teksafari.org">MathSafari Kits</PillButton>
-            </div>
-          </div> */}
-        </main>
-      </div>
-    </>
-  )
-}
+    <div className="mx-auto max-w-content px-6 pb-32 pt-12">
+      <p className="mb-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+        Projects
+      </p>
+      <h1 className="mb-4 font-editorial text-3xl font-light tracking-tight text-foreground">
+        Projects
+      </h1>
+      <p className="text-sm text-muted-foreground">
+        Coming soon.
+      </p>
+    </div>
+  );
+};
 
-export default ProjectsPage
+export default ProjectsPage;

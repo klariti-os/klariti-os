@@ -9,13 +9,11 @@ const BaseLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isHomePage = pathname === "/";
 
   return (
-    <div
-      className={`relative flex flex-col min-h-screen ${
-        !isHomePage ? "pb-20 md:pt-20 md:pb-0" : ""
-      }`}
-    >
-      {children}
+    <div className="relative flex min-h-screen flex-col">
       <Navigation />
+      <main id="main-content" className={`flex-1 ${!isHomePage ? "pt-16" : ""}`}>
+        {children}
+      </main>
     </div>
   );
 };

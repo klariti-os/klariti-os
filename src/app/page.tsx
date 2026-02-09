@@ -1,193 +1,190 @@
 import type { Metadata, NextPage } from "next";
-import Head from "next/head";
-import Image from "next/image";
-
-const heroImage = "/images/klariti-dusk.jpg";
-
-import clsx from "clsx";
-import { Card } from "@/components/Card";
-import PillButton from "@/components/PillButton";
-import Kline from "@/components/kline";
+import Link from "next/link";
 import Footer from "@/components/layout/Footer";
-import { FeatureCard } from "@/components/FeatureCard";
 
 export const metadata: Metadata = {
-  title: "Klariti OS",
+  title: "Klariti — The New Standard in Digital Wellness",
   description:
-    "Reklaim your time — Develop a healthy relationship with technology",
-  openGraph: {
-    title: "Klariti .ORG",
-    description: "Develope a healthier relationship with technology",
-    images: [
-      {
-        url: "public/images/pc-land2.png",
-        width: 1200,
-        height: 630,
-        alt: "Klariti OS - Reklaim your time",
-      },
-    ],
-  },
+    "Develop a healthy relationship with technology. Tools for focus, balance, and clarity.",
 };
 
-
-
 const HomePage: NextPage = () => {
-  const jsonSchema = JSON.stringify([
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      name: "Klariti OS",
-      url: "https://klariti.org",
-    },
-  ]);
   return (
     <>
-      <Head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: jsonSchema,
-          }}
-        />
-      </Head>
-      <main className="relative min-h-screen flex flex-col overflow-x-hidden">
-        {/* Hero Section */}
-        <div className="relative w-full min-h-screen flex flex-col justify-center items-center">
-             {/* Hero Background - Fixed to stay behind content or absolute to scroll with it? 
-                User wants "scrollable", usually hero bg scrolls away or has parallax. 
-                Let's make it absolute to the hero section so it scrolls away. 
-             */}
-            <div className="absolute inset-0 z-0">
-            <Image
-                src={heroImage}
-                alt="Klariti Landscape"
-                fill
-                className="object-cover object-center opacity-90"
-                priority
-                quality={100}
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/20 to-white/60 dark:from-black/10 dark:via-black/20 dark:to-black/60 mix-blend-overlay" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#fdfbf7] via-transparent to-transparent" />
-            </div>
-
-            <div className="relative z-10 w-full max-w-5xl mx-auto px-6 text-center pt-32 pb-32">
-            <div className="mb-8 animate-fade-in-up">
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-pp-editorial tracking-tight text-gray-100 mb-4">
-                The new standard <br />
-                <span className="italic font-light">in digital wellness</span>
-                </h1>
-            </div>
-
-            <div className="max-w-2xl mx-auto mb-10 animate-fade-in-up delay-100">
-                <p className="text-lg md:text-xl text-gray-200  font-medium leading-relaxed">
-                We&apos;re building a powerful suite of tools to empower our generation to enjoy the benefits of technology while fostering a <span className="italic font-serif">balanced, healthy relationship</span> with it.
-                </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up delay-200">
-                <PillButton
-                href="/auth"
-                className="bg-gray-900 text-white hover:bg-gray-800 px-8 py-3 text-lg font-medium rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                >
-                Get started
-                </PillButton>
-                <PillButton
-              href="/manifesto"
-              className="bg-white/50 backdrop-blur-sm text-gray-900 hover:bg-white/80 px-8 py-3 text-lg font-medium rounded-full transition-all duration-300 border border-gray-200/50 font-pp-editorial"
+      <main className="overflow-x-hidden">
+        {/* Hero */}
+        <section className="mx-auto max-w-content px-6 pb-24 pt-24 md:pt-32">
+          <p className="mb-6 font-mono text-xs uppercase tracking-widest text-muted-foreground animate-fade-in">
+            Digital Wellness
+          </p>
+          <h1 className="mb-8 font-editorial text-4xl font-light leading-[1.1] tracking-tight text-foreground md:text-6xl lg:text-7xl animate-fade-in-up" style={{ textWrap: "balance" }}>
+            The new standard{" "}
+            <br className="hidden sm:block" />
+            <em className="font-extralight">in digital wellness</em>
+          </h1>
+          <p className="mb-10 max-w-md text-base leading-relaxed text-muted-foreground animate-fade-in-up">
+            We&apos;re building tools to help our generation enjoy the benefits
+            of technology while fostering a balanced, healthy relationship
+            with it.
+          </p>
+          <div className="flex items-center gap-4 animate-fade-in-up">
+            <Link
+              href="/auth"
+              className="focus-ring rounded-full bg-primary px-6 py-2.5 font-mono text-xs text-primary-foreground transition-opacity hover:opacity-80"
             >
-              Read manifesto
-            </PillButton>
+              Get Started
+            </Link>
+            <Link
+              href="/manifesto"
+              className="focus-ring rounded-full border border-border px-6 py-2.5 font-mono text-xs text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+            >
+              Read Manifesto
+            </Link>
+          </div>
+        </section>
+
+        {/* Divider */}
+        <div className="screen-line-after mx-auto max-w-content" />
+
+        {/* Pillars */}
+        <section className="mx-auto max-w-content px-6 py-20">
+          <p className="mb-12 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Built for Those Who Value Their Time
+          </p>
+          <div className="flex flex-wrap items-center gap-x-12 gap-y-4 font-editorial text-2xl font-extralight tracking-tight text-muted-foreground/40 md:text-3xl">
+            <span>Focus</span>
+            <span>Balance</span>
+            <span>Clarity</span>
+            <span>Mindfulness</span>
+            <span>Intention</span>
+          </div>
+        </section>
+
+        {/* Divider */}
+        <div className="screen-line-after mx-auto max-w-content" />
+
+        {/* Stats */}
+        <section className="mx-auto max-w-content px-6 py-20">
+          <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
+            <div>
+              <p className="mb-1 font-editorial text-5xl font-extralight tracking-tight text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                10.6&times;
+              </p>
+              <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                Better Focus
+              </p>
             </div>
+            <div>
+              <p className="mb-1 font-editorial text-5xl font-extralight tracking-tight text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                37%
+              </p>
+              <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                Less Screen Time
+              </p>
             </div>
-        </div>
+            <div>
+              <p className="mb-1 font-editorial text-5xl font-extralight tracking-tight text-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                4.8&times;
+              </p>
+              <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                Productivity Boost
+              </p>
+            </div>
+          </div>
+        </section>
 
-        {/* Content Below Hero */}
-        <div className="relative z-10 bg-[#fdfbf7]   w-full">
-            
-            {/* Trusted By Section */}
-            <section className="py-12  dark:border-gray-800/50">
-                <div className="max-w-5xl mx-auto px-6 text-center">
-                    <p className="text-sm font-mono text-gray-500 uppercase tracking-widest mb-8">Built for those who value their time</p>
-                    <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-                        {/* Placeholders for logos - using text for now as per plan */}
-                        <span className="text-xl font-bold font-serif text-gray-400">FOCUS</span>
-                        <span className="text-xl font-bold font-serif text-gray-400">BALANCE</span>
-                        <span className="text-xl font-bold font-serif text-gray-400">CLARITY</span>
-                        <span className="text-xl font-bold font-serif text-gray-400">MINDFUL</span>
-                        <span className="text-xl font-bold font-serif text-gray-400">ZEN</span>
-                    </div>
-                </div>
-            </section>
+        {/* Divider */}
+        <div className="screen-line-after mx-auto max-w-content" />
 
-                      <div className="my-4 h-px bg-gradient-to-r from-transparent via-slate-300/50 to-transparent"></div>
+        {/* Features */}
+        <section className="mx-auto max-w-content px-6 py-20">
+          <h2 className="mb-4 font-editorial text-3xl font-light leading-tight tracking-tight text-foreground md:text-4xl" style={{ textWrap: "pretty" }}>
+            Designed to Improve Outcomes.{" "}
+            <br className="hidden md:block" />
+            Built to Scale Across Campuses.
+          </h2>
+          <p className="mb-16 max-w-md text-sm leading-relaxed text-muted-foreground">
+            A privacy-safe attention layer for learning and wellbeing.
+          </p>
 
+          <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-border md:grid-cols-3">
+            {/* Feature 1 */}
+            <article className="flex flex-col bg-card p-8">
+              <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <svg className="h-5 w-5 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
+              <h3 className="mb-2 font-editorial text-lg font-normal text-foreground">
+                Improve Learning Outcomes
+              </h3>
+              <p className="mb-6 flex-1 text-sm leading-relaxed text-muted-foreground">
+                Focus sessions and LMS-aware nudges increase time-on-task and
+                participation&mdash;without locking devices.
+              </p>
+              <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground/60">
+                +18% Time-on-Task (Pilot)
+              </p>
+            </article>
 
+            {/* Feature 2 */}
+            <article className="flex flex-col border-x border-border bg-card p-8 max-md:border-x-0 max-md:border-y">
+              <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <svg className="h-5 w-5 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="mb-2 font-editorial text-lg font-normal text-foreground">
+                Privacy by Design
+              </h3>
+              <p className="mb-6 flex-1 text-sm leading-relaxed text-muted-foreground">
+                Local processing, least-privilege scopes, aggregate dashboards.
+                FERPA/HITRUST-aligned where needed.
+              </p>
+              <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground/60">
+                Aggregate-Only &middot; No Ad-Tech
+              </p>
+            </article>
 
-            {/* Stats Section */}
-            <section className="py-24 ">
-                <div className="max-w-5xl mx-auto px-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-                        <div>
-                            <div className="text-5xl md:text-6xl font-bold  text-gray-400 mb-2 font-sans">10.6x</div>
-                            <div className="text-sm font-mono text-gray-500 uppercase tracking-wider">Better Focus</div>
-                        </div>
-                        <div>
-                            <div className="text-5xl md:text-6xl font-bold  text-gray-400 mb-2 font-sans">37%</div>
-                            <div className="text-sm font-mono text-gray-500 uppercase tracking-wider">Less Screen Time</div>
-                        </div>
-                        <div>
-                            <div className="text-5xl md:text-6xl font-bold  text-gray-400 mb-2 font-sans">4.8x</div>
-                            <div className="text-sm font-mono text-gray-500 uppercase tracking-wider">Productivity Boost</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            {/* Feature 3 */}
+            <article className="flex flex-col bg-card p-8">
+              <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <svg className="h-5 w-5 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <h3 className="mb-2 font-editorial text-lg font-normal text-foreground">
+                Peer Networks Amplify Results
+              </h3>
+              <p className="mb-6 flex-1 text-sm leading-relaxed text-muted-foreground">
+                Focus groups, class challenges, and streaks turn healthy tech
+                use into a shared norm.
+              </p>
+              <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground/60">
+                +25% Weekly Retention in Groups
+              </p>
+            </article>
+          </div>
+        </section>
 
-            {/* Features Section */}
-            <section className="py-24 bg-[#fdfbf7]">
-                <div className="max-w-5xl mx-auto px-6">
-                    <div className="mb-20 text-left">
-                        <h2 className="text-4xl md:text-5xl font-pp-editorial text-gray-900 mb-6 tracking-tight">Designed to improve outcomes. <br/>Built to scale across campuses.</h2>
-                        <p className="text-lg text-gray-600 dark:text-gray-400">A privacy-safe attention layer for learning and wellbeing.</p>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-12">
-                        <FeatureCard
-                            title="Improve learning outcomes"
-                            description="Klariti “tap-in” focus sessions and LMS-aware nudges increase time-on-task and participation—without locking devices."
-                            kpi="+18% time-on-task (pilot)"
-                            icon={
-                                <svg className="w-8 h-8 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                </svg>
-                            }
-                        />
-                        <FeatureCard
-                            title="Privacy by design"
-                            description="Local processing, least-privilege scopes, aggregate dashboards. SOC 2/ISO roadmap; FERPA/HITRUST-aligned where needed."
-                            kpi="Aggregate-only • No ad-tech"
-                            icon={
-                                <svg className="w-8 h-8 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                            }
-                        />
-                        <FeatureCard
-                            title="Peer networks amplify results"
-                            description="Focus groups, class challenges, and streaks turn healthy tech use into a shared norm. As more classes join, network effects boost adoption."
-                            kpi="+25% weekly retention in groups"
-                            icon={
-                                <svg className="w-8 h-8 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
-                            }
-                        />
-                    </div>
-                </div>
-            </section>
+        {/* CTA */}
+        <section className="mx-auto max-w-content px-6 py-20 text-center">
+          <h2 className="mb-4 font-editorial text-3xl font-light tracking-tight text-foreground" style={{ textWrap: "balance" }}>
+            Ready to Reclaim Your Time?
+          </h2>
+          <p className="mx-auto mb-8 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Join a growing community of students and educators building
+            healthier relationships with technology.
+          </p>
+          <Link
+            href="/join"
+            className="focus-ring inline-block rounded-full bg-primary px-8 py-3 font-mono text-xs text-primary-foreground transition-opacity hover:opacity-80"
+          >
+            Join the Waitlist
+          </Link>
+        </section>
 
-            <Footer />
-        </div>
+        <Footer />
       </main>
     </>
   );

@@ -19,26 +19,38 @@ const ChallengesPage: NextPage = () => {
 
   return (
     <ProtectedRoute>
-      <div className="px-6 pb-20">
-        <main className="w-full max-w-6xl mx-auto mt-10">
-          {/* Header */}
-          <div className="mb-8 p-6 bg-[#18181B]/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg">
-            <div>
-              <h1 className="text-2xl font-bold text-white mb-1 font-mono">
-                Welcome back, {user?.username || 'User'}
-              </h1>
-              <p className="text-gray-400 text-sm font-mono">
-                Track your productivity challenges
-              </p>
-            </div>
-          </div>
+      <div className="mx-auto max-w-content px-6 pb-32 pt-8">
+        {/* Header */}
+        <div className="mb-8 rounded-xl border border-border bg-card p-6">
+          <h1 className="mb-1 font-editorial text-xl font-normal text-foreground">
+            Welcome back, {user?.username || "User"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Track your productivity challenges.
+          </p>
+        </div>
 
-          {/* Challenge List */}
-          <ChallengeList
-            key={refreshKey}
-            onCreateClick={() => setShowCreateForm(true)}
-          />
-        </main>
+        {/* Create form */}
+        {showCreateForm && (
+          <div className="mb-8 rounded-xl border border-border bg-card p-6">
+            <h2 className="mb-1 font-editorial text-lg font-normal text-foreground">
+              Create New Challenge
+            </h2>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Set up a new challenge to improve your focus.
+            </p>
+            <CreateChallengeForm
+              onSuccess={handleCreateSuccess}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          </div>
+        )}
+
+        {/* Challenge list */}
+        <ChallengeList
+          key={refreshKey}
+          onCreateClick={() => setShowCreateForm(true)}
+        />
       </div>
     </ProtectedRoute>
   );
