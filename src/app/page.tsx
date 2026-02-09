@@ -244,7 +244,7 @@ const HomePage: NextPage = () => {
 
             <div className="animate-fade-in-up mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
-                href="/join"
+                href="/dashboard"
                 className="focus-ring group inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
               >
                 Get started
