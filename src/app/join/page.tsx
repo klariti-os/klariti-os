@@ -1,23 +1,31 @@
-import Head from "next/head";
+import { Metadata } from "next";
 
-export const metadata = {
-  title: "Join Us - Klariti",
-  description: "Join the Klariti team and be part of our journey.",
+export const metadata: Metadata = {
+  title: "Join",
+  description: "Join the Klariti community and be part of the digital wellness movement.",
 };
 
-const JoinUsPage = () => {
+const JoinPage = () => {
   return (
-    <>
-      <div className="">
+    <div className="mx-auto max-w-content px-6 pb-32 pt-12">
+      <p className="mb-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+        Join Us
+      </p>
+      <h1 className="mb-8 font-editorial text-3xl font-light tracking-tight text-foreground">
+        Be Part of the Movement
+      </h1>
+
+      <div className="overflow-hidden rounded-xl border border-border">
         <iframe
-          className="mt-12 md:mt-10 h-[1100px] md:w-[60%] w-[95%] m-auto rounded-xl "
+          className="h-[900px] w-full"
           src="https://tally.so/r/nrq5eL"
           allowFullScreen
-        ></iframe>
-        <br /> <br /><br />
+          title="Join Klariti waitlist form"
+          loading="lazy"
+        />
       </div>
-    </>
+    </div>
   );
 };
 
-export default JoinUsPage;
+export default JoinPage;

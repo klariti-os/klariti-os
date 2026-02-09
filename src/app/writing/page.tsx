@@ -1,22 +1,23 @@
-import { Card } from "@/components/Card";
 import { Metadata, NextPage } from "next";
 
 export const metadata: Metadata = {
-  title: "Blog — Klariti OS",
+  title: "Blog",
+  description: "Thoughts on digital wellness, focus, and building Klariti.",
 };
 
 const WritingPage: NextPage = () => {
   return (
-    <>
-      <div className="px-6">
-        <main className="w-full max-w-2xl mx-auto mt-10 mb-20">
-          <h1 className="text-xl font-medium">Blog</h1>
-          <p className="mt-4 ">99 reasons why we are building Klariti OS</p>
-
-          
-        </main>
-      </div>
-    </>
+    <div className="mx-auto max-w-content px-6 pb-32 pt-12">
+      <p className="mb-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+        Blog
+      </p>
+      <h1 className="mb-4 font-editorial text-3xl font-light tracking-tight text-foreground">
+        Writing
+      </h1>
+      <p className="text-sm text-muted-foreground">
+        Coming soon&mdash;99 reasons why we are building Klariti.
+      </p>
+    </div>
   );
 };
 
