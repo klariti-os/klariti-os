@@ -27,6 +27,21 @@ const VideoHero: React.FC<VideoHeroProps> = ({ src, poster, speed = 1, children 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const vimeo = parseVimeoSrc(src);
   const [videoReady, setVideoReady] = useState(false);
+  const [muted, setMuted] = useState(true);
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+
+    if (vimeo && iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        JSON.stringify({ method: "setVolume", value: next ? 0 : 1 }),
+        "*"
+      );
+    } else if (videoRef.current) {
+      videoRef.current.muted = next;
+    }
+  };
 
   useEffect(() => {
     if (!vimeo && videoRef.current) {
@@ -82,7 +97,7 @@ const VideoHero: React.FC<VideoHeroProps> = ({ src, poster, speed = 1, children 
           title="Background video"
         />
       ) : (
-        /* Direct mp4 */
+        /* Direct video file */
         <video
           ref={videoRef}
           className="absolute inset-0 h-full w-full object-cover"
@@ -91,8 +106,9 @@ const VideoHero: React.FC<VideoHeroProps> = ({ src, poster, speed = 1, children 
           loop
           playsInline
           autoPlay
+          preload="auto"
         >
-          <source src={src} type="video/mp4" />
+          <source src={src} type={src.endsWith(".mov") ? "video/quicktime" : "video/mp4"} />
         </video>
       )}
 
@@ -103,6 +119,23 @@ const VideoHero: React.FC<VideoHeroProps> = ({ src, poster, speed = 1, children 
       <div className="absolute inset-0 z-10 flex items-center justify-center">
         {children}
       </div>
+
+      {/* Mute / Unmute button */}
+      <button
+        onClick={toggleMute}
+        aria-label={muted ? "Unmute video" : "Mute video"}
+        className="absolute bottom-6 right-6 z-20 inline-flex items-center justify-center rounded-full border border-white/30 bg-white/10 p-3 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+      >
+        {muted ? (
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 011.28.53v17.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+          </svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v17.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+          </svg>
+        )}
+      </button>
     </div>
   );
 };
