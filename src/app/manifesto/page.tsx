@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 const Manifesto: NextPage = () => {
   return (
-    <div className="pb-32">
+    <div className="overflow-x-hidden pb-32">
       {/* ── Full-width banner ────────────────────────────────────── */}
       <div className="relative mt-0 h-[40vh] w-full overflow-hidden sm:h-[50vh]">
         <Image
