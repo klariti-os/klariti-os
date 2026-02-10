@@ -29,8 +29,8 @@ const Navigation: React.FC = () => {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <nav className="fixed  z-50 w-full px-2 lg:px-6">
-      <div className="mx-auto  mt-2 max-w-7xl transition-all duration-300">
+    <nav className="fixed z-50 w-full px-2 pt-4 lg:px-6">
+      <div className="mx-auto max-w-7xl transition-all duration-300">
         <div className="relative flex flex-wrap items-center justify-between gap-6 rounded-2xl border border-border/50 bg-background px-4 py-3 shadow-lg shadow-black/5 backdrop-blur-xl dark:shadow-black/20 lg:gap-0 lg:px-6">
           {/* Left: Logo + Mobile Toggle */}
           <div className="flex w-full justify-between lg:w-auto">
