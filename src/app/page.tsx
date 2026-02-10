@@ -217,7 +217,7 @@ const HomePage: NextPage = () => {
       <main className="overflow-x-hidden">
 
         {/* ── Hero ────────────────────────────────────────────────── */}
-        <VideoHero src="https://vimeo.com/49218277?fl=pl&fe=sh#t=1m42s&end=2m57s" speed={4} poster="/images/klariti-dusk.png">
+        <VideoHero src="https://aho0m5pvydzzhrre.public.blob.vercel-storage.com/klariti-melancholy%20mp4.mp4" poster="/images/hero-placehorder.png">
           <div className="mx-auto max-w-content px-6 text-center">
             <div className="animate-fade-in mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 backdrop-blur-sm">
               <span className="h-1.5 w-1.5 rounded-full bg-white/60" />
