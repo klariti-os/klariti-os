@@ -44,6 +44,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable}`} suppressHydrationWarning>
+      <head>
+        <link
+          rel="preload"
+          href="https://aho0m5pvydzzhrre.public.blob.vercel-storage.com/klariti-melancholy%20mp4.mp4"
+          as="video"
+          type="video/mp4"
+        />
+      </head>
       <body className="min-h-screen antialiased selection:bg-primary/10">
         {/* Skip link for keyboard navigation */}
         <a

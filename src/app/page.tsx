@@ -1,6 +1,7 @@
 import type { Metadata, NextPage } from "next";
 import Link from "next/link";
 import Footer from "@/components/layout/Footer";
+import VideoHero from "@/components/VideoHero";
 
 export const metadata: Metadata = {
   title: "Klariti \u2014 Reclaim Your Agency in the Digital Age",
@@ -216,25 +217,25 @@ const HomePage: NextPage = () => {
       <main className="overflow-x-hidden">
 
         {/* ── Hero ────────────────────────────────────────────────── */}
-        <section className="py-20 md:py-32">
+        <VideoHero src="https://aho0m5pvydzzhrre.public.blob.vercel-storage.com/klariti-melancholy%20mp4.mp4" poster="/images/hero-placehorder.png">
           <div className="mx-auto max-w-content px-6 text-center">
-            <div className="animate-fade-in mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-foreground/40" />
-              <span className="font-mono text-xs text-muted-foreground">
+            <div className="animate-fade-in mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 backdrop-blur-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-white/60" />
+              <span className="font-mono text-xs text-white/80">
                 Building the Chromium Extension
               </span>
             </div>
 
             <h1
-              className="animate-fade-in-up font-serif text-4xl leading-tight tracking-tight text-foreground md:text-6xl"
+              className="animate-fade-in-up font-serif text-4xl leading-tight tracking-tight text-white md:text-6xl"
               style={{ textWrap: "balance" }}
             >
               Reclaim your agency{" "}
-              <em className="text-muted-foreground">in the digital age</em>
+              <em className="text-white/70">in the digital age</em>
             </h1>
 
             <p
-              className="animate-fade-in-up mx-auto mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground"
+              className="animate-fade-in-up mx-auto mt-6 max-w-lg text-lg leading-relaxed text-white/80"
               style={{ textWrap: "pretty" }}
             >
               An intelligent layer between you and the internet, shaped to
@@ -245,7 +246,7 @@ const HomePage: NextPage = () => {
             <div className="animate-fade-in-up mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
                 href="/dashboard"
-                className="focus-ring group inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                className="focus-ring group inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-medium text-black transition-opacity hover:opacity-90"
               >
                 Get started
                 <svg className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -254,17 +255,17 @@ const HomePage: NextPage = () => {
               </Link>
               <Link
                 href="/manifesto"
-                className="focus-ring inline-flex items-center rounded-full border border-border bg-transparent px-6 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                className="focus-ring inline-flex items-center rounded-full border border-white/30 bg-white/10 px-6 py-2.5 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
               >
                 Read the manifesto
               </Link>
             </div>
 
-            <p className="mt-20 font-mono text-xs uppercase tracking-widest text-muted-foreground/60">
+            <p className="mt-20 font-mono text-xs uppercase tracking-widest text-white/40">
               Technology should serve people, not exploit them
             </p>
           </div>
-        </section>
+        </VideoHero>
 
         <div className="screen-line-after mx-auto max-w-content" />
 
