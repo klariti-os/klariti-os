@@ -25,6 +25,7 @@ function parseVimeoSrc(src: string): { id: string; startTime: string } | null {
 const VideoHero: React.FC<VideoHeroProps> = ({ src, poster, speed = 1, children }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const vimeo = parseVimeoSrc(src);
   const [videoReady, setVideoReady] = useState(false);
   const [muted, setMuted] = useState(true);
@@ -42,6 +43,63 @@ const VideoHero: React.FC<VideoHeroProps> = ({ src, poster, speed = 1, children 
       videoRef.current.muted = next;
     }
   };
+
+  // Mute when user switches tabs, restore when they come back
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        // Tab hidden — mute
+        if (videoRef.current) videoRef.current.muted = true;
+        if (vimeo && iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            JSON.stringify({ method: "setVolume", value: 0 }),
+            "*"
+          );
+        }
+      } else {
+        // Tab visible — restore previous mute state
+        if (videoRef.current) videoRef.current.muted = muted;
+        if (vimeo && iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            JSON.stringify({ method: "setVolume", value: muted ? 0 : 1 }),
+            "*"
+          );
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [muted, vimeo]);
+
+  // Fade volume proportionally as the hero scrolls out of the viewport
+  useEffect(() => {
+    if (muted) return; // No need to fade if already muted
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // ratio: 1 = fully visible, 0 = fully out
+        const volume = Math.max(0, Math.min(1, entry.intersectionRatio));
+
+        if (videoRef.current) {
+          videoRef.current.volume = volume;
+        }
+        if (vimeo && iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            JSON.stringify({ method: "setVolume", value: volume }),
+            "*"
+          );
+        }
+      },
+      { threshold: Array.from({ length: 21 }, (_, i) => i / 20) }
+    );
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [muted, vimeo]);
 
   useEffect(() => {
     if (!vimeo && videoRef.current) {
@@ -74,7 +132,7 @@ const VideoHero: React.FC<VideoHeroProps> = ({ src, poster, speed = 1, children 
     : "";
 
   return (
-    <div className="relative h-screen w-full overflow-hidden rounded-3xl border-8 border-white">
+    <div ref={containerRef} className="relative h-screen w-full overflow-hidden rounded-3xl border-8 border-white">
       {/* Poster image — shows instantly, sits behind the video */}
       {poster && (
         <Image
