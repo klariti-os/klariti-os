@@ -87,9 +87,6 @@ const Navigation: React.FC = () => {
               <li>
                 <NavItem href="/manifesto" title="Manifesto" />
               </li>
-              <li>
-                <NavItem href="/resources" title="Resources" />
-              </li>
               {!isLoading && user && (
                 <li>
                   <NavItem href="/dashboard" title="Dashboard" />
@@ -133,13 +130,6 @@ const Navigation: React.FC = () => {
                 <NavItem
                   href="/manifesto"
                   title="Manifesto"
-                  onClick={closeMobileMenu}
-                />
-              </li>
-              <li>
-                <NavItem
-                  href="/resources"
-                  title="Resources"
                   onClick={closeMobileMenu}
                 />
               </li>
