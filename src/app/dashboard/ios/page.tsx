@@ -1,6 +1,5 @@
 "use client";
 
-import PillButton from "@/components/PillButton";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Metadata, NextPage } from "next";
 import Head from "next/head";
