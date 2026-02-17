@@ -1,5 +1,10 @@
-import Fastify, { FastifyReply, FastifyRequest } from "fastify";
+import path from "node:path";
+import { config } from "dotenv";
 
+config({ path: path.resolve(process.cwd(), "../../.env") });
+
+import Fastify from "fastify";
+import { auth, toNodeHandler } from "@repo/auth";
 import userRoutes from "./postExample";
 
 const fastify = Fastify({
@@ -10,7 +15,16 @@ const fastify = Fastify({
   },
 });
 
-fastify.register(userRoutes, {prefix: "api/users"})
+fastify.register(userRoutes, { prefix: "api/users" });
+
+fastify.register(
+  (instance) => {
+    instance.all("*", async (request, reply) => {
+      await toNodeHandler(auth)(request.raw, reply.raw);
+    });
+  },
+  { prefix: "/api/auth" }
+);
 
 fastify.get("/favicon.ico", async (req, reply) => {
   reply.redirect("https://agentic-house.vercel.app/favicons/favicon.ico");

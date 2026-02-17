@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
-    ".": "./index.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",
@@ -20,7 +20,7 @@
     "pg": "^8.18.0"
   },
   "devDependencies": {
-    "@repo/typescript-config": "^0.0.0",
+    "@repo/typescript-config": "workspace:*",
     "@types/node": "^25.2.0",
     "drizzle-kit": "^0.31.8",
     "tsx": "^4.21.0",
