@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Warm, calm palette — wellness-forward */
+    --background: #fafaf8;
+    --foreground: #1a1a1a;
+    --muted: #f0efeb;
+    --muted-foreground: #737066;
+    --border: #e8e6e1;
+    --edge: #f0efeb;
+    --accent: #e8e6e1;
+    --accent-foreground: #1a1a1a;
+    --primary: #1a1a1a;
+    --primary-foreground: #fafaf8;
+    --card: #ffffff;
+    --card-foreground: #1a1a1a;
+    --selection: #1a1a1a;
+    --selection-foreground: #fafaf8;
+    --ring: #a8a49c;
+    --link: #4a6741;
+    --destructive: #c23b22;
+    --success: #4a6741;
+  }
+
+  .dark {
+    --background: #111110;
+    --foreground: #ededec;
+    --muted: #1e1e1c;
+    --muted-foreground: #a1a09a;
+    --border: #2a2a28;
+    --edge: #1e1e1c;
+    --accent: #2a2a28;
+    --accent-foreground: #ededec;
+    --primary: #ededec;
+    --primary-foreground: #111110;
+    --card: #191918;
+    --card-foreground: #ededec;
+    --selection: #ededec;
+    --selection-foreground: #111110;
+    --ring: #5c5b56;
+    --link: #8bb07f;
+    --destructive: #e55a3f;
+    --success: #8bb07f;
+  }
+
+  *,
+  ::after,
+  ::before {
+    @apply border-[var(--border)];
+  }
+
+  ::selection {
+    background: var(--selection);
+    color: var(--selection-foreground);
+  }
+
+  body {
+    @apply bg-[var(--background)] text-[var(--foreground)] antialiased;
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Minimal scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* Anchor scroll offset */
+  [id] {
+    scroll-margin-top: 5rem;
+  }
+
+  /* Color scheme */
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+
+  /* Touch */
+  a, button, [role="button"], input, select, textarea {
+    touch-action: manipulation;
+  }
+
+  /* Respect motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .screen-line-before {
+    @apply relative before:absolute before:top-0 before:-left-[100vw] before:-z-10 before:h-px before:w-[200vw] before:bg-[var(--edge)];
+  }
+
+  .screen-line-after {
+    @apply relative after:absolute after:bottom-0 after:-left-[100vw] after:-z-10 after:h-px after:w-[200vw] after:bg-[var(--edge)];
+  }
+}
+
+@layer components {
+  /* Focus ring utility — visible only on keyboard nav */
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)];
+  }
+}
