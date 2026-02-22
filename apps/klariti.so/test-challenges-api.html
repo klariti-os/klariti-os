@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Challenges API</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        button {
+            margin: 10px 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Challenges API Test</h1>
+    
+    <div>
+        <label>Token: <input type="text" id="token" style="width: 400px;" placeholder="Paste your access token here"></label>
+        <button onclick="loadTokenFromStorage()">Load from localStorage</button>
+    </div>
+
+    <div>
+        <button onclick="testAllChallenges()">Test Get All Challenges</button>
+        <button onclick="testMyChallenges()">Test Get My Challenges</button>
+        <button onclick="testCreatedChallenges()">Test Get Created Challenges</button>
+    </div>
+
+    <div id="output"></div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8081';
+        
+        function loadTokenFromStorage() {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                document.getElementById('token').value = token;
+                log('✅ Token loaded from localStorage', 'success');
+            } else {
+                log('❌ No token found in localStorage', 'error');
+            }
+        }
+
+        function getHeaders() {
+            const token = document.getElementById('token').value;
+            return {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` })
+            };
+        }
+
+        function log(message, type = '') {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            output.insertBefore(div, output.firstChild);
+        }
+
+        async function testAllChallenges() {
+            log('📡 Testing GET /challenges/...');
+            try {
+                const response = await fetch(`${API_URL}/challenges/?skip=0&limit=100`, {
+                    headers: getHeaders()
+                });
+                
+                log(`Status: ${response.status} ${response.statusText}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`❌ Error: ${errorText}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                log(`✅ Success! Got ${data.length} challenges`, 'success');
+                log(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+            } catch (error) {
+                log(`❌ Exception: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMyChallenges() {
+            log('📡 Testing GET /challenges/my-challenges...');
+            try {
+                const response = await fetch(`${API_URL}/challenges/my-challenges?skip=0&limit=100`, {
+                    headers: getHeaders()
+                });
+                
+                log(`Status: ${response.status} ${response.statusText}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`❌ Error: ${errorText}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                log(`✅ Success! Got ${data.length} challenges`, 'success');
+                log(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+            } catch (error) {
+                log(`❌ Exception: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCreatedChallenges() {
+            log('📡 Testing GET /challenges/my-created-challenges...');
+            try {
+                const response = await fetch(`${API_URL}/challenges/my-created-challenges?skip=0&limit=100`, {
+                    headers: getHeaders()
+                });
+                
+                log(`Status: ${response.status} ${response.statusText}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`❌ Error: ${errorText}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                log(`✅ Success! Got ${data.length} challenges`, 'success');
+                log(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+            } catch (error) {
+                log(`❌ Exception: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-load token on page load
+        window.onload = loadTokenFromStorage;
+    </script>
+</body>
+</html>
