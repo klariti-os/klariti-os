@@ -1,6 +1,7 @@
 import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 
 import userRoutes from "./postExample";
+import youtubeRoutes from "./routes/youtube";
 
 const fastify = Fastify({
   logger: {
@@ -10,7 +11,8 @@ const fastify = Fastify({
   },
 });
 
-fastify.register(userRoutes, {prefix: "api/users"})
+fastify.register(userRoutes, { prefix: "api/users" });
+fastify.register(youtubeRoutes, { prefix: "api/youtube" });
 
 fastify.get("/favicon.ico", async (req, reply) => {
   reply.redirect("https://agentic-house.vercel.app/favicons/favicon.ico");

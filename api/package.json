@@ -1,7 +1,8 @@
 {
   "name": "@klariti-os/api",
   "dependencies": {
-    "fastify": "^5.7.2"
+    "fastify": "^5.7.2",
+    "youtube-transcript": "^1.2.1"
   },
   "scripts": {
     "dev": "tsx watch src/server.ts"
