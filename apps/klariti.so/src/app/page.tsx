@@ -363,6 +363,43 @@ const HomePage: NextPage = () => {
 
         <div className="screen-line-after mx-auto max-w-content" />
 
+        {/* ── Five Principles ─────────────────────────────────────── */}
+        <section className="py-20 md:py-32">
+          <div className="mx-auto max-w-content px-6">
+            <p className="mb-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">Five Principles</p>
+            <h2 className="font-serif text-3xl tracking-tight text-foreground md:text-4xl" style={{ textWrap: "balance" }}>
+              Guided by{" "}
+              <em className="text-muted-foreground">intention</em>
+            </h2>
+            <p className="mt-4 max-w-lg leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
+              Everything we build is rooted in five principles for digital wellbeing.
+            </p>
+
+            <div className="mt-12 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-5">
+              {[
+                { word: "Focus", japanese: "集中", description: "Direct your attention with intention. Cut through the noise." },
+                { word: "Balance", japanese: "調和", description: "Technology in harmony with life, not consuming it." },
+                { word: "Clarity", japanese: "明晰", description: "See through the algorithmic fog. Know what matters." },
+                { word: "Mindful", japanese: "気づき", description: "Present in each interaction. Conscious of every click." },
+                { word: "Zen", japanese: "禅", description: "Inner peace in a world designed to disturb it." },
+              ].map((value, i) => (
+                <article
+                  key={value.word}
+                  className={`flex flex-col items-center bg-card px-4 py-8 text-center transition-colors hover:bg-muted/50 ${
+                    i === 4 ? "col-span-2 sm:col-span-1" : ""
+                  }`}
+                >
+                  <span className="mb-3 text-3xl text-muted-foreground/40 select-none">{value.japanese}</span>
+                  <h3 className="mb-2 font-mono text-xs font-semibold uppercase tracking-widest text-foreground">{value.word}</h3>
+                  <p className="max-w-[160px] text-xs leading-relaxed text-muted-foreground">{value.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <div className="screen-line-after mx-auto max-w-content" />
+
         {/* ── Manifesto teaser ────────────────────────────────────── */}
         <section className="py-20 md:py-32">
           <div className="mx-auto max-w-content px-6">
