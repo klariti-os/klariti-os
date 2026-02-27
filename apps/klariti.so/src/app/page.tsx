@@ -366,7 +366,7 @@ const HomePage: NextPage = () => {
         {/* ── Five Principles ─────────────────────────────────────── */}
         <section className="py-20 md:py-32">
           <div className="mx-auto max-w-content px-6">
-            <p className="mb-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">Five Principles</p>
+            <p className="mb-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">Four Principles</p>
             <h2 className="font-serif text-3xl tracking-tight text-foreground md:text-4xl" style={{ textWrap: "balance" }}>
               Guided by{" "}
               <em className="text-muted-foreground">intention</em>
@@ -375,23 +375,20 @@ const HomePage: NextPage = () => {
               Everything we build is rooted in five principles for digital wellbeing.
             </p>
 
-            <div className="mt-12 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-5">
+            <div className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { word: "Focus", japanese: "集中", description: "Direct your attention with intention. Cut through the noise." },
+                { word: "Focus", japanese: "集中", description: "Direct your attention with intention." },
                 { word: "Balance", japanese: "調和", description: "Technology in harmony with life, not consuming it." },
-                { word: "Clarity", japanese: "明晰", description: "See through the algorithmic fog. Know what matters." },
+                { word: "Clarity", japanese: "明晰", description: "See through the fog. Know what matters." },
                 { word: "Mindful", japanese: "気づき", description: "Present in each interaction. Conscious of every click." },
-                { word: "Zen", japanese: "禅", description: "Inner peace in a world designed to disturb it." },
-              ].map((value, i) => (
+              ].map((value) => (
                 <article
                   key={value.word}
-                  className={`flex flex-col items-center bg-card px-4 py-8 text-center transition-colors hover:bg-muted/50 ${
-                    i === 4 ? "col-span-2 sm:col-span-1" : ""
-                  }`}
+                  className="relative flex flex-col items-center overflow-hidden rounded-xl border border-border bg-card px-6 py-12 text-center transition-colors hover:border-muted-foreground/30"
                 >
-                  <span className="mb-3 text-3xl text-muted-foreground/40 select-none">{value.japanese}</span>
-                  <h3 className="mb-2 font-mono text-xs font-semibold uppercase tracking-widest text-foreground">{value.word}</h3>
-                  <p className="max-w-[160px] text-xs leading-relaxed text-muted-foreground">{value.description}</p>
+                  <span className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl font-serif opacity-10 leading-none text-foreground/[0.025] select-none">{value.japanese}</span>
+                  <h3 className="relative mb-2 font-mono text-xs font-semibold uppercase tracking-widest text-foreground">{value.word}</h3>
+                  <p className="relative leading-relaxed ">{value.description}</p>
                 </article>
               ))}
             </div>
