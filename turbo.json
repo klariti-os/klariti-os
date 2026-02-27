@@ -1,6 +1,6 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
-  "globalDependencies": [".env"],
+  "globalDependencies": [".env.example"],
   "ui": "tui",
   "tasks": {
     "build": {
