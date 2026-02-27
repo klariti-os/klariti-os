@@ -27,7 +27,7 @@ export default function NotFound() {
           style={{ textWrap: "pretty" }}
         >
           Like the space between thoughts, this page exists in emptiness.
-          Let&rsquo;s guide you back to clarity.
+          Let&rsquo;s guide you back to klariti.
         </p>
 
         {/* Actions */}
