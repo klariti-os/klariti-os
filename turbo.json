@@ -1,5 +1,7 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
+  "globalDependencies": [".env"],
+  "ui": "tui",
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -15,6 +17,15 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "drizzle:generate": {
+      "cache": false
+    },
+    "drizzle:migrate": {
+      "cache": false
+    },
+    "drizzle:push": {
+      "cache": false
     }
   }
 }
