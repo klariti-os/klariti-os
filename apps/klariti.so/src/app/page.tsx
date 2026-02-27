@@ -262,8 +262,6 @@ const HomePage: NextPage = () => {
           </div>
         </VideoHero>
 
-        <div className="screen-line-after mx-auto max-w-content" />
-
         {/* ── Gray Engine ─────────────────────────────────────────── */}
         <section id="product" className="py-20 md:py-32">
           <div className="mx-auto max-w-content px-6">
@@ -322,7 +320,6 @@ const HomePage: NextPage = () => {
           </div>
         </section>
 
-        <div className="screen-line-after mx-auto max-w-content" />
 
         {/* ── Features ────────────────────────────────────────────── */}
         <section className="py-20 md:py-32">
@@ -361,7 +358,39 @@ const HomePage: NextPage = () => {
           </div>
         </section>
 
-        <div className="screen-line-after mx-auto max-w-content" />
+
+        {/* ── Five Principles ─────────────────────────────────────── */}
+        <section className="py-20 md:py-32">
+          <div className="mx-auto max-w-content px-6">
+            <p className="mb-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">Four Principles</p>
+            <h2 className="font-serif text-3xl tracking-tight text-foreground md:text-4xl" style={{ textWrap: "balance" }}>
+              Guided by{" "}
+              <em className="text-muted-foreground">intention</em>
+            </h2>
+            <p className="mt-4 max-w-lg leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
+              Everything we build is rooted in five principles for digital wellbeing.
+            </p>
+
+            <div className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { word: "Focus", japanese: "集中", description: "Direct your attention with intention." },
+                { word: "Balance", japanese: "調和", description: "Technology in harmony with life, not consuming it." },
+                { word: "Clarity", japanese: "明晰", description: "See through the fog. Know what matters." },
+                { word: "Mindful", japanese: "気づき", description: "Present in each interaction. Conscious of every click." },
+              ].map((value) => (
+                <article
+                  key={value.word}
+                  className="relative flex flex-col items-center overflow-hidden rounded-xl border border-border bg-card px-6 py-12 text-center transition-colors hover:border-muted-foreground/30"
+                >
+                  <span className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl font-serif opacity-10 leading-none text-foreground/[0.025] select-none">{value.japanese}</span>
+                  <h3 className="relative mb-2 font-mono text-xs font-semibold uppercase tracking-widest text-foreground">{value.word}</h3>
+                  <p className="relative leading-relaxed ">{value.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
 
         {/* ── Manifesto teaser ────────────────────────────────────── */}
         <section className="py-20 md:py-32">
@@ -389,60 +418,11 @@ const HomePage: NextPage = () => {
               </footer>
             </blockquote>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              {[
-                { label: "Wellbeing-First", text: "Prioritize user health and intentionality over engagement metrics." },
-                { label: "Context-Aware", text: "Understand that content value exists along a spectrum, never binary." },
-                { label: "User Agency", text: "Empower users to reclaim control without disconnecting entirely." },
-                { label: "Transparent AI", text: "Every decision is explainable, reversible, and user-controlled." },
-              ].map((p) => (
-                <article key={p.label} className="rounded-xl border border-border bg-card p-5">
-                  <p className="mb-1 text-sm font-semibold text-foreground">{p.label}</p>
-                  <p className="text-sm leading-relaxed text-muted-foreground">{p.text}</p>
-                </article>
-              ))}
-            </div>
-
-            <div className="mt-8">
-              <Link href="/manifesto" className="focus-ring inline-flex items-center gap-2 rounded-full border border-border px-5 py-2 font-mono text-xs text-foreground transition-colors hover:bg-muted">
-                Read the full manifesto
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </Link>
-            </div>
+            
           </div>
         </section>
+       
 
-        <div className="screen-line-after mx-auto max-w-content" />
-
-        {/* ── Under the Hood ──────────────────────────────────────── */}
-        <section id="research" className="py-20 md:py-32">
-          <div className="mx-auto max-w-content px-6">
-            <p className="mb-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">Under the hood</p>
-            <h2 className="font-serif text-3xl tracking-tight text-foreground md:text-4xl" style={{ textWrap: "balance" }}>
-              Built on strong{" "}
-              <em className="text-muted-foreground">foundations</em>
-            </h2>
-            <p className="mt-4 max-w-lg leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
-              Klariti is so simple to use, it&rsquo;s easy to overlook the wealth
-              of complex engineering packed under the hood.
-            </p>
-
-            <div className="mt-12 flex flex-col gap-4">
-              {foundations.map((item) => (
-                <article key={item.title} className="rounded-xl border border-border bg-card p-6 transition-colors hover:border-muted-foreground/30">
-                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-muted">{item.icon}</div>
-                  <h3 className="mb-1 text-sm font-semibold text-foreground">{item.title}</h3>
-                  <p className="text-sm leading-relaxed text-muted-foreground">{item.description}</p>
-                </article>
-              ))}
-            </div>
-
-          </div>
-        </section>
-
-        <div className="screen-line-after mx-auto max-w-content" />
 
         {/* ── CTA ─────────────────────────────────────────────────── */}
         <section className="py-20 md:py-32">
