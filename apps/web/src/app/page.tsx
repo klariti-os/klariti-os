@@ -287,36 +287,7 @@ const HomePage: NextPage = () => {
               ))}
             </div>
 
-            {/* Browser mockup */}
-            <div className="mt-8 overflow-hidden rounded-xl border border-border bg-card">
-              <div className="flex items-center gap-3 border-b border-border px-5 py-3">
-                <div className="flex gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-border" />
-                  <div className="h-2.5 w-2.5 rounded-full bg-border" />
-                  <div className="h-2.5 w-2.5 rounded-full bg-border" />
-                </div>
-                <div className="flex-1 rounded-md bg-muted px-4 py-1 text-center">
-                  <span className="font-mono text-[11px] text-muted-foreground">instagram.com/explore</span>
-                </div>
-              </div>
-              <div className="px-6 py-10 md:py-14">
-                <div className="mx-auto max-w-sm text-center">
-                  <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5">
-                    <span className="h-2 w-2 rounded-full bg-foreground/40" />
-                    <span className="font-mono text-xs font-medium text-foreground">Gray Engine Active</span>
-                  </div>
-                  <p className="text-lg font-medium text-foreground">Explore page reshaped</p>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    Infinite scroll disabled. Algorithmic recommendations hidden.
-                    Showing only content from accounts you follow.
-                  </p>
-                  <div className="mt-6 flex items-center justify-center gap-3">
-                    <span className="rounded-full bg-muted px-4 py-1.5 text-xs font-medium text-foreground">Keep shaping</span>
-                    <span className="rounded-full border border-border px-4 py-1.5 text-xs font-medium text-muted-foreground">Override for 15&nbsp;min</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            
           </div>
         </section>
 
