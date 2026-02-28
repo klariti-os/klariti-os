@@ -17,7 +17,7 @@ const DashboardPage: NextPage = () => {
 
   return (
     <ProtectedRoute>
-      <div className="mx-auto max-w-content px-6 pb-32 pt-16">
+      <div className="mx-auto max-w-content px-6 pb-32 pt-32">
         <header className="mb-12">
           <p className="mb-2 font-mono text-xs uppercase tracking-widest text-muted-foreground">
             Dashboard

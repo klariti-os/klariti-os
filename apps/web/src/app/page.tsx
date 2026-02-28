@@ -1,6 +1,6 @@
 import type { Metadata, NextPage } from "next";
 import Link from "next/link";
-import Footer from "@/components/layout/Footer";
+import Footer from "@/components/Footer";
 import VideoHero from "@/components/VideoHero";
 
 export const metadata: Metadata = {
