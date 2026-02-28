@@ -1,19 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { NextPage } from "next";
 
 const DashboardPage: NextPage = () => {
   const { user } = useAuth();
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const handleCreateSuccess = () => {
-    setShowCreateForm(false);
-    setRefreshKey((prev) => prev + 1);
-  };
 
   return (
     <ProtectedRoute>
