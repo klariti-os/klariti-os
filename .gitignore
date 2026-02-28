@@ -2,6 +2,12 @@
 
 # Dependencies
 node_modules
+
+# Non-pnpm lockfiles
+package-lock.json
+yarn.lock
+bun.lock
+bun.lockb
 .pnp
 .pnp.js
 
