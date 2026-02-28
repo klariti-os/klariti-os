@@ -1,24 +1,23 @@
 import { defineConfig } from "wxt";
 
-// See https://wxt.dev/api/config.html
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
   manifest: {
-    permissions: [
-      "tabs",
-      "activeTab",
-      "storage",
-      "alarms",
-      "webRequest",
-      "webNavigation",
-      "declarativeNetRequest",
-      "declarativeNetRequestWithHostAccess",
-    ],
-    host_permissions: ["<all_urls>"],
+    permissions: ["tabs"],
+    host_permissions: ["http://localhost:4200/*"],
+    icons: {
+      "16": "icon/16.png",
+      "32": "icon/32.png",
+      "48": "icon/48.png",
+      "96": "icon/96.png",
+      "128": "icon/128.png",
+    },
     action: {
       default_icon: {
-        "16": "logo.svg",
-        "32": "logo.svg",
+        "16": "icon/16.png",
+        "32": "icon/32.png",
+        "48": "icon/48.png",
+        "128": "icon/128.png",
       },
     },
   },
