@@ -15,7 +15,10 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    
     fetch(`${API_URL}/api/auth/get-session`, { credentials: "include" })
+
+
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.user?.id) setUser(data.user);
