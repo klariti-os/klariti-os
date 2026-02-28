@@ -8,6 +8,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
     };
   }>("/", {
     schema: {
+      tags: ["Users"],
       body: {
         type: "object",
         required: ["name", "age"],
@@ -16,11 +17,18 @@ export default async function userRoutes(fastify: FastifyInstance) {
           age: { type: "number" },
         },
       },
+      response: {
+        201: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            age: { type: "number" },
+          },
+        },
+      },
     },
     handler: async (request, reply) => {
-      const body = request.body;
-      console.log({ body });
-      return reply.code(201).send(body);
+      return reply.code(201).send(request.body);
     },
   });
 }
