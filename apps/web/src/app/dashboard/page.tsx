@@ -4,8 +4,6 @@ import { useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { NextPage } from "next";
-import ChallengeList from "@/components/challenges/ChallengeList";
-import CreateChallengeForm from "@/components/challenges/CreateChallengeForm";
 
 const DashboardPage: NextPage = () => {
   const { user } = useAuth();
@@ -36,18 +34,7 @@ const DashboardPage: NextPage = () => {
           </p>
         </header>
 
-        <section>
-          <h2
-            className="mb-6 font-serif text-2xl font-light text-foreground"
-            style={{ textWrap: "balance" }}
-          >
-            Your Challenges
-          </h2>
-          <ChallengeList
-            key={refreshKey}
-            onCreateClick={() => setShowCreateForm(true)}
-          />
-        </section>
+        
       </div>
     </ProtectedRoute>
   );

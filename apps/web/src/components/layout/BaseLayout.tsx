@@ -10,12 +10,12 @@ const BaseLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="relative flex min-h-screen flex-col">
-      <Navigation />
+      <Navigation /> 
       <main id="main-content" className={`flex-1 ${!hasFullBleedHero ? "pt-16" : ""}`}>
         {children}
       </main>
     </div>
-  );
+  ); 
 };
 
 export default BaseLayout;

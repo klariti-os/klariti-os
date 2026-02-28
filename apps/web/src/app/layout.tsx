@@ -3,7 +3,6 @@ import { type Metadata, type Viewport } from "next"
 import "@/styles/globals.css"
 import BaseLayout from "@/components/layout/BaseLayout"
 import { AuthProvider } from "@/contexts/AuthContext"
-import QueryProvider from "@/components/providers/QueryProvider"
 import { fontSerif, fontMono, fontSans } from "@/lib/fonts"
 
 export const metadata: Metadata = {
@@ -60,11 +59,9 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <QueryProvider>
           <AuthProvider>
             <BaseLayout>{children}</BaseLayout> 
           </AuthProvider>
-        </QueryProvider>
       </body>
     </html>
   )
