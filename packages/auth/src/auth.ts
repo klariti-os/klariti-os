@@ -18,13 +18,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
-  },
-  emailVerification: {
-    sendVerificationEmail: async ({ user, url }) => {
-      // TODO: replace with real email provider (Resend, SendGrid, etc.)
-      console.log(`[auth] Verification email for ${user.email}: ${url}`);
-    },
+    requireEmailVerification: true,
   },
   user: {
     changeEmail: {

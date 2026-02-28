@@ -17,8 +17,8 @@ export default defineConfig({
     host_permissions: ["<all_urls>"],
     action: {
       default_icon: {
-        "16": "snwtr.png",
-        "32": "snwtr.png",
+        "16": "logo.svg",
+        "32": "logo.svg",
       },
     },
   },
