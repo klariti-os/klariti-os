@@ -2,6 +2,7 @@ import fp from "fastify-plugin";
 import { FastifyInstance } from "fastify";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import { config } from "../config";
 
 export default fp(
   async function swaggerPlugin(fastify: FastifyInstance) {
@@ -14,13 +15,15 @@ export default fp(
           version: "1.0.0",
         },
         servers: [
-          { url: "http://localhost:4200", description: "Development" },
+          { url: config.appUrl, description: "Development" },
         ],
         components: {
           securitySchemes: {
             bearerAuth: {
               type: "http",
               scheme: "bearer",
+              description:
+                "Sign in via POST /api/sign-in, copy the token from the response, then paste it here.",
             },
           },
         },
@@ -32,6 +35,7 @@ export default fp(
       uiConfig: {
         docExpansion: "list",
         deepLinking: true,
+        persistAuthorization: true,
       },
     });
   },

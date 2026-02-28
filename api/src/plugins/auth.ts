@@ -1,9 +1,45 @@
 import fp from "fastify-plugin";
-import { FastifyInstance } from "fastify";
-import { auth } from "@klariti/auth/server";
+import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { auth, type Session } from "@klariti/auth/server";
+
+declare module "fastify" {
+  interface FastifyRequest {
+    session: Session | null;
+  }
+  interface FastifyInstance {
+    verifySession: (
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ) => Promise<void>;
+  }
+}
 
 export default fp(
   async function authPlugin(fastify: FastifyInstance) {
+    // Attach session to every request (null if unauthenticated)
+    fastify.decorateRequest("session", null);
+
+    // Reusable preHandler – use on any protected route:
+    //   { preHandler: [fastify.verifySession] }
+    fastify.decorate(
+      "verifySession",
+      async function (request: FastifyRequest, reply: FastifyReply) {
+        const headers = new Headers();
+        for (const [key, value] of Object.entries(request.headers)) {
+          if (value !== undefined) {
+            headers.set(key, Array.isArray(value) ? value.join(", ") : value);
+          }
+        }
+
+        const session = await auth.api.getSession({ headers });
+        if (!session) {
+          return reply.status(401).send({ error: "Unauthorized" });
+        }
+        request.session = session;
+      },
+    );
+
+    // Forward all better-auth routes (cookie-based auth, etc.)
     fastify.route({
       method: ["GET", "POST"],
       url: "/api/auth/*",
@@ -32,5 +68,5 @@ export default fp(
       },
     });
   },
-  { name: "auth" }
+  { name: "auth" },
 );
