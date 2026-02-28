@@ -8,6 +8,20 @@
       "when": 1772239253018,
       "tag": "0000_right_wrecking_crew",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772247301140,
+      "tag": "0001_short_madame_hydra",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772248250277,
+      "tag": "0002_white_rictor",
+      "breakpoints": true
     }
   ]
 }

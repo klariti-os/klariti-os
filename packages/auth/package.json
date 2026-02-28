@@ -1,0 +1,23 @@
+{
+  "name": "@klariti/auth",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/auth.ts",
+    "./client": "./src/client.ts"
+  },
+  "dependencies": {
+    "better-auth": "^1.2.0",
+    "@klariti/database": "workspace:*"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^25.2.0",
+    "@types/react": "^19.2.7",
+    "typescript": "^5.9.3"
+  }
+}
