@@ -1,9 +1,12 @@
 import Fastify from "fastify";
+import formbody from "@fastify/formbody";
+import { config } from "./config";
 
 import swaggerPlugin from "./plugins/swagger";
 import corsPlugin from "./plugins/cors";
 import authPlugin from "./plugins/auth";
-import userRoutes from "./routes/users";
+import meRoutes from "./routes/me";
+import authRoutes from "./routes/auth";
 
 const fastify = Fastify({
   logger: {
@@ -14,15 +17,17 @@ const fastify = Fastify({
 });
 
 // Plugins (order matters: swagger before routes, cors before auth)
+fastify.register(formbody);
 fastify.register(swaggerPlugin);
 fastify.register(corsPlugin);
 fastify.register(authPlugin);
 
 // Routes
-fastify.register(userRoutes, { prefix: "/api/users" });
+fastify.register(authRoutes);
+fastify.register(meRoutes, { prefix: "/api/me" });
 
 fastify.get(
-  "/",
+  "/",    
   {
     schema: {
       tags: ["Health"],
@@ -40,7 +45,7 @@ fastify.get("/favicon.ico", { schema: { hide: true } }, async (_req, reply) => {
 
 async function main() {
   try {
-    await fastify.listen({ port: 4200, host: "0.0.0.0" });
+    await fastify.listen({ port: config.port, host: config.host });
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
