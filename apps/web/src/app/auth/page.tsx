@@ -11,6 +11,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [verificationSent, setVerificationSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { user, signIn, signUp, isLoading: authLoading } = useAuth();
@@ -38,7 +39,7 @@ export default function AuthPage() {
           throw new Error("Password must be at least 8 characters");
         }
         await signUp(name, email, password);
-        router.push("/dashboard");
+        setVerificationSent(true);
       }
     } catch (err: any) {
       setError(err.message || "An error occurred. Please try again.");
@@ -50,10 +51,32 @@ export default function AuthPage() {
   const toggleMode = () => {
     setMode(mode === "signin" ? "signup" : "signin");
     setError("");
+    setVerificationSent(false);
     setName("");
     setPassword("");
     setConfirmPassword("");
   };
+
+  if (verificationSent) {
+    return (
+      <div className="mx-auto max-w-sm px-6 pt-24 pb-32 md:pt-32">
+        <h1 className="mb-2 font-serif text-2xl font-light text-foreground">
+          Check your email
+        </h1>
+        <p className="mb-8 text-sm text-muted-foreground">
+          We sent a verification link to{" "}
+          <span className="font-mono text-foreground">{email}</span>. Click the
+          link to activate your account, then sign in.
+        </p>
+        <button
+          onClick={toggleMode}
+          className="focus-ring w-full rounded-lg bg-primary py-2.5 font-mono text-sm text-primary-foreground transition-opacity hover:opacity-80"
+        >
+          Back to Sign In
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-sm px-6 pt-24 pb-32 md:pt-32">
