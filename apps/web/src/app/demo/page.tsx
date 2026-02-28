@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 const DemoPage: NextPage = () => {
   return (
-    <div className="mx-auto max-w-content px-6 pb-32 pt-12">
+    <div className="mx-auto max-w-content px-6 pb-32 pt-20">
       <p className="mb-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">
         Demo
       </p>

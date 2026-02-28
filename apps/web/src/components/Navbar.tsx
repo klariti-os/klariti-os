@@ -1,9 +1,9 @@
 "use client";
 
 import NextLink from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import KlaritiLogo from "@/components/KlaritiLogo";
 
 const NavItem: React.FC<{
   href: string;
@@ -40,7 +40,7 @@ const Navigation: React.FC = () => {
               className="flex items-center space-x-2"
             >
               {/* Logo Icon */}
-              <KlaritiLogo variant="dark" className="size-7" />
+              <Image src="/logo.svg" width={28} height={28} alt="Klariti logo" className="size-7" />
               <span className="font-serif text-lg font-medium tracking-tight text-foreground">
                 Klariti
               </span>

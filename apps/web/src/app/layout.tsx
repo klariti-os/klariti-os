@@ -1,9 +1,8 @@
 import { type Metadata, type Viewport } from "next"
 
 import "@/styles/globals.css"
-import BaseLayout from "@/components/layout/BaseLayout"
+import Navbar from "@/components/Navbar"
 import { AuthProvider } from "@/contexts/AuthContext"
-import QueryProvider from "@/components/providers/QueryProvider"
 import { fontSerif, fontMono, fontSans } from "@/lib/fonts"
 
 export const metadata: Metadata = {
@@ -53,18 +52,20 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen antialiased selection:bg-primary/10">
-        {/* Skip link for keyboard navigation */}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
         >
           Skip to main content
         </a>
-        <QueryProvider>
-          <AuthProvider>
-            <BaseLayout>{children}</BaseLayout> 
-          </AuthProvider>
-        </QueryProvider>
+        <AuthProvider>
+          <div className="relative flex min-h-screen flex-col">
+            <Navbar />
+            <main id="main-content" className="flex-1">
+              {children}
+            </main>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   )

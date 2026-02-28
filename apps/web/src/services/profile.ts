@@ -1,8 +1,5 @@
 import { getApiMe, patchApiMe, postApiMeChangePassword } from '@klariti/api-client';
 
-export async function getProfile() {
-  return await getApiMe();
-}
 
 export async function updateProfile(data: { username: string; password: string }) {
   // Update username (PATCH /me)
