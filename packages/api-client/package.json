@@ -1,0 +1,19 @@
+{
+  "name": "@klariti/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "fetch-spec": "node scripts/fetch-openapi.mjs",
+    "generate": "openapi-ts",
+    "generate:full": "npm run fetch-spec && npm run generate",
+    "check-types": "tsc --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "^0.93.1",
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "^5.9.3"
+  }
+}

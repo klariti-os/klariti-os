@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@klariti/api-client": "workspace:*",
     "@klariti/auth": "workspace:*",
     "better-auth": "^1.2.0",
     "@tanstack/query-sync-storage-persister": "^5.90.14",

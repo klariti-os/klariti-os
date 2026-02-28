@@ -23,7 +23,7 @@ const NavItem: React.FC<{
 };
 
 const Navigation: React.FC = () => {
-  const { user, logout, isLoading } = useAuth();
+  const { user, signOut, isLoading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -99,7 +99,7 @@ const Navigation: React.FC = () => {
           <div className="hidden lg:flex items-center gap-3">
             {!isLoading && user ? (
               <button
-                onClick={logout}
+                onClick={signOut}
                 className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border bg-transparent px-4 py-2 text-sm font-medium text-muted-foreground shadow-sm transition-all hover:border-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Log Out
@@ -149,7 +149,7 @@ const Navigation: React.FC = () => {
               {!isLoading && user ? (
                 <button
                   onClick={() => {
-                    logout();
+                    signOut();
                     closeMobileMenu();
                   }}
                   className="w-full rounded-lg border border-border bg-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:border-foreground hover:text-foreground"

@@ -62,7 +62,7 @@ export default function RootLayout({
         </a>
         <QueryProvider>
           <AuthProvider>
-            <BaseLayout>{children}</BaseLayout>
+            <BaseLayout>{children}</BaseLayout> 
           </AuthProvider>
         </QueryProvider>
       </body>

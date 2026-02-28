@@ -4,9 +4,15 @@ import { bearer } from "better-auth/plugins";
 import { toNodeHandler } from "better-auth/node";
 import { db, authUser, authSession, authAccount, authVerification } from "@klariti/database";
 
+const trustedOrigins = (process.env.CORS_ORIGINS ?? "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL,
+  trustedOrigins,
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
@@ -18,7 +24,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
+    requireEmailVerification: false,
   },
   user: {
     changeEmail: {

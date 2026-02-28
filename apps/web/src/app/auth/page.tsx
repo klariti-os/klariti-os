@@ -6,30 +6,21 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [username, setUsername] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [verificationSent, setVerificationSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { user, login, register, isLoading: authLoading } = useAuth();
+  const { user, signIn, signUp, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     if (!authLoading && user) {
       router.push("/dashboard");
     }
   }, [user, authLoading, router]);
-
-  const handleLogin = async () => {
-    await login(username, password);
-    router.push("/dashboard");
-  };
-
-  const handleRegister = async () => {
-    await register(username, password);
-    await login(username, password);
-    router.push("/dashboard");
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,15 +29,17 @@ export default function AuthPage() {
 
     try {
       if (mode === "signin") {
-        await handleLogin();
+        await signIn(email, password);
+        router.push("/dashboard");
       } else {
         if (password !== confirmPassword) {
           throw new Error("Passwords do not match");
         }
-        if (password.length < 6) {
-          throw new Error("Password must be at least 6 characters");
+        if (password.length < 8) {
+          throw new Error("Password must be at least 8 characters");
         }
-        await handleRegister();
+        await signUp(name, email, password);
+        setVerificationSent(true);
       }
     } catch (err: any) {
       setError(err.message || "An error occurred. Please try again.");
@@ -58,9 +51,32 @@ export default function AuthPage() {
   const toggleMode = () => {
     setMode(mode === "signin" ? "signup" : "signin");
     setError("");
+    setVerificationSent(false);
+    setName("");
     setPassword("");
     setConfirmPassword("");
   };
+
+  if (verificationSent) {
+    return (
+      <div className="mx-auto max-w-sm px-6 pt-24 pb-32 md:pt-32">
+        <h1 className="mb-2 font-serif text-2xl font-light text-foreground">
+          Check your email
+        </h1>
+        <p className="mb-8 text-sm text-muted-foreground">
+          We sent a verification link to{" "}
+          <span className="font-mono text-foreground">{email}</span>. Click the
+          link to activate your account, then sign in.
+        </p>
+        <button
+          onClick={toggleMode}
+          className="focus-ring w-full rounded-lg bg-primary py-2.5 font-mono text-sm text-primary-foreground transition-opacity hover:opacity-80"
+        >
+          Back to Sign In
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-sm px-6 pt-24 pb-32 md:pt-32">
@@ -84,23 +100,47 @@ export default function AuthPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        {mode === "signup" && (
+          <div>
+            <label
+              htmlFor="name"
+              className="mb-1.5 block font-mono text-xs text-muted-foreground"
+            >
+              Name
+            </label>
+            <input
+              id="name"
+              type="text"
+              name="name"
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              spellCheck={false}
+              placeholder="Your full name\u2026"
+              disabled={isLoading || authLoading}
+              className="focus-ring w-full rounded-lg border border-border bg-background px-4 py-2.5 font-mono text-sm text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50"
+            />
+          </div>
+        )}
+
         <div>
           <label
-            htmlFor="username"
+            htmlFor="email"
             className="mb-1.5 block font-mono text-xs text-muted-foreground"
           >
-            Username
+            Email
           </label>
           <input
-            id="username"
-            type="text"
-            name="username"
-            autoComplete={mode === "signin" ? "username" : "username"}
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            id="email"
+            type="email"
+            name="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
             spellCheck={false}
-            placeholder="Enter your username\u2026"
+            placeholder="you@example.com"
             disabled={isLoading || authLoading}
             className="focus-ring w-full rounded-lg border border-border bg-background px-4 py-2.5 font-mono text-sm text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50"
           />
@@ -121,10 +161,10 @@ export default function AuthPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            minLength={mode === "signup" ? 6 : undefined}
+            minLength={mode === "signup" ? 8 : undefined}
             placeholder={
               mode === "signup"
-                ? "At least 6 characters\u2026"
+                ? "At least 8 characters\u2026"
                 : "Enter your password\u2026"
             }
             disabled={isLoading || authLoading}
