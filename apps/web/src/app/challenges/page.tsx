@@ -23,7 +23,7 @@ const ChallengesPage: NextPage = () => {
         {/* Header */}
         <div className="mb-8 rounded-xl border border-border bg-card p-6">
           <h1 className="mb-1 font-serif text-xl font-normal text-foreground">
-            Welcome back, {user?.username || "User"}
+            Welcome back, {user?.name || "User"}
           </h1>
           <p className="text-sm text-muted-foreground">
             Track your productivity challenges.

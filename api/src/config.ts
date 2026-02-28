@@ -10,7 +10,7 @@ export const config = {
 
   corsOrigins: (
     process.env.CORS_ORIGINS ??
-    `http://localhost:${port},http://127.0.0.1:${port}`
+    `http://localhost:${port},http://127.0.0.1:${port},http://localhost:3001`
   )
     .split(",")
     .map((o) => o.trim())

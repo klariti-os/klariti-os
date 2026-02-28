@@ -27,7 +27,7 @@ export default function ChallengeCard({
   style,
 }: ChallengeCardProps) {
   const { user } = useAuth();
-  const isCreator = user?.id === challenge.creator_id;
+  const isCreator = user?.id === String(challenge.creator_id);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
   useEffect(() => {

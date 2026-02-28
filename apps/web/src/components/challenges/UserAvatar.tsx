@@ -62,7 +62,7 @@ export default function UserAvatar({
   };
 
   // Check if this user is the current logged-in user
-  const isCurrentUser = currentUser?.id === user.id;
+  const isCurrentUser = currentUser?.id === String(user.id);
 
   if (variant === "rectangle") {
     return (

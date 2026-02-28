@@ -8,7 +8,10 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "studio": "pnpm --filter @klariti/database studio"
+    "studio": "pnpm --filter @klariti/database studio",
+    "generate": "turbo run generate",
+    "fetch-spec": "pnpm --filter @klariti/api-client fetch-spec",
+    "generate:api-client": "pnpm --filter @klariti/api-client generate:full"
   },
   "devDependencies": {
     "prettier": "^3.7.4",

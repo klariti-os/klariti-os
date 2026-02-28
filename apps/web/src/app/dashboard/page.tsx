@@ -28,7 +28,7 @@ const DashboardPage: NextPage = () => {
             className="mb-2 font-serif text-3xl font-light tracking-tight text-foreground"
             style={{ textWrap: "balance" }}
           >
-            Welcome back{user ? `, ${user.username}` : ""}
+            Welcome back{user ? `, ${user.name}` : ""}
           </h1>
           <p className="max-w-md text-sm text-muted-foreground leading-relaxed">
             Manage your focus challenges and track your digital wellness

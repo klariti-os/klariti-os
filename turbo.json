@@ -18,6 +18,10 @@
       "cache": false,
       "persistent": true
     },
+    "generate": {
+      "inputs": ["openapi.json", "openapi-ts.config.ts"],
+      "outputs": ["src/generated/**"]
+    },
     "drizzle:generate": {
       "cache": false
     },
