@@ -42,22 +42,7 @@ export const ruleTypeEnum = pgEnum("rule_type", [
   "HIGHLIGHT",
 ]);
 
-export const rulesTable = pgTable(
-  "rules",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    profile_id: uuid("profile_id")
-      .notNull()
-      .references(() => profilesTable.id, { onDelete: "cascade" }),
-    rule_type: ruleTypeEnum("rule_type").notNull(),
-    condition: jsonb("condition").$type<Record<string, unknown>>().notNull(), // domain patterns, keywords, time-based
-    action_config: jsonb("action_config").$type<Record<string, unknown>>().notNull(), // what to hide/blur, duration, etc.
-    priority: integer("priority").notNull(),
-    is_enabled: boolean("is_enabled").notNull().default(true),
-    created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  },
-  (table) => [index("rules_profile_id_idx").on(table.profile_id)]
-);
+
 
 export const userPreferencesTable = pgTable("user_preferences", {
   user_id: uuid("user_id")
