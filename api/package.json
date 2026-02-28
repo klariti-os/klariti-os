@@ -1,5 +1,5 @@
 {
-  "name": "@klariti-os/api",
+  "name": "@klariti/api",
   "dependencies": {
     "fastify": "^5.7.2"
   },
