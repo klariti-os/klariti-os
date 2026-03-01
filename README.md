@@ -60,3 +60,12 @@ packages/
   url-classifier/           # URL -> category (ex: YouTube URL -> category)
   youtube-intel/            # YouTube metadata parsing (optional split)
   shared/                   # shared types, schemas, utils
+
+
+## Team members 
+- Ariella: - UI/UX
+- Benjamin - systems
+- Ebuka - full stack engineer
+- Myah - Data 
+- Praveen - AI 
+- ignas - vibes
