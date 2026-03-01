@@ -1,5 +1,7 @@
-import "dotenv/config";
 import { google } from "googleapis";
+import { config } from "dotenv";
+
+config({ path: "../../../.env" });
 
 const youtube = google.youtube({
   version: "v3",
@@ -14,7 +16,6 @@ async function getVideoMetadata(videoId: string) {
 
   const video = response.data.items?.[0];
   if (!video) {
-    // Should probably throw an error here
     return null;
   }
 
@@ -27,19 +28,19 @@ async function getVideoMetadata(videoId: string) {
 }
 
 async function classifyUrl(url: string) {
-  // Regex to extract video ID from YouTube URL (v=<11 characters> followed by more parameters or end of string)
   const videoIdMatch = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})(?:\?|&|$)/);
-  if (!videoIdMatch) {
-    return null;
-  }
+  if (!videoIdMatch) return null;
 
-  // videoIdMatch[1] is the captured video ID
   const videoId = videoIdMatch[1];
   const metadata = await getVideoMetadata(videoId);
-  if (!metadata) {
-    return null;
-  }
+  if (!metadata) return null;
 
   // Call model here to classify the video based on the metadata
-  console.log(classifyUrl("youtube.com"))
+
+  return metadata;
 }
+
+(async () => {
+  const result = await classifyUrl("https://youtu.be/99VNCxlbW1c?si=7KaoMCcs5awP3Z_D");
+  console.log(result);
+})();
