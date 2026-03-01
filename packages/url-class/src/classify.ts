@@ -41,4 +41,5 @@ async function classifyUrl(url: string) {
   }
 
   // Call model here to classify the video based on the metadata
+  console.log(classifyUrl("youtube.com"))
 }
