@@ -1,5 +1,7 @@
-import "dotenv/config";
 import { google } from "googleapis";
+import { config } from "dotenv";
+
+config({ path: "../../../.env" });
 
 const youtube = google.youtube({
   version: "v3",
@@ -40,6 +42,8 @@ async function classifyUrl(url: string) {
     return null;
   }
 
-  // Call model here to classify the video based on the metadata
-  console.log(classifyUrl("youtube.com"))
+
 }
+
+  // Call model here to classify the video based on the metadata
+console.log(classifyUrl("youtube.com"))
