@@ -13,19 +13,51 @@ const youtube = google.youtube({
 });
 
 class YouTubeCategoriesCache {
-  private cache: Record<string, string> = {};
-  private lastUpdated: Date = new Date(0);
-  private cacheDuration: number = 8.64e7; // 1 day in milliseconds
+  private lastUpdated = new Date(0);
+  private cacheDuration = 8.64e7; // 1 day in milliseconds
+  private cache: Record<string, string> = {
+    "1": "Film & Animation",
+    "2": "Autos & Vehicles",
+    "10": "Music",
+    "15": "Pets & Animals",
+    "17": "Sports",
+    "18": "Short Movies",
+    "19": "Travel & Events",
+    "20": "Gaming",
+    "21": "Videoblogging",
+    "22": "People & Blogs",
+    "23": "Comedy",
+    "24": "Entertainment",
+    "25": "News & Politics",
+    "26": "Howto & Style",
+    "27": "Education",
+    "28": "Science & Technology",
+    "29": "Nonprofits & Activism",
+    "30": "Movies",
+    "31": "Anime/Animation",
+    "32": "Action/Adventure",
+    "33": "Classics",
+    "34": "Comedy",
+    "35": "Documentary",
+    "36": "Drama",
+    "37": "Family",
+    "38": "Foreign",
+    "39": "Horror",
+    "40": "Sci-Fi/Fantasy",
+    "41": "Thriller",
+    "42": "Shorts",
+    "43": "Shows",
+    "44": "Trailers",
+  };
 
-  constructor() {
-    this.updateCache();
-  }
+  constructor() {}
 
   /**
    * Checks if the cache is stale and updates it if necessary.
    * This method should be called before accessing the cache to ensure that the data is up to date.
    */
   private async updateCache() {
+    return // we can probably just use the hardcoded values.
     if (Date.now() - this.lastUpdated.getTime() > this.cacheDuration) {
       this.cache = await this.fetchCategories();
       this.lastUpdated = new Date();
@@ -69,6 +101,7 @@ class YouTubeCategoriesCache {
   }
 }
 
+// This should be stored somewhere more persistent and shared across the app.
 const youtubeCategoriesCache = new YouTubeCategoriesCache();
 
 /**
@@ -109,7 +142,7 @@ async function classifyYoutubeVideo(url: string) {
 
   const videoId = videoIdMatch[1];
   const categoryId = (await getVideoMetadata(videoId))?.categoryId;
-  if (!categoryId) return null; // It might be possible not all videos have a category, so we should handle this case
+  if (!categoryId) return null;
 
   return youtubeCategoriesCache?.getCategoryTitle(categoryId);
 }
