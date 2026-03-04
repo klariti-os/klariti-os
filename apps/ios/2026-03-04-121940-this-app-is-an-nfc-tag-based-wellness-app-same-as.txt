@@ -1,0 +1,2692 @@
+
+╭─── Claude Code v2.1.59 ──────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting        │
+│               Welcome back Ignas XV!               │ started                 │
+│                                                    │ Run /init to create a … │
+│                       ▐▛███▜▌                      │ ─────────────────────── │
+│                      ▝▜█████▛▘                     │ Recent activity         │
+│                        ▘▘ ▝▝                       │ No recent activity      │
+│                                                    │                         │
+│   Sonnet 4.6 · Claude Pro · ignasxv@gmail.com's    │                         │
+│   Organization                                     │                         │
+│                   ~/code/klariti                   │                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+❯ this app is an nfc tag based wellness app same as brick app... when you   
+  open the app there should be just be minal setup that alow you to scan an 
+   nfc tag and selecte apps you want to block and use the nfc as a lock and 
+   only you can reuse the nfc to unclock                                    
+
+⏺ Let me look at the current state of the project first.
+
+⏺ Searched for 2 patterns, read 2 files (ctrl+o to expand)
+
+⏺ Good foundation is there. I'll redesign the UI into a clean, minimal
+  onboarding flow + home/locked screens — similar to how Brick works.
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Now I have the full picture. Here's my redesign plan:
+  - Setup flow: Step 1 (NFC register) → Step 2 (pick apps) → Done
+  - Home screen: Minimal, just "Start Focus" button
+  - Locked screen: Full-screen, "tap NFC to unlock" prompt
+  - Clean NFCScanner class at file level
+
+⏺ Write(klariti/ContentView.swift)
+  ⎿  Added 494 lines, removed 294 lines
+        2  //  ContentView.swift
+        3  //  klariti
+        4  //
+        5 -//  Created by ignas Kamugisha on 3/4/26.                     
+        6 -//                                                            
+        5  
+        6  import SwiftUI
+        7  import FamilyControls
+        8  import ManagedSettings
+        9  import CoreNFC
+       10  
+       13 -// NOTE: This is a lightweight scaffold for Klariti's main flo
+          -w.                                                            
+       14 -// It replaces the template list with three primary actions.  
+       15 -// NFC and FamilyControls managers are mocked here so the view
+          - compiles.                                                    
+       11 +// MARK: - NFC Scanner                                        
+       12  
+       17 -struct ContentView: View {                                    
+       18 -    @AppStorage("nfcRegistered") private var nfcRegistered: Bo
+          -ol = false                                                    
+       19 -    @State private var selectedAppsCount: Int = 0             
+       20 -    @AppStorage("isLocked") private var isLocked: Bool = false
+       21 -    @AppStorage("nfcTagPayload") private var nfcTagPayload: St
+          -ring = ""                                                     
+       22 -    @State private var showingAppPicker: Bool = false         
+       13 +private class NFCScanner: NSObject, NFCNDEFReaderSessionDelega
+          +te {                                                          
+       14 +    var onTextPayload: ((String) -> Void)?                    
+       15 +    var onError: ((String) -> Void)?                          
+       16 +    private var session: NFCNDEFReaderSession?                
+       17 +    private var writeToken: String?                           
+       18  
+       24 -    @State private var activitySelection = FamilyActivitySelec
+          -tion()                                                        
+       25 -    @State private var authorizationGranted: Bool = false     
+       26 -    @State private var nfcErrorMessage: String? = nil         
+       27 -    @State private var showNFCErrorAlert: Bool = false        
+       28 -    @State private var nfcAvailable: Bool = false             
+       19 +    func beginWrite(token: String, alert: String) {           
+       20 +        writeToken = token                                    
+       21 +        start(alert: alert)                                   
+       22 +    }                                                         
+       23  
+       30 -    private let settingsStore = ManagedSettingsStore()        
+       31 -    private let nfcScanner = NFCScanner()                     
+       32 -                                                              
+       33 -    private func applyShields() {                             
+       34 -        // Apply shields for selected apps and categories when
+          - locked                                                       
+       35 -        settingsStore.shield.applications = activitySelection.
+          -applicationTokens                                             
+       36 -        settingsStore.shield.applicationCategories = .specific
+          -(activitySelection.categoryTokens)                            
+       24 +    func beginScan(alert: String) {                           
+       25 +        writeToken = nil                                      
+       26 +        start(alert: alert)                                   
+       27      }
+       28  
+       39 -    private func clearShields() {                             
+       40 -        settingsStore.shield.applications = nil               
+       41 -        settingsStore.shield.applicationCategories = nil      
+       29 +    private func start(alert: String) {                       
+       30 +        guard NFCNDEFReaderSession.readingAvailable else {    
+       31 +            onError?("NFC is not available on this device.")  
+       32 +            return                                            
+       33 +        }                                                     
+       34 +        session = NFCNDEFReaderSession(delegate: self, queue: 
+          +nil, invalidateAfterFirstRead: true)                          
+       35 +        session?.alertMessage = alert                         
+       36 +        session?.begin()                                      
+       37      }
+       38  
+       44 -    private func refreshNFCAvailability() {                   
+       45 -        #if targetEnvironment(simulator)                      
+       46 -        nfcAvailable = false                                  
+       47 -        #else                                                 
+       48 -        nfcAvailable = NFCNDEFReaderSession.readingAvailable  
+       49 -        #endif                                                
+       50 -        print("[Klariti] NFC readingAvailable=\(nfcAvailable)"
+          -)                                                             
+       39 +    func readerSession(_ session: NFCNDEFReaderSession, didInv
+          +alidateWithError error: Error) {                              
+       40 +        let nsError = error as NSError                        
+       41 +        if nsError.code != 200 { // 200 = user cancelled      
+       42 +            DispatchQueue.main.async { self.onError?(error.loc
+          +alizedDescription) }                                          
+       43 +        }                                                     
+       44      }
+       45  
+       53 -    private class NFCScanner: NSObject, NFCNDEFReaderSessionDe
+          -legate {                                                      
+       54 -        var onTextPayload: ((String) -> Void)?                
+       55 -        private var session: NFCNDEFReaderSession?            
+       56 -                                                              
+       57 -        private var writeToken: String? = nil                 
+       58 -        func beginWrite(token: String, alert: String, onUnavai
+          -lable: (() -> Void)? = nil) {                                 
+       59 -            writeToken = token                                
+       60 -            beginScan(alert: alert, onUnavailable: onUnavailab
+          -le)                                                           
+       46 +    func readerSession(_ session: NFCNDEFReaderSession, didDet
+          +ect tags: [NFCNDEFTag]) {                                     
+       47 +        guard let tag = tags.first else { return }            
+       48 +        session.connect(to: tag) { [weak self] error in       
+       49 +            guard let self else { return }                    
+       50 +            if let error {                                    
+       51 +                session.invalidate(errorMessage: error.localiz
+          +edDescription)                                                
+       52 +                DispatchQueue.main.async { self.onError?(error
+          +.localizedDescription) }                                      
+       53 +                return                                        
+       54 +            }                                                 
+       55 +            tag.queryNDEFStatus { _, _, error in              
+       56 +                if let error {                                
+       57 +                    session.invalidate(errorMessage: error.loc
+          +alizedDescription)                                            
+       58 +                    DispatchQueue.main.async { self.onError?(e
+          +rror.localizedDescription) }                                  
+       59 +                    return                                    
+       60 +                }                                             
+       61 +                if let token = self.writeToken {              
+       62 +                    self.write(token: token, to: tag, session:
+          + session)                                                     
+       63 +                } else {                                      
+       64 +                    self.read(from: tag, session: session)    
+       65 +                }                                             
+       66 +            }                                                 
+       67          }
+       68 +    }                                                         
+       69  
+       63 -        func beginScan(alert: String, onUnavailable: (() -> Vo
+          -id)? = nil) {                                                 
+       64 -            guard NFCNDEFReaderSession.readingAvailable else {
+       65 -                onUnavailable?()                              
+       70 +    private func write(token: String, to tag: NFCNDEFTag, sess
+          +ion: NFCNDEFReaderSession) {                                  
+       71 +        let langBytes = [UInt8]("en".utf8)                    
+       72 +        let textBytes = [UInt8](token.utf8)                   
+       73 +        var payload = Data()                                  
+       74 +        payload.append(UInt8(langBytes.count))                
+       75 +        payload.append(contentsOf: langBytes)                 
+       76 +        payload.append(contentsOf: textBytes)                 
+       77 +        let record = NFCNDEFPayload(                          
+       78 +            format: .nfcWellKnown,                            
+       79 +            type: "T".data(using: .utf8)!,                    
+       80 +            identifier: Data(),                               
+       81 +            payload: payload                                  
+       82 +        )                                                     
+       83 +        tag.writeNDEF(NFCNDEFMessage(records: [record])) { [we
+          +ak self] error in                                             
+       84 +            if let error {                                    
+       85 +                session.invalidate(errorMessage: error.localiz
+          +edDescription)                                                
+       86 +                DispatchQueue.main.async { self?.onError?(erro
+          +r.localizedDescription) }                                     
+       87                  return
+       88              }
+       68 -            session = NFCNDEFReaderSession(delegate: self, que
+          -ue: nil, invalidateAfterFirstRead: true)                      
+       69 -            session?.alertMessage = alert                     
+       70 -            session?.begin()                                  
+       89 +            session.alertMessage = "Focus key registered!"    
+       90 +            session.invalidate()                              
+       91 +            DispatchQueue.main.async { self?.onTextPayload?(to
+          +ken) }                                                        
+       92          }
+       93 +    }                                                         
+       94  
+       73 -        func readerSession(_ session: NFCNDEFReaderSession, di
+          -dInvalidateWithError error: Error) {                          
+       95 +    private func read(from tag: NFCNDEFTag, session: NFCNDEFRe
+          +aderSession) {                                                
+       96 +        tag.readNDEF { [weak self] message, error in          
+       97 +            guard let self else { return }                    
+       98 +            if let error {                                    
+       99 +                session.invalidate(errorMessage: error.localiz
+          +edDescription)                                                
+      100 +                DispatchQueue.main.async { self.onError?(error
+          +.localizedDescription) }                                      
+      101 +                return                                        
+      102 +            }                                                 
+      103 +            guard let record = message?.records.first else {  
+      104 +                session.invalidate(errorMessage: "No data foun
+          +d on tag.")                                                   
+      105 +                return                                        
+      106 +            }                                                 
+      107 +            session.invalidate()                              
+      108 +            let text = self.decodeText(record)                
+      109              DispatchQueue.main.async {
+       75 -                NotificationCenter.default.post(name: .nfcSess
+          -ionError, object: error)                                      
+      110 +                if let text { self.onTextPayload?(text) }     
+      111 +                else { self.onError?("Could not read tag data.
+          +") }                                                          
+      112              }
+      113          }
+       78 -                                                              
+       79 -        func readerSession(_ session: NFCNDEFReaderSession, di
+          -dDetect tags: [NFCNDEFTag]) {                                 
+       80 -            guard let tag = tags.first else { return }        
+       81 -            session.connect(to: tag) { error in               
+       82 -                if let error {                                
+       83 -                    session.invalidate(errorMessage: error.loc
+          -alizedDescription)                                            
+       84 -                    DispatchQueue.main.async {                
+       85 -                        NotificationCenter.default.post(name: 
+          -.nfcSessionError, object: error)                              
+       86 -                    }                                         
+       87 -                    return                                    
+      114 +    }                                                         
+      115 +                                                              
+      116 +    private func decodeText(_ record: NFCNDEFPayload) -> Strin
+          +g? {                                                          
+      117 +        if record.typeNameFormat == .nfcWellKnown,            
+      118 +           let type = String(data: record.type, encoding: .utf
+          +8), type == "T" {                                             
+      119 +            let p = record.payload                            
+      120 +            if let status = p.first {                         
+      121 +                let langLen = Int(status & 0x3F)              
+      122 +                if p.count > 1 + langLen {                    
+      123 +                    return String(data: p[p.index(p.startIndex
+          +, offsetBy: 1 + langLen)...], encoding: .utf8)                
+      124                  }
+       89 -                tag.queryNDEFStatus { status, capacity, error 
+          -in                                                            
+       90 -                    if let error {                            
+       91 -                        session.invalidate(errorMessage: error
+          -.localizedDescription)                                        
+       92 -                        DispatchQueue.main.async {            
+       93 -                            NotificationCenter.default.post(na
+          -me: .nfcSessionError, object: error)                          
+       94 -                        }                                     
+       95 -                        return                                
+       96 -                    }                                         
+       97 -                    // Prepare message: writeToken as a well-k
+          -nown Text record (en-US)                                      
+       98 -                    guard let token = self.writeToken else {  
+       99 -                        session.invalidate(errorMessage: "No t
+          -oken to write.")                                              
+      100 -                        return                                
+      101 -                    }                                         
+      102 -                    let lang = "en"                           
+      103 -                    let langBytes = [UInt8](lang.utf8)        
+      104 -                    let textBytes = [UInt8](token.utf8)       
+      105 -                    var payload = Data()                      
+      106 -                    payload.append(UInt8(langBytes.count))    
+      107 -                    payload.append(contentsOf: langBytes)     
+      108 -                    payload.append(contentsOf: textBytes)     
+      109 -                    let record = NFCNDEFPayload(format: .nfcWe
+          -llKnown, type: "T".data(using: .utf8)!, identifier: Data(), pa
+          -yload: payload)                                               
+      110 -                    let message = NFCNDEFMessage(records: [rec
+          -ord])                                                         
+      111 -                    switch status {                           
+      112 -                    case .readWrite:                          
+      113 -                        tag.writeNDEF(message) { error in     
+      114 -                            if let error {                    
+      115 -                                session.invalidate(errorMessag
+          -e: error.localizedDescription)                                
+      116 -                                DispatchQueue.main.async {    
+      117 -                                    NotificationCenter.default
+          -.post(name: .nfcSessionError, object: error)                  
+      118 -                                }                             
+      119 -                                return                        
+      120 -                            }                                 
+      121 -                            session.alertMessage = "Tag writte
+          -n successfully."                                              
+      122 -                            session.invalidate()              
+      123 -                            // Also invoke onTextPayload so th
+          -e caller can store the token                                  
+      124 -                            DispatchQueue.main.async {        
+      125 -                                self.onTextPayload?(token)    
+      126 -                            }                                 
+      127 -                        }                                     
+      128 -                    case .readOnly:                           
+      129 -                        session.invalidate(errorMessage: "Tag 
+          -is read-only.")                                               
+      130 -                    case .notSupported:                       
+      131 -                        session.invalidate(errorMessage: "Tag 
+          -not NDEF compatible.")                                        
+      132 -                    @unknown default:                         
+      133 -                        session.invalidate(errorMessage: "Unkn
+          -own tag status.")                                             
+      134 -                    }                                         
+      135 -                }                                             
+      125              }
+      126          }
+      127 +        return String(data: record.payload, encoding: .utf8)  
+      128 +    }                                                         
+      129  
+      139 -        func readerSession(_ session: NFCNDEFReaderSession, di
+          -dDetectNDEFs messages: [NFCNDEFMessage]) {                    
+      140 -            guard let record = messages.first?.records.first e
+          -lse { return }                                                
+      141 -            // Attempt to decode well-known text              
+      142 -            var text: String?                                 
+      143 -            if record.typeNameFormat == .nfcWellKnown, let typ
+          -e = String(data: record.type, encoding: .utf8), type == "T" { 
+      144 -                // Text record payload parsing: status byte + 
+          -language code + text                                          
+      145 -                let payload = record.payload                  
+      146 -                if let status = payload.first {               
+      147 -                    let langLen = Int(status & 0x3F)          
+      148 -                    if payload.count > 1 + langLen {          
+      149 -                        let start = payload.index(payload.star
+          -tIndex, offsetBy: 1 + langLen)                                
+      150 -                        let textData = payload[start...]      
+      151 -                        text = String(data: textData, encoding
+          -: .utf8)                                                      
+      152 -                    }                                         
+      153 -                }                                             
+      130 +    func readerSession(_ session: NFCNDEFReaderSession, didDet
+          +ectNDEFs messages: [NFCNDEFMessage]) {}                       
+      131 +}                                                             
+      132 +                                                              
+      133 +// MARK: - Main View                                          
+      134 +                                                              
+      135 +struct ContentView: View {                                    
+      136 +    @AppStorage("setupComplete") private var setupComplete = f
+          +alse                                                          
+      137 +    @AppStorage("nfcRegistered") private var nfcRegistered = f
+          +alse                                                          
+      138 +    @AppStorage("nfcTagPayload") private var nfcTagPayload = "
+          +"                                                             
+      139 +    @AppStorage("isLocked") private var isLocked = false      
+      140 +    @AppStorage("selectedAppsCount") private var selectedAppsC
+          +ount = 0                                                      
+      141 +    @AppStorage("setupStep") private var setupStep = 0        
+      142 +                                                              
+      143 +    @State private var activitySelection = FamilyActivitySelec
+          +tion()                                                        
+      144 +    @State private var authorizationGranted = false           
+      145 +    @State private var showingAppPicker = false               
+      146 +    @State private var isScanning = false                     
+      147 +    @State private var nfcErrorMessage: String?               
+      148 +    @State private var showNFCErrorAlert = false              
+      149 +                                                              
+      150 +    private let settingsStore = ManagedSettingsStore()        
+      151 +    private let nfcScanner = NFCScanner()                     
+      152 +                                                              
+      153 +    private var nfcAvailable: Bool {                          
+      154 +        #if targetEnvironment(simulator)                      
+      155 +        return false                                          
+      156 +        #else                                                 
+      157 +        return NFCNDEFReaderSession.readingAvailable          
+      158 +        #endif                                                
+      159 +    }                                                         
+      160 +                                                              
+      161 +    var body: some View {                                     
+      162 +        Group {                                               
+      163 +            if isLocked {                                     
+      164 +                lockedScreen                                  
+      165 +            } else if !setupComplete {                        
+      166 +                setupScreen                                   
+      167              } else {
+      155 -                text = String(data: record.payload, encoding: 
+          -.utf8)                                                        
+      168 +                homeScreen                                    
+      169              }
+      157 -            if let text {                                     
+      158 -                DispatchQueue.main.async { self.onTextPayload?
+          -(text) }                                                      
+      159 -            }                                                 
+      170          }
+      171 +        .animation(.spring(duration: 0.4), value: isLocked)   
+      172 +        .animation(.spring(duration: 0.4), value: setupComplet
+          +e)                                                            
+      173 +        .onAppear {                                           
+      174 +            loadSavedSelection()                              
+      175 +            requestAuthorization()                            
+      176 +            if isLocked { applyShields() }                    
+      177 +        }                                                     
+      178 +        .alert("NFC Error", isPresented: $showNFCErrorAlert, p
+          +resenting: nfcErrorMessage) { _ in                            
+      179 +            Button("OK", role: .cancel) {}                    
+      180 +        } message: { Text($0) }                               
+      181 +        .sheet(isPresented: $showingAppPicker) {              
+      182 +            appPickerSheet                                    
+      183 +        }                                                     
+      184      }
+      185  
+      163 -    var body: some View {                                     
+      164 -        NavigationStack {                                     
+      165 -            List {                                            
+      166 -                Section("NFC Tag") {                          
+      167 -                    HStack {                                  
+      168 -                        Image(systemName: nfcRegistered ? "che
+          -ckmark.circle.fill" : "tag")                                  
+      169 -                            .foregroundStyle(nfcRegistered ? .
+          -green : .blue)                                                
+      170 -                        VStack(alignment: .leading) {         
+      171 -                            Text(nfcRegistered ? "NFC tag regi
+          -stered" : "Register NFC tag")                                 
+      172 -                                .font(.headline)              
+      173 -                            Text(nfcRegistered ? "Tap to re-sc
+          -an and re-register" : "Scan an NFC tag to use as your unlock k
+          -ey")                                                          
+      174 -                                .font(.subheadline)           
+      175 -                                .foregroundStyle(.secondary)  
+      176 -                            if !nfcAvailable {                
+      177 -                                Text("NFC not available. Ensur
+          -e capability and Info.plist are configured, and use a supporte
+          -d iPhone.")                                                   
+      178 -                                    .font(.footnote)          
+      179 -                                    .foregroundStyle(.orange) 
+      180 -                            }                                 
+      181 -                        }                                     
+      182 -                        Spacer()                              
+      183 -                        Button(nfcRegistered ? "Re-register" :
+          - "Register") {                                                
+      184 -                            let token = UUID().uuidString     
+      185 -                            nfcScanner.onTextPayload = { paylo
+          -ad in                                                         
+      186 -                                nfcTagPayload = payload       
+      187 -                                nfcRegistered = true          
+      188 -                            }                                 
+      189 -                            nfcScanner.beginWrite(token: token
+          -, alert: "Hold your iPhone near the NFC tag to register.") {  
+      190 -                                nfcErrorMessage = "NFC is not 
+          -available on this device. Please use a physical iPhone with NF
+          -C."                                                           
+      191 -                                showNFCErrorAlert = true      
+      192 -                            }                                 
+      193 -                        }                                     
+      194 -                        .buttonStyle(.borderedProminent)      
+      186 +    // MARK: - Locked Screen                                  
+      187 +                                                              
+      188 +    private var lockedScreen: some View {                     
+      189 +        ZStack {                                              
+      190 +            Color(.systemBackground).ignoresSafeArea()        
+      191 +            VStack(spacing: 0) {                              
+      192 +                Spacer()                                      
+      193 +                VStack(spacing: 20) {                         
+      194 +                    Image(systemName: "lock.fill")            
+      195 +                        .font(.system(size: 72, weight: .semib
+          +old))                                                         
+      196 +                        .foregroundStyle(.primary)            
+      197 +                                                              
+      198 +                    VStack(spacing: 6) {                      
+      199 +                        Text("Focus Mode")                    
+      200 +                            .font(.system(size: 34, weight: .b
+          +old))                                                         
+      201 +                        Text("Tap your NFC tag to unlock")    
+      202 +                            .font(.subheadline)               
+      203 +                            .foregroundStyle(.secondary)      
+      204                      }
+      196 -                }                                             
+      205  
+      198 -                Section("Apps to Block") {                    
+      199 -                    HStack {                                  
+      200 -                        Image(systemName: "app.badge.checkmark
+          -")                                                            
+      201 -                            .foregroundStyle(.blue)           
+      202 -                        VStack(alignment: .leading) {         
+      203 -                            Text("Select apps to block")      
+      204 -                                .font(.headline)              
+      205 -                            Text("Currently selected: \(select
+          -edAppsCount)")                                                
+      206 -                                .font(.subheadline)           
+      207 -                                .foregroundStyle(.secondary)  
+      208 -                            if !authorizationGranted {        
+      209 -                                Text("Authorization required t
+          -o pick apps")                                                 
+      210 -                                    .font(.footnote)          
+      211 -                                    .foregroundStyle(.red)    
+      212 -                            }                                 
+      206 +                    if selectedAppsCount > 0 {                
+      207 +                        Text("\(selectedAppsCount) app\(select
+          +edAppsCount == 1 ? "" : "s") blocked")                        
+      208 +                            .font(.footnote)                  
+      209 +                            .foregroundStyle(.tertiary)       
+      210 +                            .padding(.top, 4)                 
+      211 +                    }                                         
+      212 +                }                                             
+      213 +                Spacer()                                      
+      214 +                Button(action: scanToUnlock) {                
+      215 +                    HStack(spacing: 10) {                     
+      216 +                        if isScanning {                       
+      217 +                            ProgressView().tint(.background)  
+      218 +                        } else {                              
+      219 +                            Image(systemName: "wave.3.right") 
+      220                          }
+      214 -                        Spacer()                              
+      215 -                        Button("Choose") {                    
+      216 -                            // Placeholder for FamilyActivityP
+          -icker presentation                                            
+      217 -                            showingAppPicker = true           
+      218 -                        }                                     
+      219 -                        .buttonStyle(.bordered)               
+      220 -                        .disabled(!authorizationGranted)      
+      221 +                        Text(isScanning ? "Scanning…" : "Tap t
+          +o Unlock")                                                    
+      222 +                            .font(.headline)                  
+      223                      }
+      224 +                    .frame(maxWidth: .infinity)               
+      225 +                    .padding(.vertical, 16)                   
+      226 +                    .background(.primary)                     
+      227 +                    .foregroundStyle(.background)             
+      228 +                    .clipShape(RoundedRectangle(cornerRadius: 
+          +16))                                                          
+      229                  }
+      230 +                .disabled(isScanning)                         
+      231 +                .padding(.horizontal, 32)                     
+      232 +                .padding(.bottom, 52)                         
+      233 +            }                                                 
+      234 +        }                                                     
+      235 +    }                                                         
+      236  
+      224 -                if !authorizationGranted {                    
+      225 -                    Section {                                 
+      226 -                        Label("Family Controls authorization n
+          -ot granted.", systemImage: "exclamationmark.triangle")        
+      227 -                            .foregroundStyle(.orange)         
+      228 -                        Text("Go to Settings > Screen Time and
+          - approve access, then return to Klariti.")                    
+      229 -                            .font(.footnote)                  
+      237 +    // MARK: - Home Screen                                    
+      238 +                                                              
+      239 +    private var homeScreen: some View {                       
+      240 +        NavigationStack {                                     
+      241 +            VStack(spacing: 0) {                              
+      242 +                Spacer()                                      
+      243 +                VStack(spacing: 14) {                         
+      244 +                    Image(systemName: "lock.open.fill")       
+      245 +                        .font(.system(size: 64, weight: .semib
+          +old))                                                         
+      246 +                        .foregroundStyle(.secondary)          
+      247 +                                                              
+      248 +                    Text("Ready to focus")                    
+      249 +                        .font(.system(size: 34, weight: .bold)
+          +)                                                             
+      250 +                                                              
+      251 +                    if selectedAppsCount > 0 {                
+      252 +                        Text("\(selectedAppsCount) app\(select
+          +edAppsCount == 1 ? "" : "s") will be blocked")                
+      253 +                            .font(.subheadline)               
+      254                              .foregroundStyle(.secondary)
+      255 +                    } else {                                  
+      256 +                        Text("No apps selected yet")          
+      257 +                            .font(.subheadline)               
+      258 +                            .foregroundStyle(.secondary)      
+      259                      }
+      260                  }
+      261 +                Spacer()                                      
+      262 +                VStack(spacing: 14) {                         
+      263 +                    Button {                                  
+      264 +                        isLocked = true                       
+      265 +                        applyShields()                        
+      266 +                    } label: {                                
+      267 +                        Text("Start Focus")                   
+      268 +                            .font(.headline)                  
+      269 +                            .frame(maxWidth: .infinity)       
+      270 +                            .padding(.vertical, 16)           
+      271 +                            .background(selectedAppsCount > 0 
+          +? .primary : Color(.systemFill))                              
+      272 +                            .foregroundStyle(selectedAppsCount
+          + > 0 ? .background : .secondary)                              
+      273 +                            .clipShape(RoundedRectangle(corner
+          +Radius: 16))                                                  
+      274 +                    }                                         
+      275 +                    .disabled(selectedAppsCount == 0)         
+      276  
+      234 -                Section("Session") {                          
+      235 -                    HStack {                                  
+      236 -                        Image(systemName: isLocked ? "lock.fil
+          -l" : "lock.open")                                             
+      237 -                            .foregroundStyle(isLocked ? .red :
+          - .green)                                                      
+      238 -                        VStack(alignment: .leading) {         
+      239 -                            Text(isLocked ? "Locked" : "Unlock
+          -ed")                                                          
+      240 -                                .font(.headline)              
+      241 -                            Text(isLocked ? "Apps are currentl
+          -y blocked" : "Apps are currently allowed")                    
+      242 -                                .font(.subheadline)           
+      243 -                                .foregroundStyle(.secondary)  
+      244 -                        }                                     
+      245 -                        Spacer()                              
+      246 -                        Button(isLocked ? "Unlock" : "Lock") {
+      247 -                            if isLocked {                     
+      248 -                                // Scan and match payload to u
+          -nlock                                                         
+      249 -                                nfcScanner.onTextPayload = { p
+          -ayload in                                                     
+      250 -                                    if !nfcTagPayload.isEmpty 
+          -&& payload == nfcTagPayload {                                 
+      251 -                                        withAnimation { isLock
+          -ed = false }                                                  
+      252 -                                        clearShields()        
+      253 -                                    }                         
+      254 -                                }                             
+      255 -                                nfcScanner.beginScan(alert: "H
+          -old near your registered NFC tag to unlock.") {               
+      256 -                                    nfcErrorMessage = "NFC is 
+          -not available on this device. Please use a physical iPhone wit
+          -h NFC."                                                       
+      257 -                                    showNFCErrorAlert = true  
+      258 -                                }                             
+      259 -                            } else {                          
+      260 -                                // To lock, ensure a tag is re
+          -gistered first                                                
+      261 -                                if nfcRegistered {            
+      262 -                                    withAnimation { isLocked =
+          - true }                                                       
+      263 -                                    applyShields()            
+      264 -                                } else {                      
+      265 -                                    let token = UUID().uuidStr
+          -ing                                                           
+      266 -                                    nfcScanner.onTextPayload =
+          - { payload in                                                 
+      267 -                                        nfcTagPayload = payloa
+          -d                                                             
+      268 -                                        nfcRegistered = true  
+      269 -                                    }                         
+      270 -                                    nfcScanner.beginWrite(toke
+          -n: token, alert: "Hold your iPhone near the NFC tag to registe
+          -r.") {                                                        
+      271 -                                        nfcErrorMessage = "NFC
+          - is not available on this device. Please use a physical iPhone
+          - with NFC."                                                   
+      272 -                                        showNFCErrorAlert = tr
+          -ue                                                            
+      273 -                                    }                         
+      274 -                                }                             
+      275 -                            }                                 
+      276 -                        }                                     
+      277 -                        .buttonStyle(.borderedProminent)      
+      278 -                        .tint(isLocked ? .green : .red)       
+      277 +                    Button(selectedAppsCount > 0 ? "Edit block
+          +ed apps" : "Choose apps to block") {                          
+      278 +                        showingAppPicker = true               
+      279                      }
+      280 +                    .font(.subheadline)                       
+      281 +                    .foregroundStyle(.secondary)              
+      282                  }
+      283 +                .padding(.horizontal, 32)                     
+      284 +                .padding(.bottom, 52)                         
+      285              }
+      286              .navigationTitle("Klariti")
+      283 -            .onReceive(NotificationCenter.default.publisher(fo
+          -r: .nfcSessionError)) { output in                             
+      284 -                if let error = output.object as? Error {      
+      285 -                    nfcErrorMessage = (error as NSError).local
+          -izedDescription                                               
+      286 -                } else {                                      
+      287 -                    nfcErrorMessage = "NFC session failed."   
+      287 +            .navigationBarTitleDisplayMode(.inline)           
+      288 +            .toolbar {                                        
+      289 +                ToolbarItem(placement: .topBarTrailing) {     
+      290 +                    Menu {                                    
+      291 +                        Button("Re-register NFC Tag", action: 
+          +reRegisterNFC)                                                
+      292 +                        Divider()                             
+      293 +                        Button("Reset Setup", role: .destructi
+          +ve, action: resetSetup)                                       
+      294 +                    } label: {                                
+      295 +                        Image(systemName: "ellipsis.circle")  
+      296 +                    }                                         
+      297                  }
+      289 -                showNFCErrorAlert = true                      
+      298              }
+      291 -            .alert("NFC Error", isPresented: $showNFCErrorAler
+          -t, presenting: nfcErrorMessage) { _ in                        
+      292 -                Button("OK", role: .cancel) { }               
+      293 -            } message: { message in                           
+      294 -                Text(message)                                 
+      295 -            }                                                 
+      296 -            .sheet(isPresented: $showingAppPicker) {          
+      297 -                NavigationStack {                             
+      298 -                    VStack {                                  
+      299 -                        FamilyActivityPicker(selection: $activ
+          -itySelection)                                                 
+      300 -                            .padding(.top)                    
+      301 -                        Spacer()                              
+      302 -                    }                                         
+      303 -                    .navigationTitle("Choose Apps")           
+      304 -                    .toolbar {                                
+      305 -                        ToolbarItem(placement: .topBarTrailing
+          -) {                                                           
+      306 -                            Button("Done") { showingAppPicker 
+          -= false }                                                     
+      307 -                        }                                     
+      308 -                    }                                         
+      299 +        }                                                     
+      300 +    }                                                         
+      301 +                                                              
+      302 +    // MARK: - Setup Screen                                   
+      303 +                                                              
+      304 +    @ViewBuilder                                              
+      305 +    private var setupScreen: some View {                      
+      306 +        if setupStep == 0 {                                   
+      307 +            nfcSetupStep                                      
+      308 +        } else {                                              
+      309 +            appSetupStep                                      
+      310 +        }                                                     
+      311 +    }                                                         
+      312 +                                                              
+      313 +    private var nfcSetupStep: some View {                     
+      314 +        VStack(spacing: 0) {                                  
+      315 +            Spacer()                                          
+      316 +            VStack(spacing: 24) {                             
+      317 +                Image(systemName: "wave.3.right.circle.fill") 
+      318 +                    .font(.system(size: 80))                  
+      319 +                    .foregroundStyle(.blue)                   
+      320 +                    .symbolRenderingMode(.hierarchical)       
+      321 +                                                              
+      322 +                VStack(spacing: 10) {                         
+      323 +                    Text("Register your\nfocus key")          
+      324 +                        .font(.system(size: 34, weight: .bold)
+          +)                                                             
+      325 +                        .multilineTextAlignment(.center)      
+      326 +                    Text("Scan an NFC tag. You'll need to tap 
+          +it\nevery time you want to end a session.")                   
+      327 +                        .font(.subheadline)                   
+      328 +                        .foregroundStyle(.secondary)          
+      329 +                        .multilineTextAlignment(.center)      
+      330                  }
+      310 -                .onDisappear {                                
+      311 -                    // Update count when picker closes        
+      312 -                    selectedAppsCount = activitySelection.appl
+          -icationTokens.count                                           
+      313 -                    if isLocked { applyShields() }            
+      331 +                                                              
+      332 +                if nfcRegistered {                            
+      333 +                    Label("Tag registered", systemImage: "chec
+          +kmark.circle.fill")                                           
+      334 +                        .foregroundStyle(.green)              
+      335 +                        .font(.subheadline.bold())            
+      336                  }
+      337 +                                                              
+      338 +                if !nfcAvailable {                            
+      339 +                    Label("NFC not available on this device", 
+          +systemImage: "exclamationmark.triangle.fill")                 
+      340 +                        .font(.footnote)                      
+      341 +                        .foregroundStyle(.orange)             
+      342 +                }                                             
+      343              }
+      316 -            .toolbar {                                        
+      317 -                ToolbarItem(placement: .topBarTrailing) {     
+      318 -                    Menu("More") {                            
+      319 -                        Button("Reset Setup") {               
+      320 -                            withAnimation {                   
+      321 -                                nfcRegistered = false         
+      322 -                                selectedAppsCount = 0         
+      323 -                                isLocked = false              
+      324 -                                clearShields()                
+      325 -                            }                                 
+      344 +            .padding(.horizontal, 32)                         
+      345 +            Spacer()                                          
+      346 +            VStack(spacing: 12) {                             
+      347 +                Button(action: registerNFC) {                 
+      348 +                    HStack(spacing: 10) {                     
+      349 +                        if isScanning {                       
+      350 +                            ProgressView().tint(nfcRegistered 
+          +? .primary : .background)                                     
+      351 +                        } else {                              
+      352 +                            Image(systemName: nfcRegistered ? 
+          +"arrow.clockwise" : "wave.3.right")                           
+      353                          }
+      354 +                        Text(nfcRegistered ? "Re-scan Tag" : (
+          +isScanning ? "Scanning…" : "Scan NFC Tag"))                   
+      355 +                            .font(.headline)                  
+      356                      }
+      357 +                    .frame(maxWidth: .infinity)               
+      358 +                    .padding(.vertical, 16)                   
+      359 +                    .background(nfcRegistered ? Color(.systemF
+          +ill) : .primary)                                              
+      360 +                    .foregroundStyle(nfcRegistered ? .primary 
+          +: .background)                                                
+      361 +                    .clipShape(RoundedRectangle(cornerRadius: 
+          +16))                                                          
+      362                  }
+      363 +                .disabled(isScanning || !nfcAvailable)        
+      364 +                                                              
+      365 +                if nfcRegistered {                            
+      366 +                    Button("Continue") {                      
+      367 +                        setupStep = 1                         
+      368 +                    }                                         
+      369 +                    .font(.headline)                          
+      370 +                    .frame(maxWidth: .infinity)               
+      371 +                    .padding(.vertical, 16)                   
+      372 +                    .background(.primary)                     
+      373 +                    .foregroundStyle(.background)             
+      374 +                    .clipShape(RoundedRectangle(cornerRadius: 
+          +16))                                                          
+      375 +                }                                             
+      376              }
+      377 +            .padding(.horizontal, 32)                         
+      378 +            .padding(.bottom, 52)                             
+      379          }
+      331 -        .onAppear {                                           
+      332 -            Task { @MainActor in                              
+      333 -                // Log NFC availability at startup            
+      334 -                refreshNFCAvailability()                      
+      380 +    }                                                         
+      381  
+      336 -                func updateStatus() {                         
+      337 -                    authorizationGranted = (AuthorizationCente
+          -r.shared.authorizationStatus == .approved)                    
+      382 +    private var appSetupStep: some View {                     
+      383 +        VStack(spacing: 0) {                                  
+      384 +            Spacer()                                          
+      385 +            VStack(spacing: 24) {                             
+      386 +                Image(systemName: "apps.iphone.badge.plus")   
+      387 +                    .font(.system(size: 80))                  
+      388 +                    .foregroundStyle(.orange)                 
+      389 +                    .symbolRenderingMode(.hierarchical)       
+      390 +                                                              
+      391 +                VStack(spacing: 10) {                         
+      392 +                    Text("Choose apps\nto block")             
+      393 +                        .font(.system(size: 34, weight: .bold)
+          +)                                                             
+      394 +                        .multilineTextAlignment(.center)      
+      395 +                    Text("These apps will be unavailable\nduri
+          +ng every focus session.")                                     
+      396 +                        .font(.subheadline)                   
+      397 +                        .foregroundStyle(.secondary)          
+      398 +                        .multilineTextAlignment(.center)      
+      399                  }
+      400  
+      340 -                // Reflect current status immediately         
+      341 -                updateStatus()                                
+      401 +                if selectedAppsCount > 0 {                    
+      402 +                    Label("\(selectedAppsCount) app\(selectedA
+          +ppsCount == 1 ? "" : "s") selected", systemImage: "checkmark.c
+          +ircle.fill")                                                  
+      403 +                        .foregroundStyle(.green)              
+      404 +                        .font(.subheadline.bold())            
+      405 +                }                                             
+      406  
+      343 -                // Only request if not already approved       
+      344 -                if AuthorizationCenter.shared.authorizationSta
+          -tus != .approved {                                            
+      345 -                    do {                                      
+      346 -                        try await AuthorizationCenter.shared.r
+          -equestAuthorization(for: .individual)                         
+      347 -                    } catch {                                 
+      348 -                        // Ignore error; we'll reflect status 
+          -below                                                         
+      407 +                if !authorizationGranted {                    
+      408 +                    Label("Screen Time permission required", s
+          +ystemImage: "exclamationmark.triangle.fill")                  
+      409 +                        .font(.footnote)                      
+      410 +                        .foregroundStyle(.orange)             
+      411 +                }                                             
+      412 +            }                                                 
+      413 +            .padding(.horizontal, 32)                         
+      414 +            Spacer()                                          
+      415 +            VStack(spacing: 12) {                             
+      416 +                Button {                                      
+      417 +                    showingAppPicker = true                   
+      418 +                } label: {                                    
+      419 +                    HStack(spacing: 10) {                     
+      420 +                        Image(systemName: "app.badge.checkmark
+          +")                                                            
+      421 +                        Text(selectedAppsCount > 0 ? "Edit sel
+          +ection" : "Choose Apps")                                      
+      422 +                            .font(.headline)                  
+      423                      }
+      350 -                    updateStatus()                            
+      424 +                    .frame(maxWidth: .infinity)               
+      425 +                    .padding(.vertical, 16)                   
+      426 +                    .background(selectedAppsCount > 0 ? Color(
+          +.systemFill) : .primary)                                      
+      427 +                    .foregroundStyle(selectedAppsCount > 0 ? .
+          +primary : .background)                                        
+      428 +                    .clipShape(RoundedRectangle(cornerRadius: 
+          +16))                                                          
+      429 +                }                                             
+      430 +                .disabled(!authorizationGranted)              
+      431  
+      352 -                    // Optional: retry once after a short dela
+          -y                                                             
+      353 -                    if !authorizationGranted {                
+      354 -                        try? await Task.sleep(nanoseconds: 1_0
+          -00_000_000)                                                   
+      355 -                        updateStatus()                        
+      432 +                if selectedAppsCount > 0 {                    
+      433 +                    Button("Done — Start using Klariti") {    
+      434 +                        setupComplete = true                  
+      435                      }
+      436 +                    .font(.headline)                          
+      437 +                    .frame(maxWidth: .infinity)               
+      438 +                    .padding(.vertical, 16)                   
+      439 +                    .background(.primary)                     
+      440 +                    .foregroundStyle(.background)             
+      441 +                    .clipShape(RoundedRectangle(cornerRadius: 
+          +16))                                                          
+      442                  }
+      443 +                                                              
+      444 +                Button("Back") {                              
+      445 +                    setupStep = 0                             
+      446 +                }                                             
+      447 +                .font(.subheadline)                           
+      448 +                .foregroundStyle(.secondary)                  
+      449              }
+      450 +            .padding(.horizontal, 32)                         
+      451 +            .padding(.bottom, 52)                             
+      452          }
+      360 -        .onReceive(NotificationCenter.default.publisher(for: U
+          -IApplication.didBecomeActiveNotification)) { _ in             
+      361 -            refreshNFCAvailability()                          
+      453 +    }                                                         
+      454 +                                                              
+      455 +    // MARK: - App Picker Sheet                               
+      456 +                                                              
+      457 +    private var appPickerSheet: some View {                   
+      458 +        NavigationStack {                                     
+      459 +            FamilyActivityPicker(selection: $activitySelection
+          +)                                                             
+      460 +                .navigationTitle("Choose Apps")               
+      461 +                .navigationBarTitleDisplayMode(.inline)       
+      462 +                .toolbar {                                    
+      463 +                    ToolbarItem(placement: .topBarTrailing) { 
+      464 +                        Button("Done") {                      
+      465 +                            selectedAppsCount = activitySelect
+          +ion.applicationTokens.count                                   
+      466 +                            saveActivitySelection()           
+      467 +                            showingAppPicker = false          
+      468 +                            if isLocked { applyShields() }    
+      469 +                        }                                     
+      470 +                        .fontWeight(.semibold)                
+      471 +                    }                                         
+      472 +                }                                             
+      473          }
+      474      }
+      364 -}                                                             
+      475  
+      366 -extension Notification.Name {                                 
+      367 -    static let nfcSessionError = Notification.Name("NFCSession
+          -ErrorNotification")                                           
+      476 +    // MARK: - Actions                                        
+      477 +                                                              
+      478 +    private func registerNFC() {                              
+      479 +        let token = UUID().uuidString                         
+      480 +        isScanning = true                                     
+      481 +        nfcScanner.onTextPayload = { payload in               
+      482 +            nfcTagPayload = payload                           
+      483 +            nfcRegistered = true                              
+      484 +            isScanning = false                                
+      485 +        }                                                     
+      486 +        nfcScanner.onError = { error in                       
+      487 +            isScanning = false                                
+      488 +            nfcErrorMessage = error                           
+      489 +            showNFCErrorAlert = true                          
+      490 +        }                                                     
+      491 +        nfcScanner.beginWrite(token: token, alert: "Hold iPhon
+          +e near the NFC tag to register it as your focus key.")        
+      492 +    }                                                         
+      493 +                                                              
+      494 +    private func reRegisterNFC() {                            
+      495 +        let token = UUID().uuidString                         
+      496 +        nfcScanner.onTextPayload = { payload in               
+      497 +            nfcTagPayload = payload                           
+      498 +            nfcRegistered = true                              
+      499 +        }                                                     
+      500 +        nfcScanner.onError = { error in                       
+      501 +            nfcErrorMessage = error                           
+      502 +            showNFCErrorAlert = true                          
+      503 +        }                                                     
+      504 +        nfcScanner.beginWrite(token: token, alert: "Hold iPhon
+          +e near the NFC tag to re-register.")                          
+      505 +    }                                                         
+      506 +                                                              
+      507 +    private func scanToUnlock() {                             
+      508 +        isScanning = true                                     
+      509 +        nfcScanner.onTextPayload = { payload in               
+      510 +            isScanning = false                                
+      511 +            if !nfcTagPayload.isEmpty && payload == nfcTagPayl
+          +oad {                                                         
+      512 +                isLocked = false                              
+      513 +                clearShields()                                
+      514 +            } else {                                          
+      515 +                nfcErrorMessage = "Wrong NFC tag. Use your reg
+          +istered focus key."                                           
+      516 +                showNFCErrorAlert = true                      
+      517 +            }                                                 
+      518 +        }                                                     
+      519 +        nfcScanner.onError = { error in                       
+      520 +            isScanning = false                                
+      521 +            nfcErrorMessage = error                           
+      522 +            showNFCErrorAlert = true                          
+      523 +        }                                                     
+      524 +        nfcScanner.beginScan(alert: "Hold iPhone near your foc
+          +us key to unlock.")                                           
+      525 +    }                                                         
+      526 +                                                              
+      527 +    private func applyShields() {                             
+      528 +        settingsStore.shield.applications = activitySelection.
+          +applicationTokens                                             
+      529 +        settingsStore.shield.applicationCategories = .specific
+          +(activitySelection.categoryTokens)                            
+      530 +    }                                                         
+      531 +                                                              
+      532 +    private func clearShields() {                             
+      533 +        settingsStore.shield.applications = nil               
+      534 +        settingsStore.shield.applicationCategories = nil      
+      535 +    }                                                         
+      536 +                                                              
+      537 +    private func resetSetup() {                               
+      538 +        setupComplete = false                                 
+      539 +        nfcRegistered = false                                 
+      540 +        nfcTagPayload = ""                                    
+      541 +        isLocked = false                                      
+      542 +        selectedAppsCount = 0                                 
+      543 +        setupStep = 0                                         
+      544 +        activitySelection = FamilyActivitySelection()         
+      545 +        UserDefaults.standard.removeObject(forKey: "activitySe
+          +lection")                                                     
+      546 +        clearShields()                                        
+      547 +    }                                                         
+      548 +                                                              
+      549 +    private func requestAuthorization() {                     
+      550 +        authorizationGranted = (AuthorizationCenter.shared.aut
+          +horizationStatus == .approved)                                
+      551 +        Task { @MainActor in                                  
+      552 +            guard AuthorizationCenter.shared.authorizationStat
+          +us != .approved else { return }                               
+      553 +            try? await AuthorizationCenter.shared.requestAutho
+          +rization(for: .individual)                                    
+      554 +            authorizationGranted = (AuthorizationCenter.shared
+          +.authorizationStatus == .approved)                            
+      555 +        }                                                     
+      556 +    }                                                         
+      557 +                                                              
+      558 +    private func saveActivitySelection() {                    
+      559 +        if let data = try? JSONEncoder().encode(activitySelect
+          +ion) {                                                        
+      560 +            UserDefaults.standard.set(data, forKey: "activityS
+          +election")                                                    
+      561 +        }                                                     
+      562 +    }                                                         
+      563 +                                                              
+      564 +    private func loadSavedSelection() {                       
+      565 +        guard let data = UserDefaults.standard.data(forKey: "a
+          +ctivitySelection"),                                           
+      566 +              let saved = try? JSONDecoder().decode(FamilyActi
+          +vitySelection.self, from: data) else { return }               
+      567 +        activitySelection = saved                             
+      568 +    }                                                         
+      569  }
+      570  
+      571  #Preview {
+      572      ContentView()
+      573  }
+      373 -                                                              
+
+⏺ Here's what I built:
+
+  Setup flow (2 steps):
+  1. Register NFC tag — Big NFC icon, "Scan NFC Tag" button writes a UUID token
+  to the tag. Once registered shows a checkmark + "Continue" button
+  2. Choose apps to block — App picker with FamilyControls. "Done" button
+  completes setup
+
+  Home screen (unlocked):
+  - Lock open icon + "Ready to focus"
+  - Shows how many apps will be blocked
+  - "Start Focus" button (disabled until apps are selected)
+  - "Edit blocked apps" link + menu for re-registering NFC or resetting
+
+  Locked screen:
+  - Full screen, prominent lock icon + "Focus Mode" title
+  - "Tap to Unlock" button triggers NFC scan — only the registered tag's payload
+   matches
+
+  Under the hood:
+  - activitySelection (FamilyActivitySelection) is JSON-encoded to UserDefaults
+  so shields can be re-applied on app relaunch while locked
+  - Shields persist in ManagedSettingsStore even after the app closes
+  - NFC error code 200 (user cancelled) is silently ignored — no spurious error
+  alerts
+  - All state persisted with @AppStorage — correct screen shown on every launch
+
+✻ Cooked for 4m 26s
+
+❯ there are a few erros in teh contentView, please fix 
+
+⏺ Bash(xcodebuild -scheme klariti -destination 'platform=iOS
+      Simulator,name=iPhone 16' build 2>&1 | grep -E "error:|warning:" | head
+      -40)
+  ⎿  xcode-select: error: tool 'xcodebuild' requires Xcode, but active deve
+     loper directory '/Library/Developer/CommandLineTools' is a command lin
+     e tools instance
+
+⏺ Bash(sudo xcode-select -s /Applications/Xcode.app/Contents/Developer 2>&1 &&
+      xcodebuild -scheme klariti -destination 'platform=iOS
+      Simulator,name=iPhone 16' build 2>…)
+  ⎿  Error: Exit code 1
+     sudo: a terminal is required to read the password; either use the -S option
+      to read from standard input or configure an askpass helper
+     sudo: a password is required
+
+     sudo: a terminal is required to read the password; either use the -S option
+      to read from standard input or configure an askpass helper
+     sudo: a password is required
+
+⏺ Searched for 1 pattern (ctrl+o to expand)
+
+⏺ Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild
+      -scheme klariti -destination 'platform=iOS Simulator,name=iPhone 16' build
+       2>&1 | grep -E "e…)
+  ⎿  xcodebuild: error: Unable to find a device matching the provided desti
+     nation specifier:
+  ⎿  (timeout 2m)
+
+⏺ Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild
+      -scheme klariti -destination 'generic/platform=iOS' build 2>&1 | grep -E
+      "error:|note:" | he…)
+  ⎿  note: Building targets in dependency order
+     note: Target dependency graph (1 target)
+     /Users/ignasxv/code/klariti/klariti/ContentView.swift:217:50: error: m
+     … +20 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ All the errors are the same root cause: mixing ShapeStyle types (.background =
+   BackgroundStyle, .primary = HierarchicalShapeStyle) in ternaries and .tint()
+  modifiers. Fix is to use explicit Color types everywhere.
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 3 lines, removed 3 lines
+      214                  Button(action: scanToUnlock) {
+      215                      HStack(spacing: 10) {
+      216                          if isScanning {
+      217 -                            ProgressView().tint(.background)  
+      217 +                            ProgressView().tint(Color(.systemB
+          +ackground))                                                   
+      218                          } else {
+      219                              Image(systemName: "wave.3.right")
+      220                          }
+     ...
+      223                      }
+      224                      .frame(maxWidth: .infinity)
+      225                      .padding(.vertical, 16)
+      226 -                    .background(.primary)                     
+      227 -                    .foregroundStyle(.background)             
+      226 +                    .background(Color.primary)                
+      227 +                    .foregroundStyle(Color(.systemBackground))
+      228                      .clipShape(RoundedRectangle(cornerRadius: 
+           16))
+      229                  }
+      230                  .disabled(isScanning)
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 2 lines, removed 2 lines
+      268                              .font(.headline)
+      269                              .frame(maxWidth: .infinity)
+      270                              .padding(.vertical, 16)
+      271 -                            .background(selectedAppsCount > 0 
+          -? .primary : Color(.systemFill))                              
+      272 -                            .foregroundStyle(selectedAppsCount
+          - > 0 ? .background : .secondary)                              
+      271 +                            .background(selectedAppsCount > 0 
+          +? Color.primary : Color(.systemFill))                         
+      272 +                            .foregroundStyle(selectedAppsCount
+          + > 0 ? Color(.systemBackground) : Color.secondary)            
+      273                              .clipShape(RoundedRectangle(corner
+           Radius: 16))
+      274                      }
+      275                      .disabled(selectedAppsCount == 0)
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 3 lines, removed 3 lines
+      347                  Button(action: registerNFC) {
+      348                      HStack(spacing: 10) {
+      349                          if isScanning {
+      350 -                            ProgressView().tint(nfcRegistered 
+          -? .primary : .background)                                     
+      350 +                            ProgressView().tint(nfcRegistered 
+          +? Color.primary : Color(.systemBackground))                   
+      351                          } else {
+      352                              Image(systemName: nfcRegistered ? 
+           "arrow.clockwise" : "wave.3.right")
+      353                          }
+     ...
+      356                      }
+      357                      .frame(maxWidth: .infinity)
+      358                      .padding(.vertical, 16)
+      359 -                    .background(nfcRegistered ? Color(.systemF
+          -ill) : .primary)                                              
+      360 -                    .foregroundStyle(nfcRegistered ? .primary 
+          -: .background)                                                
+      359 +                    .background(nfcRegistered ? Color(.systemF
+          +ill) : Color.primary)                                         
+      360 +                    .foregroundStyle(nfcRegistered ? Color.pri
+          +mary : Color(.systemBackground))                              
+      361                      .clipShape(RoundedRectangle(cornerRadius: 
+           16))
+      362                  }
+      363                  .disabled(isScanning || !nfcAvailable)
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 2 lines, removed 2 lines
+      369                      .font(.headline)
+      370                      .frame(maxWidth: .infinity)
+      371                      .padding(.vertical, 16)
+      372 -                    .background(.primary)                     
+      373 -                    .foregroundStyle(.background)             
+      372 +                    .background(Color.primary)                
+      373 +                    .foregroundStyle(Color(.systemBackground))
+      374                      .clipShape(RoundedRectangle(cornerRadius: 
+           16))
+      375                  }
+      376              }
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 2 lines, removed 2 lines
+      423                      }
+      424                      .frame(maxWidth: .infinity)
+      425                      .padding(.vertical, 16)
+      426 -                    .background(selectedAppsCount > 0 ? Color(
+          -.systemFill) : .primary)                                      
+      427 -                    .foregroundStyle(selectedAppsCount > 0 ? .
+          -primary : .background)                                        
+      426 +                    .background(selectedAppsCount > 0 ? Color(
+          +.systemFill) : Color.primary)                                 
+      427 +                    .foregroundStyle(selectedAppsCount > 0 ? C
+          +olor.primary : Color(.systemBackground))                      
+      428                      .clipShape(RoundedRectangle(cornerRadius: 
+           16))
+      429                  }
+      430                  .disabled(!authorizationGranted)
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 2 lines, removed 2 lines
+      436                      .font(.headline)
+      437                      .frame(maxWidth: .infinity)
+      438                      .padding(.vertical, 16)
+      439 -                    .background(.primary)                     
+      440 -                    .foregroundStyle(.background)             
+      439 +                    .background(Color.primary)                
+      440 +                    .foregroundStyle(Color(.systemBackground))
+      441                      .clipShape(RoundedRectangle(cornerRadius: 
+           16))
+      442                  }
+      443  
+
+⏺ Now verify it builds clean:
+
+⏺ Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild
+      -scheme klariti -destination 'generic/platform=iOS' build 2>&1 | grep -E
+      "error:" | head -20)
+  ⎿  (No output)
+  ⎿  (timeout 2m)
+
+⏺ Clean build — no errors.
+
+  The root cause was Swift's type system couldn't resolve ternaries mixing
+  HierarchicalShapeStyle (.primary, .secondary) with BackgroundStyle
+  (.background), and .tint() / .background() modifiers that expected Color but
+  got a generic ShapeStyle. Fixed by using explicit Color.primary and
+  Color(.systemBackground) throughout.
+
+✻ Crunched for 3m 5s
+
+❯ when i have installed the app into my iphone.. i get a warming that nfc   
+  not availabe on this device.. but i am using an iphone 17 pro an dam sure 
+   it has nfc... so please fix that                                         
+
+⏺ Searched for 1 pattern (ctrl+o to expand)
+
+⏺ Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild
+      -scheme klariti -destination 'generic/platform=iOS' build 2>&1 | grep -i
+      "nfc\|entitlement\|…)
+  ⎿      Entitlements:
+         builtin-productPackagingUtility -entitlements -format xml -o /User
+     s/ignasxv/Library/Developer/Xcode/DerivedData/klariti-dfzpjfgwwqgevuaj
+     … +15 lines (ctrl+o to expand)
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Bash(find /Users/ignasxv/code/klariti -name "*.pbxproj" | xargs grep -i
+      "nfc\|NFCReaderUsageDescription" 2>/dev/null | head -20)
+  ⎿  (No output)
+
+⏺ Found the problem. The built entitlements are missing the NFC capability
+  entirely — that's why NFCNDEFReaderSession.readingAvailable returns false even
+   on real hardware.
+
+⏺ Bash(find /Users/ignasxv/code/klariti -name "*.pbxproj" | xargs grep
+      "CODE_SIGN_ENTITLEMENTS" 2>/dev/null)
+  ⎿  Error: Exit code 1
+
+⏺ Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+⏺ The project uses PBXFileSystemSynchronizedRootGroup so I just need to: 1)
+  create the entitlements file, 2) add CODE_SIGN_ENTITLEMENTS +
+  NFCReaderUsageDescription to the build settings.
+
+⏺ Write(klariti/klariti.entitlements)
+  ⎿  Wrote 10 lines to klariti/klariti.entitlements
+       1 <?xml version="1.0" encoding="UTF-8"?>
+       2 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www
+         .apple.com/DTDs/PropertyList-1.0.dtd">
+       3 <plist version="1.0">
+       4 <dict>
+       5        <key>com.apple.developer.nfc.readersession.formats</key>
+       6        <array>
+       7                <string>NDEF</string>
+       8        </array>
+       9 </dict>
+      10 </plist>
+
+⏺ Now add CODE_SIGN_ENTITLEMENTS and NFCReaderUsageDescription to both Debug and
+   Release target build configs:
+
+⏺ Update(klariti.xcodeproj/project.pbxproj)
+  ⎿  Added 1 line
+      251        buildSettings = {
+      252          ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+      253          ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = Accen
+           tColor;
+      254 +        CODE_SIGN_ENTITLEMENTS = klariti/klariti.entitlements;
+      255          CODE_SIGN_STYLE = Automatic;
+      256          CURRENT_PROJECT_VERSION = 1;
+      257          DEVELOPMENT_TEAM = GK4HXR5FTG;
+
+⏺ Update(klariti.xcodeproj/project.pbxproj)
+  ⎿  Added 2 lines
+      259          GENERATE_INFOPLIST_FILE = YES;
+      260          INFOPLIST_KEY_UIApplicationSceneManifest_Generation = 
+           YES;
+      261          INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents
+            = YES;
+      262 +        INFOPLIST_KEY_NFCReaderUsageDescription = "Klariti use
+          +s NFC to read your focus key tag.";                           
+      263          INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+      264          INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = 
+           "UIInterfaceOrientationPortrait UIInterfaceOrientationPortrait
+           UpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrie
+           ntationLandscapeRight";
+      265          INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone 
+           = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandsc
+           apeLeft UIInterfaceOrientationLandscapeRight";
+     ...
+      285        buildSettings = {
+      286          ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+      287          ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = Accen
+           tColor;
+      288 +        CODE_SIGN_ENTITLEMENTS = klariti/klariti.entitlements;
+      289          CODE_SIGN_STYLE = Automatic;
+      290          CURRENT_PROJECT_VERSION = 1;
+      291          DEVELOPMENT_TEAM = GK4HXR5FTG;
+
+⏺ Update(klariti.xcodeproj/project.pbxproj)
+  ⎿  Added 1 line
+      293          GENERATE_INFOPLIST_FILE = YES;
+      294          INFOPLIST_KEY_UIApplicationSceneManifest_Generation = 
+           YES;
+      295          INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents
+            = YES;
+      296 +        INFOPLIST_KEY_NFCReaderUsageDescription = "Klariti use
+          +s NFC to read your focus key tag.";                           
+      297          INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+      298          INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = 
+           "UIInterfaceOrientationPortrait UIInterfaceOrientationPortrait
+           UpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrie
+           ntationLandscapeRight";
+      299          INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone 
+           = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandsc
+           apeLeft UIInterfaceOrientationLandscapeRight";
+
+⏺ Now verify the build still compiles and confirm the entitlements show up:
+
+⏺ Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild
+      -scheme klariti -destination 'generic/platform=iOS' build 2>&1 | grep -E
+      "error:|NFC|entitle…)
+  ⎿  ProcessProductPackaging /Users/ignasxv/code/klariti/klariti/klariti.en
+     titlements /Users/ignasxv/Library/Developer/Xcode/DerivedData/klariti-
+     dfzpjfgwwqgevuajxygqkxtxeebl/Build/Intermediates.noindex/klariti.build
+     … +20 lines (ctrl+o to expand)
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ The NFC entitlement com.apple.developer.nfc.readersession.formats is now in
+  the signed app. Here's what was wrong and what was fixed:
+
+  Root cause: The app had no entitlements file at all.
+  NFCNDEFReaderSession.readingAvailable returns false if the NFC entitlement
+  isn't present — it's not just a hardware check, it also validates the
+  entitlement is signed into the app.
+
+  What was added:
+  1. klariti/klariti.entitlements — declares the
+  com.apple.developer.nfc.readersession.formats: [NDEF] entitlement
+  2. CODE_SIGN_ENTITLEMENTS in both Debug & Release build configs pointing to
+  that file
+  3. NFCReaderUsageDescription in Info.plist keys (required by App Store /
+  system prompt)
+
+  Rebuild and reinstall on your iPhone 17 Pro and the NFC warning will be gone.
+
+✻ Churned for 1m 43s
+
+❯ now make sure i can actually choose apps to block and block them  
+
+⏺ Searched for 2 patterns, read 2 files (ctrl+o to expand)
+
+⏺ Two issues: FamilyControls entitlement is missing (like the NFC one was), and
+  the auth flow needs to be more robust. Let me fix both.
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Got it. Three things to fix:
+
+  1. Missing com.apple.developer.family-controls entitlement — without it
+  requestAuthorization silently fails, button stays disabled
+  2. Button UX — requesting auth inline when tapping "Choose Apps" instead of
+  disabling the button
+  3. selectedAppsCount doesn't count category tokens — if user picks whole
+  categories (Social, Games etc), count stays 0 and "Done" never enables
+
+  Fix 1 — entitlement:
+
+⏺ Update(klariti/klariti.entitlements)
+  ⎿  Added 2 lines
+      2  <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www
+         .apple.com/DTDs/PropertyList-1.0.dtd">
+      3  <plist version="1.0">
+      4  <dict>
+      5 +  <key>com.apple.developer.family-controls</key>                
+      6 +  <true/>                                                       
+      7    <key>com.apple.developer.nfc.readersession.formats</key>
+      8    <array>
+      9      <string>NDEF</string>
+
+⏺ Fix 2 — inline auth + recheck on foreground, Fix 3 — count categories too:
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 3 lines, removed 2 lines
+      405                  }
+      406  
+      407                  if !authorizationGranted {
+      408 -                    Label("Screen Time permission required", s
+          -ystemImage: "exclamationmark.triangle.fill")                  
+      408 +                    Label("Tap below — Screen Time access will
+          + be requested", systemImage: "info.circle")                   
+      409                          .font(.footnote)
+      410 -                        .foregroundStyle(.orange)             
+      410 +                        .foregroundStyle(.secondary)          
+      411 +                        .multilineTextAlignment(.center)      
+      412                  }
+      413              }
+      414              .padding(.horizontal, 32)
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 9 lines, removed 2 lines
+      415              Spacer()
+      416              VStack(spacing: 12) {
+      417                  Button {
+      418 -                    showingAppPicker = true                   
+      418 +                    Task { @MainActor in                      
+      419 +                        if !authorizationGranted {            
+      420 +                            try? await AuthorizationCenter.sha
+          +red.requestAuthorization(for: .individual)                    
+      421 +                            authorizationGranted = (Authorizat
+          +ionCenter.shared.authorizationStatus == .approved)            
+      422 +                        }                                     
+      423 +                        if authorizationGranted {             
+      424 +                            showingAppPicker = true           
+      425 +                        }                                     
+      426 +                    }                                         
+      427                  } label: {
+      428                      HStack(spacing: 10) {
+      429                          Image(systemName: "app.badge.checkmark
+           ")
+     ...
+      436                      .foregroundStyle(selectedAppsCount > 0 ? C
+           olor.primary : Color(.systemBackground))
+      437                      .clipShape(RoundedRectangle(cornerRadius: 
+           16))
+      438                  }
+      431 -                .disabled(!authorizationGranted)              
+      439  
+      440                  if selectedAppsCount > 0 {
+      441                      Button("Done — Start using Klariti") {
+
+⏺ Now fix the count to include category tokens, and do the same for the home
+  screen "Edit blocked apps" button:
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 1 line
+      471                      ToolbarItem(placement: .topBarTrailing) {
+      472                          Button("Done") {
+      473                              selectedAppsCount = activitySelect
+           ion.applicationTokens.count
+      474 +                                + activitySelection.categoryTo
+          +kens.count                                                    
+      475                              saveActivitySelection()
+      476                              showingAppPicker = false
+      477                              if isLocked { applyShields() }
+
+⏺ Now add didBecomeActive observer so auth state refreshes if the user approves
+  Screen Time in Settings then returns:
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 3 lines
+      175              requestAuthorization()
+      176              if isLocked { applyShields() }
+      177          }
+      178 +        .onReceive(NotificationCenter.default.publisher(for: U
+          +IApplication.didBecomeActiveNotification)) { _ in             
+      179 +            authorizationGranted = (AuthorizationCenter.shared
+          +.authorizationStatus == .approved)                            
+      180 +        }                                                     
+      181          .alert("NFC Error", isPresented: $showNFCErrorAlert, p
+           resenting: nfcErrorMessage) { _ in
+      182              Button("OK", role: .cancel) {}
+      183          } message: { Text($0) }
+
+⏺ Also fix the home screen "Edit blocked apps" button — same auth-first pattern:
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 7 lines, removed 1 line
+      278                      .disabled(selectedAppsCount == 0)
+      279  
+      280                      Button(selectedAppsCount > 0 ? "Edit block
+           ed apps" : "Choose apps to block") {
+      281 -                        showingAppPicker = true               
+      281 +                        Task { @MainActor in                  
+      282 +                            if !authorizationGranted {        
+      283 +                                try? await AuthorizationCenter
+          +.shared.requestAuthorization(for: .individual)                
+      284 +                                authorizationGranted = (Author
+          +izationCenter.shared.authorizationStatus == .approved)        
+      285 +                            }                                 
+      286 +                            if authorizationGranted { showingA
+          +ppPicker = true }                                             
+      287 +                        }                                     
+      288                      }
+      289                      .font(.subheadline)
+      290                      .foregroundStyle(.secondary)
+
+⏺ Verify clean build:
+
+⏺ Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild
+      -scheme klariti -destination 'generic/platform=iOS' build 2>&1 | grep
+      "error:" | head -20)
+  ⎿  (No output)
+  ⎿  (timeout 2m)
+
+⏺ Clean. Here's a summary of what was broken and what's fixed:
+
+  ┌─────────────────────────────────┬───────────────────────────────────────┐
+  │             Problem             │                  Fix                  │
+  ├─────────────────────────────────┼───────────────────────────────────────┤
+  │                                 │ Added to klariti.entitlements —       │
+  │ com.apple.developer.family-cont │ without it requestAuthorization       │
+  │ rols entitlement missing        │ silently fails and the picker never   │
+  │                                 │ works                                 │
+  ├─────────────────────────────────┼───────────────────────────────────────┤
+  │ "Choose Apps" button disabled   │ Removed .disabled(), now tapping the  │
+  │ when auth not yet granted       │ button triggers auth request inline,  │
+  │                                 │ then opens the picker                 │
+  ├─────────────────────────────────┼───────────────────────────────────────┤
+  │ Only counting individual app    │ Count now includes categoryTokens too │
+  │ tokens                          │  — so picking "Social Media" or       │
+  │                                 │ "Games" enables the Done button       │
+  ├─────────────────────────────────┼───────────────────────────────────────┤
+  │ Auth state not rechecked after  │ Added UIApplication.didBecomeActiveNo │
+  │ returning from Settings         │ tification observer                   │
+  └─────────────────────────────────┴───────────────────────────────────────┘
+
+✻ Cooked for 2m 3s
+
+❯ the scanning button seem to keep on saying scanning and spinning even     
+  when the pop up has been go away, espeiclaly when a scanning hasnpt       
+  happending making the button staying captive                              
+
+⏺ The bug: when the user cancels the NFC popup (error code 200),
+  didInvalidateWithError is called but we silently skip it — so isScanning never
+   resets to false. Fix is adding an onCancelled callback that fires
+  specifically on user-cancel.
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 1 line
+      13  private class NFCScanner: NSObject, NFCNDEFReaderSessionDelegat
+          e {
+      14      var onTextPayload: ((String) -> Void)?
+      15      var onError: ((String) -> Void)?
+      16 +    var onCancelled: (() -> Void)?                             
+      17      private var session: NFCNDEFReaderSession?
+      18      private var writeToken: String?
+      19  
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 3 lines, removed 1 line
+      39  
+      40      func readerSession(_ session: NFCNDEFReaderSession, didInva
+          lidateWithError error: Error) {
+      41          let nsError = error as NSError
+      42 -        if nsError.code != 200 { // 200 = user cancelled       
+      42 +        if nsError.code == 200 { // user cancelled             
+      43 +            DispatchQueue.main.async { self.onCancelled?() }   
+      44 +        } else {                                               
+      45              DispatchQueue.main.async { self.onError?(error.loca
+          lizedDescription) }
+      46          }
+      47      }
+
+⏺ Now set onCancelled in each scan call that sets isScanning = true:
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 1 line
+      509              nfcErrorMessage = error
+      510              showNFCErrorAlert = true
+      511          }
+      512 +        nfcScanner.onCancelled = { isScanning = false }       
+      513          nfcScanner.beginWrite(token: token, alert: "Hold iPhon
+           e near the NFC tag to register it as your focus key.")
+      514      }
+      515  
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 1 line
+      543              nfcErrorMessage = error
+      544              showNFCErrorAlert = true
+      545          }
+      546 +        nfcScanner.onCancelled = { isScanning = false }       
+      547          nfcScanner.beginScan(alert: "Hold iPhone near your foc
+           us key to unlock.")
+      548      }
+      549  
+
+⏺ Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild
+      -scheme klariti -destination 'generic/platform=iOS' build 2>&1 | grep
+      "error:" | head -10)
+  ⎿  (No output)
+  ⎿  (timeout 2m)
+
+⏺ Clean. The fix: error code 200 from CoreNFC means the user dismissed the sheet
+   — it's not a real error, so the old code swallowed it without doing anything,
+   leaving isScanning stuck at true. Now onCancelled fires on dismiss and resets
+   the button immediately.
+
+✻ Crunched for 1m 7s
+
+❯ there's actually no need to transtion the btton into scannsing state.. 
+
+⏺ Searched for 2 patterns (ctrl+o to expand)
+
+⏺ I'll strip out isScanning entirely — the state var, all the UI conditionals,
+  the spinner, and the .disabled(isScanning) guards.
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Removed 1 line
+      146      @State private var activitySelection = FamilyActivitySelec
+           tion()
+      147      @State private var authorizationGranted = false
+      148      @State private var showingAppPicker = false
+      149 -    @State private var isScanning = false                     
+      149      @State private var nfcErrorMessage: String?
+      150      @State private var showNFCErrorAlert = false
+      151  
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 7 lines, removed 15 lines
+      217                  }
+      218                  Spacer()
+      219                  Button(action: scanToUnlock) {
+      220 -                    HStack(spacing: 10) {                     
+      221 -                        if isScanning {                       
+      222 -                            ProgressView().tint(Color(.systemB
+          -ackground))                                                   
+      223 -                        } else {                              
+      224 -                            Image(systemName: "wave.3.right") 
+      225 -                        }                                     
+      226 -                        Text(isScanning ? "Scanning…" : "Tap t
+          -o Unlock")                                                    
+      227 -                            .font(.headline)                  
+      228 -                    }                                         
+      229 -                    .frame(maxWidth: .infinity)               
+      230 -                    .padding(.vertical, 16)                   
+      231 -                    .background(Color.primary)                
+      232 -                    .foregroundStyle(Color(.systemBackground))
+      233 -                    .clipShape(RoundedRectangle(cornerRadius: 
+          -16))                                                          
+      220 +                    Label("Tap to Unlock", systemImage: "wave.
+          +3.right")                                                     
+      221 +                        .font(.headline)                      
+      222 +                        .frame(maxWidth: .infinity)           
+      223 +                        .padding(.vertical, 16)               
+      224 +                        .background(Color.primary)            
+      225 +                        .foregroundStyle(Color(.systemBackgrou
+          +nd))                                                          
+      226 +                        .clipShape(RoundedRectangle(cornerRadi
+          +us: 16))                                                      
+      227                  }
+      235 -                .disabled(isScanning)                         
+      228                  .padding(.horizontal, 32)
+      229                  .padding(.bottom, 52)
+      230              }
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 9 lines, removed 15 lines
+      348              Spacer()
+      349              VStack(spacing: 12) {
+      350                  Button(action: registerNFC) {
+      351 -                    HStack(spacing: 10) {                     
+      352 -                        if isScanning {                       
+      353 -                            ProgressView().tint(nfcRegistered 
+          -? Color.primary : Color(.systemBackground))                   
+      354 -                        } else {                              
+      355 -                            Image(systemName: nfcRegistered ? 
+          -"arrow.clockwise" : "wave.3.right")                           
+      356 -                        }                                     
+      357 -                        Text(nfcRegistered ? "Re-scan Tag" : (
+          -isScanning ? "Scanning…" : "Scan NFC Tag"))                   
+      358 -                            .font(.headline)                  
+      359 -                    }                                         
+      360 -                    .frame(maxWidth: .infinity)               
+      361 -                    .padding(.vertical, 16)                   
+      362 -                    .background(nfcRegistered ? Color(.systemF
+          -ill) : Color.primary)                                         
+      363 -                    .foregroundStyle(nfcRegistered ? Color.pri
+          -mary : Color(.systemBackground))                              
+      364 -                    .clipShape(RoundedRectangle(cornerRadius: 
+          -16))                                                          
+      351 +                    Label(nfcRegistered ? "Re-scan Tag" : "Sca
+          +n NFC Tag",                                                   
+      352 +                          systemImage: nfcRegistered ? "arrow.
+          +clockwise" : "wave.3.right")                                  
+      353 +                        .font(.headline)                      
+      354 +                        .frame(maxWidth: .infinity)           
+      355 +                        .padding(.vertical, 16)               
+      356 +                        .background(nfcRegistered ? Color(.sys
+          +temFill) : Color.primary)                                     
+      357 +                        .foregroundStyle(nfcRegistered ? Color
+          +.primary : Color(.systemBackground))                          
+      358 +                        .clipShape(RoundedRectangle(cornerRadi
+          +us: 16))                                                      
+      359                  }
+      366 -                .disabled(isScanning || !nfcAvailable)        
+      360 +                .disabled(!nfcAvailable)                      
+      361  
+      362                  if nfcRegistered {
+      363                      Button("Continue") {
+
+⏺ Now remove the isScanning assignments from the action functions and the
+  onCancelled callbacks:
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Removed 4 lines
+      483  
+      484      private func registerNFC() {
+      485          let token = UUID().uuidString
+      486 -        isScanning = true                                     
+      486          nfcScanner.onTextPayload = { payload in
+      487              nfcTagPayload = payload
+      488              nfcRegistered = true
+      490 -            isScanning = false                                
+      489          }
+      490          nfcScanner.onError = { error in
+      493 -            isScanning = false                                
+      491              nfcErrorMessage = error
+      492              showNFCErrorAlert = true
+      493          }
+      497 -        nfcScanner.onCancelled = { isScanning = false }       
+      494          nfcScanner.beginWrite(token: token, alert: "Hold iPhon
+           e near the NFC tag to register it as your focus key.")
+      495      }
+      496  
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Removed 4 lines
+      508      }
+      509  
+      510      private func scanToUnlock() {
+      511 -        isScanning = true                                     
+      511          nfcScanner.onTextPayload = { payload in
+      513 -            isScanning = false                                
+      512              if !nfcTagPayload.isEmpty && payload == nfcTagPayl
+           oad {
+      513                  isLocked = false
+      514                  clearShields()
+     ...
+      518              }
+      519          }
+      520          nfcScanner.onError = { error in
+      523 -            isScanning = false                                
+      521              nfcErrorMessage = error
+      522              showNFCErrorAlert = true
+      523          }
+      527 -        nfcScanner.onCancelled = { isScanning = false }       
+      524          nfcScanner.beginScan(alert: "Hold iPhone near your foc
+           us key to unlock.")
+      525      }
+      526  
+
+⏺ Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild
+      -scheme klariti -destination 'generic/platform=iOS' build 2>&1 | grep
+      "error:" | head -10)
+  ⎿  (No output)
+  ⎿  (timeout 2m)
+
+⏺ Clean. Buttons now stay static — they just open the system NFC sheet and do
+  nothing visually until a tag is actually read or an error occurs.
+
+✻ Cogitated for 54s
+
+❯ the following ins the desing language to use{                             
+    "description": "Klariti design language: minimal, warm, and             
+  wellness-forward. Built on neutral cream and dark tones with sage green   
+  accents. Clean sans-serif typography (Poppins) with optional serif        
+  (Literata) for expressive moments. Calm motion, accessible contrast, and  
+  class-based dark mode. Everything is intentionally understated — no       
+  bright primaries, no aggressive UI chrome.",                              
+                                                                            
+    "fonts": {                                                              
+      "sans": {                                                             
+        "name": "Poppins",                                                  
+        "source": "Google Fonts",                                           
+        "weights": ["400", "700"],                                          
+        "variable": "--font-sans",                                          
+        "usage": "Primary UI font — body text, labels, navigation,          
+  headings"                                                                 
+      },                                                                    
+      "serif": {                                                            
+        "name": "Literata",                                                 
+        "source": "Google Fonts",                                           
+        "weights": ["400", "700"],                                          
+        "variable": "--font-serif",                                         
+        "usage": "Accent serif — pull quotes, editorial content, expressive 
+   headings"                                                                
+      },                                                                    
+      "mono": {                                                             
+        "name": "Space Mono",                                               
+        "source": "Google Fonts",                                           
+        "weights": ["400", "700"],                                          
+        "variable": "--font-mono",                                          
+        "usage": "Code blocks, technical content, monospaced data"          
+      }                                                                     
+    },                                                                      
+                                                                            
+    "colors": {                                                             
+      "light": {                                                            
+        "background": "#fafaf8",                                            
+        "foreground": "#1a1a1a",                                            
+        "muted": "#f0efeb",                                                 
+        "mutedForeground": "#737066",                                       
+        "border": "#e8e6e1",                                                
+        "edge": "#f0efeb",                                                  
+        "accent": "#e8e6e1",                                                
+        "accentForeground": "#1a1a1a",                                      
+        "primary": "#1a1a1a",                                               
+        "primaryForeground": "#fafaf8",                                     
+        "card": "#ffffff",                                                  
+        "cardForeground": "#1a1a1a",                                        
+        "ring": "#a8a49c",                                                  
+        "link": "#4a6741",                                                  
+        "success": "#4a6741",                                               
+        "destructive": "#c23b22",                                           
+        "selection": "#1a1a1a",                                             
+        "selectionForeground": "#fafaf8"                                    
+      },                                                                    
+      "dark": {                                                             
+        "background": "#111110",                                            
+        "foreground": "#ededec",                                            
+        "muted": "#1e1e1c",                                                 
+        "mutedForeground": "#a1a09a",                                       
+        "border": "#2a2a28",                                                
+        "edge": "#1e1e1c",                                                  
+        "accent": "#2a2a28",                                                
+        "accentForeground": "#ededec",                                      
+        "primary": "#ededec",                                               
+        "primaryForeground": "#111110",                                     
+        "card": "#191918",                                                  
+        "cardForeground": "#ededec",                                        
+        "ring": "#5c5b56",                                                  
+        "link": "#8bb07f",                                                  
+        "success": "#8bb07f",                                               
+        "destructive": "#e55a3f",                                           
+        "selection": "#ededec",                                             
+        "selectionForeground": "#111110"                                    
+      }                                                                     
+    },                                                                      
+                                                                            
+    "layout": {                                                             
+      "contentMaxWidth": "680px",                                           
+      "scrollOffset": "5rem",                                               
+      "darkMode": "class-based (.dark)"                                     
+    },                                                                      
+                                                                            
+    "motion": {                                                             
+      "fadeIn": "0.6s ease-out",                                            
+      "fadeInUp": "0.6s ease-out, translateY 12px → 0",                     
+      "slideUp": "0.5s ease-out, translateY 24px → 0",                      
+      "reducedMotion": "respects prefers-reduced-motion: reduce"            
+    },                                                                      
+                                                                            
+    "notes": [                                                              
+      "Warm, off-white backgrounds — never pure white in light mode",       
+      "Accent and link color is forest/sage green — used sparingly",        
+      "Dark mode uses very dark gray (not pure black) for comfort",         
+      "Scrollbars are 4px thin with transparent track",                     
+      "Focus rings use --ring variable with ring-offset for accessibility", 
+      "Screen-line utilities draw full-width horizontal rules via           
+  ::before/::after",                                                        
+      "font-synthesis-weight: none to prevent faux bold",                   
+      "text-rendering: optimizeLegibility for crisp type"                   
+    ]                                                                       
+  }                                                                         
+                                                                            
+
+⏺ Let me read the full current ContentView first so I can plan exactly what
+  changes are needed.
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Now I have everything I need. I'll create a Theme.swift design system file and
+   rewrite the UI in ContentView.swift.
+
+⏺ Write(klariti/Theme.swift)
+  ⎿  Wrote 120 lines to klariti/Theme.swift
+       1 //
+       2 //  Theme.swift
+       3 //  klariti
+       4 //
+       5 //  Klariti design language: minimal, warm, wellness-forward.
+       6 //  Warm cream / dark charcoal palette, Poppins typography, calm
+          motion.
+       7 //
+       8 //  FONT SETUP: Download Poppins-Regular.ttf and Poppins-Bold.tt
+         f from
+       9 //  fonts.google.com/specimen/Poppins, drag both files into the 
+         Xcode
+      10 //  target (check "Add to target: klariti"), then add the two fi
+         lenames
+     … +110 lines (ctrl+o to expand)
+
+⏺ Now rewrite ContentView.swift with the design language applied throughout:
+
+⏺ Write(klariti/ContentView.swift)
+  ⎿  Added 116 lines, removed 144 lines
+      39  
+      40      func readerSession(_ session: NFCNDEFReaderSession, didInva
+          lidateWithError error: Error) {
+      41          let nsError = error as NSError
+      42 -        if nsError.code == 200 { // user cancelled             
+      42 +        if nsError.code == 200 {                               
+      43              DispatchQueue.main.async { self.onCancelled?() }
+      44          } else {
+      45              DispatchQueue.main.async { self.onError?(error.loca
+          lizedDescription) }
+     ...
+      170                  homeScreen
+      171              }
+      172          }
+      173 -        .animation(.spring(duration: 0.4), value: isLocked)   
+      174 -        .animation(.spring(duration: 0.4), value: setupComplet
+          -e)                                                            
+      173 +        .animation(.klDefault, value: isLocked)               
+      174 +        .animation(.klDefault, value: setupComplete)          
+      175          .onAppear {
+      176              loadSavedSelection()
+      177              requestAuthorization()
+     ...
+      180          .onReceive(NotificationCenter.default.publisher(for: U
+           IApplication.didBecomeActiveNotification)) { _ in
+      181              authorizationGranted = (AuthorizationCenter.shared
+           .authorizationStatus == .approved)
+      182          }
+      183 -        .alert("NFC Error", isPresented: $showNFCErrorAlert, p
+          -resenting: nfcErrorMessage) { _ in                            
+      183 +        .alert("Something went wrong", isPresented: $showNFCEr
+          +rorAlert, presenting: nfcErrorMessage) { _ in                 
+      184              Button("OK", role: .cancel) {}
+      185 -        } message: { Text($0) }                               
+      185 +        } message: {                                          
+      186 +            Text($0)                                          
+      187 +                .font(KlFont.body)                            
+      188 +        }                                                     
+      189          .sheet(isPresented: $showingAppPicker) {
+      190              appPickerSheet
+      191          }
+     ...
+      194      // MARK: - Locked Screen
+      195  
+      196      private var lockedScreen: some View {
+      194 -        ZStack {                                              
+      195 -            Color(.systemBackground).ignoresSafeArea()        
+      196 -            VStack(spacing: 0) {                              
+      197 -                Spacer()                                      
+      198 -                VStack(spacing: 20) {                         
+      199 -                    Image(systemName: "lock.fill")            
+      200 -                        .font(.system(size: 72, weight: .semib
+          -old))                                                         
+      201 -                        .foregroundStyle(.primary)            
+      197 +        VStack(spacing: 0) {                                  
+      198 +            Spacer()                                          
+      199 +            VStack(spacing: 16) {                             
+      200 +                Image(systemName: "lock.fill")                
+      201 +                    .font(.system(size: 52, weight: .regular))
+      202 +                    .foregroundStyle(Color.klForeground)      
+      203  
+      203 -                    VStack(spacing: 6) {                      
+      204 -                        Text("Focus Mode")                    
+      205 -                            .font(.system(size: 34, weight: .b
+          -old))                                                         
+      206 -                        Text("Tap your NFC tag to unlock")    
+      207 -                            .font(.subheadline)               
+      208 -                            .foregroundStyle(.secondary)      
+      209 -                    }                                         
+      204 +                VStack(spacing: 6) {                          
+      205 +                    Text("Focus Mode")                        
+      206 +                        .font(KlFont.largeTitle)              
+      207 +                        .foregroundStyle(Color.klForeground)  
+      208 +                    Text("Tap your NFC tag to unlock")        
+      209 +                        .font(KlFont.subhead)                 
+      210 +                        .foregroundStyle(Color.klSubtle)      
+      211 +                }                                             
+      212  
+      211 -                    if selectedAppsCount > 0 {                
+      212 -                        Text("\(selectedAppsCount) app\(select
+          -edAppsCount == 1 ? "" : "s") blocked")                        
+      213 -                            .font(.footnote)                  
+      214 -                            .foregroundStyle(.tertiary)       
+      215 -                            .padding(.top, 4)                 
+      216 -                    }                                         
+      213 +                if selectedAppsCount > 0 {                    
+      214 +                    Text("\(selectedAppsCount) app\(selectedAp
+          +psCount == 1 ? "" : "s") blocked")                            
+      215 +                        .font(KlFont.footnote)                
+      216 +                        .foregroundStyle(Color.klSubtle.opacit
+          +y(0.7))                                                       
+      217 +                        .padding(.top, 2)                     
+      218                  }
+      218 -                Spacer()                                      
+      219 -                Button(action: scanToUnlock) {                
+      220 -                    Label("Tap to Unlock", systemImage: "wave.
+          -3.right")                                                     
+      221 -                        .font(.headline)                      
+      222 -                        .frame(maxWidth: .infinity)           
+      223 -                        .padding(.vertical, 16)               
+      224 -                        .background(Color.primary)            
+      225 -                        .foregroundStyle(Color(.systemBackgrou
+          -nd))                                                          
+      226 -                        .clipShape(RoundedRectangle(cornerRadi
+          -us: 16))                                                      
+      227 -                }                                             
+      228 -                .padding(.horizontal, 32)                     
+      229 -                .padding(.bottom, 52)                         
+      219              }
+      220 +            Spacer()                                          
+      221 +            Button(action: scanToUnlock) {                    
+      222 +                Label("Tap to Unlock", systemImage: "wave.3.ri
+          +ght")                                                         
+      223 +            }                                                 
+      224 +            .buttonStyle(KlPrimaryButtonStyle())              
+      225 +            .padding(.horizontal, 32)                         
+      226 +            .padding(.bottom, 52)                             
+      227          }
+      228 +        .frame(maxWidth: .infinity, maxHeight: .infinity)     
+      229 +        .background(Color.klBackground.ignoresSafeArea())     
+      230      }
+      231  
+      232      // MARK: - Home Screen
+     ...
+      235          NavigationStack {
+      236              VStack(spacing: 0) {
+      237                  Spacer()
+      240 -                VStack(spacing: 14) {                         
+      241 -                    Image(systemName: "lock.open.fill")       
+      242 -                        .font(.system(size: 64, weight: .semib
+          -old))                                                         
+      243 -                        .foregroundStyle(.secondary)          
+      238 +                VStack(spacing: 12) {                         
+      239 +                    Image(systemName: "lock.open")            
+      240 +                        .font(.system(size: 48, weight: .light
+          +))                                                            
+      241 +                        .foregroundStyle(Color.klSubtle)      
+      242  
+      243                      Text("Ready to focus")
+      246 -                        .font(.system(size: 34, weight: .bold)
+          -)                                                             
+      244 +                        .font(KlFont.largeTitle)              
+      245 +                        .foregroundStyle(Color.klForeground)  
+      246  
+      248 -                    if selectedAppsCount > 0 {                
+      249 -                        Text("\(selectedAppsCount) app\(select
+          -edAppsCount == 1 ? "" : "s") will be blocked")                
+      250 -                            .font(.subheadline)               
+      251 -                            .foregroundStyle(.secondary)      
+      252 -                    } else {                                  
+      253 -                        Text("No apps selected yet")          
+      254 -                            .font(.subheadline)               
+      255 -                            .foregroundStyle(.secondary)      
+      256 -                    }                                         
+      247 +                    Text(selectedAppsCount > 0                
+      248 +                         ? "\(selectedAppsCount) app\(selected
+          +AppsCount == 1 ? "" : "s") will be blocked"                   
+      249 +                         : "No apps selected yet")            
+      250 +                        .font(KlFont.subhead)                 
+      251 +                        .foregroundStyle(Color.klSubtle)      
+      252                  }
+      253                  Spacer()
+      259 -                VStack(spacing: 14) {                         
+      260 -                    Button {                                  
+      254 +                VStack(spacing: 12) {                         
+      255 +                    Button("Start Focus") {                   
+      256                          isLocked = true
+      257                          applyShields()
+      263 -                    } label: {                                
+      264 -                        Text("Start Focus")                   
+      265 -                            .font(.headline)                  
+      266 -                            .frame(maxWidth: .infinity)       
+      267 -                            .padding(.vertical, 16)           
+      268 -                            .background(selectedAppsCount > 0 
+          -? Color.primary : Color(.systemFill))                         
+      269 -                            .foregroundStyle(selectedAppsCount
+          - > 0 ? Color(.systemBackground) : Color.secondary)            
+      270 -                            .clipShape(RoundedRectangle(corner
+          -Radius: 16))                                                  
+      258                      }
+      259 +                    .buttonStyle(KlPrimaryButtonStyle(isEnable
+          +d: selectedAppsCount > 0))                                    
+      260                      .disabled(selectedAppsCount == 0)
+      261  
+      262                      Button(selectedAppsCount > 0 ? "Edit block
+           ed apps" : "Choose apps to block") {
+     ...
+      268                              if authorizationGranted { showingA
+           ppPicker = true }
+      269                          }
+      270                      }
+      283 -                    .font(.subheadline)                       
+      284 -                    .foregroundStyle(.secondary)              
+      271 +                    .font(KlFont.subhead)                     
+      272 +                    .foregroundStyle(Color.klSubtle)          
+      273                  }
+      274                  .padding(.horizontal, 32)
+      275                  .padding(.bottom, 52)
+      276              }
+      289 -            .navigationTitle("Klariti")                       
+      290 -            .navigationBarTitleDisplayMode(.inline)           
+      277 +            .background(Color.klBackground)                   
+      278              .toolbar {
+      279 +                ToolbarItem(placement: .principal) {          
+      280 +                    Text("Klariti")                           
+      281 +                        .font(KlFont.headline)                
+      282 +                        .foregroundStyle(Color.klForeground)  
+      283 +                }                                             
+      284                  ToolbarItem(placement: .topBarTrailing) {
+      285                      Menu {
+      286                          Button("Re-register NFC Tag", action: 
+           reRegisterNFC)
+      287                          Divider()
+      288                          Button("Reset Setup", role: .destructi
+           ve, action: resetSetup)
+      289                      } label: {
+      298 -                        Image(systemName: "ellipsis.circle")  
+      290 +                        Image(systemName: "ellipsis")         
+      291 +                            .font(.system(size: 15, weight: .r
+          +egular))                                                      
+      292 +                            .foregroundStyle(Color.klSubtle)  
+      293                      }
+      294                  }
+      295              }
+      296 +            .toolbarBackground(Color.klBackground, for: .navig
+          +ationBar)                                                     
+      297 +            .toolbarBackground(.visible, for: .navigationBar) 
+      298          }
+      299      }
+      300  
+     ...
+      312      private var nfcSetupStep: some View {
+      313          VStack(spacing: 0) {
+      314              Spacer()
+      319 -            VStack(spacing: 24) {                             
+      320 -                Image(systemName: "wave.3.right.circle.fill") 
+      321 -                    .font(.system(size: 80))                  
+      322 -                    .foregroundStyle(.blue)                   
+      323 -                    .symbolRenderingMode(.hierarchical)       
+      315 +            VStack(spacing: 28) {                             
+      316 +                Image(systemName: "tag")                      
+      317 +                    .font(.system(size: 56, weight: .light))  
+      318 +                    .foregroundStyle(Color.klForeground)      
+      319  
+      325 -                VStack(spacing: 10) {                         
+      320 +                VStack(spacing: 8) {                          
+      321                      Text("Register your\nfocus key")
+      327 -                        .font(.system(size: 34, weight: .bold)
+          -)                                                             
+      322 +                        .font(KlFont.largeTitle)              
+      323 +                        .foregroundStyle(Color.klForeground)  
+      324                          .multilineTextAlignment(.center)
+      329 -                    Text("Scan an NFC tag. You'll need to tap 
+          -it\nevery time you want to end a session.")                   
+      330 -                        .font(.subheadline)                   
+      331 -                        .foregroundStyle(.secondary)          
+      325 +                    Text("Scan an NFC tag. You'll need it\neve
+          +ry time you want to end a session.")                          
+      326 +                        .font(KlFont.subhead)                 
+      327 +                        .foregroundStyle(Color.klSubtle)      
+      328                          .multilineTextAlignment(.center)
+      329                  }
+      330  
+      331                  if nfcRegistered {
+      332                      Label("Tag registered", systemImage: "chec
+           kmark.circle.fill")
+      337 -                        .foregroundStyle(.green)              
+      338 -                        .font(.subheadline.bold())            
+      333 +                        .font(KlFont.subhead)                 
+      334 +                        .foregroundStyle(Color.klSuccess)     
+      335                  }
+      336  
+      337                  if !nfcAvailable {
+      342 -                    Label("NFC not available on this device", 
+          -systemImage: "exclamationmark.triangle.fill")                 
+      343 -                        .font(.footnote)                      
+      344 -                        .foregroundStyle(.orange)             
+      338 +                    Label("NFC not available on this device", 
+          +systemImage: "exclamationmark.triangle")                      
+      339 +                        .font(KlFont.footnote)                
+      340 +                        .foregroundStyle(Color.klSubtle)      
+      341                  }
+      342              }
+      347 -            .padding(.horizontal, 32)                         
+      343 +            .padding(.horizontal, 36)                         
+      344              Spacer()
+      349 -            VStack(spacing: 12) {                             
+      345 +            VStack(spacing: 10) {                             
+      346                  Button(action: registerNFC) {
+      347                      Label(nfcRegistered ? "Re-scan Tag" : "Sca
+           n NFC Tag",
+      348                            systemImage: nfcRegistered ? "arrow.
+           clockwise" : "wave.3.right")
+      353 -                        .font(.headline)                      
+      354 -                        .frame(maxWidth: .infinity)           
+      355 -                        .padding(.vertical, 16)               
+      356 -                        .background(nfcRegistered ? Color(.sys
+          -temFill) : Color.primary)                                     
+      357 -                        .foregroundStyle(nfcRegistered ? Color
+          -.primary : Color(.systemBackground))                          
+      358 -                        .clipShape(RoundedRectangle(cornerRadi
+          -us: 16))                                                      
+      349                  }
+      350 +                .buttonStyle(nfcRegistered ? KlSecondaryButton
+          +Style() : KlPrimaryButtonStyle())                             
+      351                  .disabled(!nfcAvailable)
+      352  
+      353                  if nfcRegistered {
+      363 -                    Button("Continue") {                      
+      364 -                        setupStep = 1                         
+      365 -                    }                                         
+      366 -                    .font(.headline)                          
+      367 -                    .frame(maxWidth: .infinity)               
+      368 -                    .padding(.vertical, 16)                   
+      369 -                    .background(Color.primary)                
+      370 -                    .foregroundStyle(Color(.systemBackground))
+      371 -                    .clipShape(RoundedRectangle(cornerRadius: 
+          -16))                                                          
+      354 +                    Button("Continue") { setupStep = 1 }      
+      355 +                        .buttonStyle(KlPrimaryButtonStyle())  
+      356                  }
+      357              }
+      358              .padding(.horizontal, 32)
+      359              .padding(.bottom, 52)
+      360          }
+      361 +        .frame(maxWidth: .infinity, maxHeight: .infinity)     
+      362 +        .background(Color.klBackground.ignoresSafeArea())     
+      363      }
+      364  
+      365      private var appSetupStep: some View {
+      366          VStack(spacing: 0) {
+      367              Spacer()
+      382 -            VStack(spacing: 24) {                             
+      383 -                Image(systemName: "apps.iphone.badge.plus")   
+      384 -                    .font(.system(size: 80))                  
+      385 -                    .foregroundStyle(.orange)                 
+      386 -                    .symbolRenderingMode(.hierarchical)       
+      368 +            VStack(spacing: 28) {                             
+      369 +                Image(systemName: "apps.iphone")              
+      370 +                    .font(.system(size: 56, weight: .light))  
+      371 +                    .foregroundStyle(Color.klForeground)      
+      372  
+      388 -                VStack(spacing: 10) {                         
+      373 +                VStack(spacing: 8) {                          
+      374                      Text("Choose apps\nto block")
+      390 -                        .font(.system(size: 34, weight: .bold)
+          -)                                                             
+      375 +                        .font(KlFont.largeTitle)              
+      376 +                        .foregroundStyle(Color.klForeground)  
+      377                          .multilineTextAlignment(.center)
+      378                      Text("These apps will be unavailable\nduri
+           ng every focus session.")
+      393 -                        .font(.subheadline)                   
+      394 -                        .foregroundStyle(.secondary)          
+      379 +                        .font(KlFont.subhead)                 
+      380 +                        .foregroundStyle(Color.klSubtle)      
+      381                          .multilineTextAlignment(.center)
+      382                  }
+      383  
+      384                  if selectedAppsCount > 0 {
+      399 -                    Label("\(selectedAppsCount) app\(selectedA
+          -ppsCount == 1 ? "" : "s") selected", systemImage: "checkmark.c
+          -ircle.fill")                                                  
+      400 -                        .foregroundStyle(.green)              
+      401 -                        .font(.subheadline.bold())            
+      385 +                    Label("\(selectedAppsCount) app\(selectedA
+          +ppsCount == 1 ? "" : "s") selected",                          
+      386 +                          systemImage: "checkmark.circle.fill"
+          +)                                                             
+      387 +                        .font(KlFont.subhead)                 
+      388 +                        .foregroundStyle(Color.klSuccess)     
+      389                  }
+      390  
+      391                  if !authorizationGranted {
+      405 -                    Label("Tap below — Screen Time access will
+          - be requested", systemImage: "info.circle")                   
+      406 -                        .font(.footnote)                      
+      407 -                        .foregroundStyle(.secondary)          
+      392 +                    Text("Screen Time access will be requested
+          + when you tap below.")                                        
+      393 +                        .font(KlFont.footnote)                
+      394 +                        .foregroundStyle(Color.klSubtle)      
+      395                          .multilineTextAlignment(.center)
+      396                  }
+      397              }
+      411 -            .padding(.horizontal, 32)                         
+      398 +            .padding(.horizontal, 36)                         
+      399              Spacer()
+      413 -            VStack(spacing: 12) {                             
+      400 +            VStack(spacing: 10) {                             
+      401                  Button {
+      402                      Task { @MainActor in
+      403                          if !authorizationGranted {
+      404                              try? await AuthorizationCenter.sha
+           red.requestAuthorization(for: .individual)
+      405                              authorizationGranted = (Authorizat
+           ionCenter.shared.authorizationStatus == .approved)
+      406                          }
+      420 -                        if authorizationGranted {             
+      421 -                            showingAppPicker = true           
+      422 -                        }                                     
+      407 +                        if authorizationGranted { showingAppPi
+          +cker = true }                                                 
+      408                      }
+      409                  } label: {
+      425 -                    HStack(spacing: 10) {                     
+      426 -                        Image(systemName: "app.badge.checkmark
+          -")                                                            
+      427 -                        Text(selectedAppsCount > 0 ? "Edit sel
+          -ection" : "Choose Apps")                                      
+      428 -                            .font(.headline)                  
+      429 -                    }                                         
+      430 -                    .frame(maxWidth: .infinity)               
+      431 -                    .padding(.vertical, 16)                   
+      432 -                    .background(selectedAppsCount > 0 ? Color(
+          -.systemFill) : Color.primary)                                 
+      433 -                    .foregroundStyle(selectedAppsCount > 0 ? C
+          -olor.primary : Color(.systemBackground))                      
+      434 -                    .clipShape(RoundedRectangle(cornerRadius: 
+          -16))                                                          
+      410 +                    Text(selectedAppsCount > 0 ? "Edit selecti
+          +on" : "Choose Apps")                                          
+      411                  }
+      412 +                .buttonStyle(selectedAppsCount > 0 ? KlSeconda
+          +ryButtonStyle() : KlPrimaryButtonStyle())                     
+      413  
+      414                  if selectedAppsCount > 0 {
+      438 -                    Button("Done — Start using Klariti") {    
+      439 -                        setupComplete = true                  
+      440 -                    }                                         
+      441 -                    .font(.headline)                          
+      442 -                    .frame(maxWidth: .infinity)               
+      443 -                    .padding(.vertical, 16)                   
+      444 -                    .background(Color.primary)                
+      445 -                    .foregroundStyle(Color(.systemBackground))
+      446 -                    .clipShape(RoundedRectangle(cornerRadius: 
+          -16))                                                          
+      415 +                    Button("Done — Start using Klariti") { set
+          +upComplete = true }                                           
+      416 +                        .buttonStyle(KlPrimaryButtonStyle())  
+      417                  }
+      418  
+      449 -                Button("Back") {                              
+      450 -                    setupStep = 0                             
+      451 -                }                                             
+      452 -                .font(.subheadline)                           
+      453 -                .foregroundStyle(.secondary)                  
+      419 +                Button("Back") { setupStep = 0 }              
+      420 +                    .font(KlFont.subhead)                     
+      421 +                    .foregroundStyle(Color.klSubtle)          
+      422 +                    .padding(.top, 4)                         
+      423              }
+      424              .padding(.horizontal, 32)
+      425              .padding(.bottom, 52)
+      426          }
+      427 +        .frame(maxWidth: .infinity, maxHeight: .infinity)     
+      428 +        .background(Color.klBackground.ignoresSafeArea())     
+      429      }
+      430  
+      431      // MARK: - App Picker Sheet
+     ...
+      444                              showingAppPicker = false
+      445                              if isLocked { applyShields() }
+      446                          }
+      476 -                        .fontWeight(.semibold)                
+      447 +                        .font(KlFont.headline)                
+      448 +                        .foregroundStyle(Color.klForeground)  
+      449                      }
+      450                  }
+      451          }
+
+⏺ Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild
+      -scheme klariti -destination 'generic/platform=iOS' build 2>&1 | grep
+      "error:" | head -20)
+  ⎿  /Users/ignasxv/code/klariti/klariti/ContentView.swift:350:46: error: r
+     esult values in '? :' expression have mismatching types 'KlSecondaryBu
+     ttonStyle' and 'KlPrimaryButtonStyle'
+     … +3 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+
+⏺ The ternary can't mix two different ButtonStyle types. Simplest fix — use
+  if/else on each button and a single shared style with a secondary flag.
+
+⏺ Update(klariti/Theme.swift)
+  ⎿  Added 10 lines, removed 20 lines
+       87  
+       88  // MARK: - Reusable button styles
+       89  
+       90 -/// Full-width filled pill button using the primary colour pai
+          -r                                                             
+       91 -struct KlPrimaryButtonStyle: ButtonStyle {                    
+       92 -    var isEnabled: Bool = true                                
+       90 +/// Full-width pill button. `secondary: true` uses the muted f
+          +ill variant.                                                  
+       91 +/// `enabled: false` greys out the primary variant (pass `.dis
+          +abled()` separately).                                         
+       92 +struct KlButtonStyle: ButtonStyle {                           
+       93 +    var secondary: Bool = false                               
+       94 +    var enabled: Bool = true                                  
+       95  
+       96      func makeBody(configuration: Configuration) -> some View {
+       95 -        configuration.label                                   
+       96 -            .font(KlFont.headline)                            
+       97 -            .frame(maxWidth: .infinity)                       
+       98 -            .padding(.vertical, 16)                           
+       99 -            .background(isEnabled ? Color.klPrimary : Color.kl
+          -Muted)                                                        
+      100 -            .foregroundStyle(isEnabled ? Color.klPrimaryFg : C
+          -olor.klSubtle)                                                
+      101 -            .clipShape(RoundedRectangle(cornerRadius: 12))    
+      102 -            .opacity(configuration.isPressed ? 0.85 : 1)      
+      103 -            .animation(.klSnappy, value: configuration.isPress
+          -ed)                                                           
+      104 -    }                                                         
+      105 -}                                                             
+       97 +        let bg: Color = secondary ? .klMuted  : (enabled ? .kl
+          +Primary : .klMuted)                                           
+       98 +        let fg: Color = secondary ? .klForeground : (enabled ?
+          + .klPrimaryFg : .klSubtle)                                    
+       99  
+      107 -/// Full-width outlined / muted pill button                   
+      108 -struct KlSecondaryButtonStyle: ButtonStyle {                  
+      109 -    func makeBody(configuration: Configuration) -> some View {
+      100          configuration.label
+      101              .font(KlFont.headline)
+      102              .frame(maxWidth: .infinity)
+      103              .padding(.vertical, 16)
+      114 -            .background(Color.klMuted)                        
+      115 -            .foregroundStyle(Color.klForeground)              
+      104 +            .background(bg)                                   
+      105 +            .foregroundStyle(fg)                              
+      106              .clipShape(RoundedRectangle(cornerRadius: 12))
+      117 -            .opacity(configuration.isPressed ? 0.75 : 1)      
+      107 +            .opacity(configuration.isPressed ? 0.8 : 1)       
+      108              .animation(.klSnappy, value: configuration.isPress
+           ed)
+      109      }
+      110  }
+
+⏺ Now update ContentView.swift to use KlButtonStyle:
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 5 lines, removed 5 lines
+      221              Button(action: scanToUnlock) {
+      222                  Label("Tap to Unlock", systemImage: "wave.3.ri
+           ght")
+      223              }
+      224 -            .buttonStyle(KlPrimaryButtonStyle())              
+      224 +            .buttonStyle(KlButtonStyle())                     
+      225              .padding(.horizontal, 32)
+      226              .padding(.bottom, 52)
+      227          }
+     ...
+      347                      Label(nfcRegistered ? "Re-scan Tag" : "Sca
+           n NFC Tag",
+      348                            systemImage: nfcRegistered ? "arrow.
+           clockwise" : "wave.3.right")
+      349                  }
+      350 -                .buttonStyle(nfcRegistered ? KlSecondaryButton
+          -Style() : KlPrimaryButtonStyle())                             
+      350 +                .buttonStyle(nfcRegistered ? KlSecondaryButton
+          +Style() : KlButtonStyle())                                    
+      351                  .disabled(!nfcAvailable)
+      352  
+      353                  if nfcRegistered {
+      354                      Button("Continue") { setupStep = 1 }
+      355 -                        .buttonStyle(KlPrimaryButtonStyle())  
+      355 +                        .buttonStyle(KlButtonStyle())         
+      356                  }
+      357              }
+      358              .padding(.horizontal, 32)
+     ...
+      409                  } label: {
+      410                      Text(selectedAppsCount > 0 ? "Edit selecti
+           on" : "Choose Apps")
+      411                  }
+      412 -                .buttonStyle(selectedAppsCount > 0 ? KlSeconda
+          -ryButtonStyle() : KlPrimaryButtonStyle())                     
+      412 +                .buttonStyle(selectedAppsCount > 0 ? KlSeconda
+          +ryButtonStyle() : KlButtonStyle())                            
+      413  
+      414                  if selectedAppsCount > 0 {
+      415                      Button("Done — Start using Klariti") { set
+           upComplete = true }
+      416 -                        .buttonStyle(KlPrimaryButtonStyle())  
+      416 +                        .buttonStyle(KlButtonStyle())         
+      417                  }
+      418  
+      419                  Button("Back") { setupStep = 0 }
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 2 lines, removed 2 lines
+      347                      Label(nfcRegistered ? "Re-scan Tag" : "Sca
+           n NFC Tag",
+      348                            systemImage: nfcRegistered ? "arrow.
+           clockwise" : "wave.3.right")
+      349                  }
+      350 -                .buttonStyle(nfcRegistered ? KlSecondaryButton
+          -Style() : KlButtonStyle())                                    
+      350 +                .buttonStyle(nfcRegistered ? KlButtonStyle(sec
+          +ondary: true) : KlButtonStyle())                              
+      351                  .disabled(!nfcAvailable)
+      352  
+      353                  if nfcRegistered {
+     ...
+      409                  } label: {
+      410                      Text(selectedAppsCount > 0 ? "Edit selecti
+           on" : "Choose Apps")
+      411                  }
+      412 -                .buttonStyle(selectedAppsCount > 0 ? KlSeconda
+          -ryButtonStyle() : KlButtonStyle())                            
+      412 +                .buttonStyle(selectedAppsCount > 0 ? KlButtonS
+          +tyle(secondary: true) : KlButtonStyle())                      
+      413  
+      414                  if selectedAppsCount > 0 {
+      415                      Button("Done — Start using Klariti") { set
+           upComplete = true }
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Error editing file
+
+⏺ Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 1 line, removed 1 line
+      256                          isLocked = true
+      257                          applyShields()
+      258                      }
+      259 -                    .buttonStyle(KlPrimaryButtonStyle(isEnable
+          -d: selectedAppsCount > 0))                                    
+      259 +                    .buttonStyle(KlButtonStyle(enabled: select
+          +edAppsCount > 0))                                             
+      260                      .disabled(selectedAppsCount == 0)
+      261  
+      262                      Button(selectedAppsCount > 0 ? "Edit block
+           ed apps" : "Choose apps to block") {
+
+⏺ Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild
+      -scheme klariti -destination 'generic/platform=iOS' build 2>&1 | grep
+      "error:" | head -20)
+  ⎿  (No output)
+  ⎿  (timeout 2m)
+
+⏺ Clean build. Here's what changed:
+
+  Theme.swift (new file) — all design tokens in one place:
+  - Color.klBackground / klForeground / klMuted / klSubtle / klBorder /
+  klPrimary / klPrimaryFg / klCard / klSuccess / klDestructive — all adaptive
+  light/dark via UIColor
+  - KlFont — semantic scale using Poppins (regular/bold), automatic SF Pro
+  fallback until you add the font files
+  - Animation.klDefault (0.6 s ease-out) / .klSnappy (0.45 s)
+  - KlButtonStyle(secondary:, enabled:) — single unified button style
+
+  ContentView.swift changes:
+  - All Color(.systemBackground), .primary, .secondary, Color(.systemFill),
+  .green, .blue, .orange replaced with design tokens
+  - All fonts replaced with KlFont.*
+  - Animations swapped to .klDefault
+  - Icons switched to weight: .light / .regular — no SF fill variants, no bright
+   colors, monochromatic
+  - Navigation bar gets toolbarBackground(Color.klBackground) so it blends
+  seamlessly
+
+  To activate Poppins: download Poppins-Regular.ttf + Poppins-Bold.ttf from
+  fonts.google.com, drag both into Xcode (check "Add to target: klariti"), and
+  add both filenames under UIAppFonts in Info.plist.
+
+✻ Sautéed for 5m 8s
+
+❯ this is the message when i click *tap to unlock) -[NFCNDEFReaderSession   
+  _callbackDidBecomeActive]:223 Delegate does not implement                 
+  -readerSessionDidBecomeActive: method                                     
+
+⏺ That's a missing optional delegate method. CoreNFC logs a warning (and can
+  behave unexpectedly) when readerSessionDidBecomeActive(_:) isn't implemented.
+  One-line fix:
+
+⏺ Update(klariti/ContentView.swift)
+  ⎿  Added 1 line
+      130          return String(data: record.payload, encoding: .utf8)
+      131      }
+      132  
+      133 +    func readerSessionDidBecomeActive(_ session: NFCNDEFReader
+          +Session) {}                                                   
+      134      func readerSession(_ session: NFCNDEFReaderSession, didDet
+           ectNDEFs messages: [NFCNDEFMessage]) {}
+      135  }
+      136  
+
+⏺ Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild
+      -scheme klariti -destination 'generic/platform=iOS' build 2>&1 | grep
+      "error:" | head -5)
+  ⎿  (No output)
+  ⎿  (timeout 1m)
+
+⏺ Clean. readerSessionDidBecomeActive(_:) is an optional protocol method that
+  CoreNFC calls as soon as the NFC reader sheet appears — without it the system
+  logs that warning and the session may not proceed to scan. Empty
+  implementation is all that's needed.
+
+❯ add the necessasry .gitignore on the root 
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Write(.gitignore)
+  ⎿  Wrote 46 lines to .gitignore
+      1 # Xcode
+      2 *.xcuserstate
+      3 *.xccheckout
+      4 *.moved-aside
+      5 *.hmap
+      6 *.ipa
+      7 *.dSYM.zip
+      8 *.dSYM
+      9 xcuserdata/
+     … +36 lines (ctrl+o to expand)
+
+⏺ Done.
