@@ -41,6 +41,6 @@ async function classifyUrl(url: string) {
 }
 
 (async () => {
-  const result = await classifyUrl("https://youtu.be/99VNCxlbW1c?si=7KaoMCcs5awP3Z_D");
-  console.log(result);
+  const result = await classifyUrl("https://youtu.be/EZQ_cME6yrU");
+  console.log(result?.categoryId);
 })();

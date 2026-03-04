@@ -1,0 +1,94 @@
+{
+  "description": "Klariti design language: minimal, warm, and wellness-forward. Built on neutral cream and dark tones with sage green accents. Clean sans-serif typography (Poppins) with optional serif (Literata) for expressive moments. Calm motion, accessible contrast, and class-based dark mode. Everything is intentionally understated — no bright primaries, no aggressive UI chrome.",
+
+  "fonts": {
+    "sans": {
+      "name": "Poppins",
+      "source": "Google Fonts",
+      "weights": ["400", "700"],
+      "variable": "--font-sans",
+      "usage": "Primary UI font — body text, labels, navigation, headings"
+    },
+    "serif": {
+      "name": "Literata",
+      "source": "Google Fonts",
+      "weights": ["400", "700"],
+      "variable": "--font-serif",
+      "usage": "Accent serif — pull quotes, editorial content, expressive headings"
+    },
+    "mono": {
+      "name": "Space Mono",
+      "source": "Google Fonts",
+      "weights": ["400", "700"],
+      "variable": "--font-mono",
+      "usage": "Code blocks, technical content, monospaced data"
+    }
+  },
+
+  "colors": {
+    "light": {
+      "background": "#fafaf8",
+      "foreground": "#1a1a1a",
+      "muted": "#f0efeb",
+      "mutedForeground": "#737066",
+      "border": "#e8e6e1",
+      "edge": "#f0efeb",
+      "accent": "#e8e6e1",
+      "accentForeground": "#1a1a1a",
+      "primary": "#1a1a1a",
+      "primaryForeground": "#fafaf8",
+      "card": "#ffffff",
+      "cardForeground": "#1a1a1a",
+      "ring": "#a8a49c",
+      "link": "#4a6741",
+      "success": "#4a6741",
+      "destructive": "#c23b22",
+      "selection": "#1a1a1a",
+      "selectionForeground": "#fafaf8"
+    },
+    "dark": {
+      "background": "#111110",
+      "foreground": "#ededec",
+      "muted": "#1e1e1c",
+      "mutedForeground": "#a1a09a",
+      "border": "#2a2a28",
+      "edge": "#1e1e1c",
+      "accent": "#2a2a28",
+      "accentForeground": "#ededec",
+      "primary": "#ededec",
+      "primaryForeground": "#111110",
+      "card": "#191918",
+      "cardForeground": "#ededec",
+      "ring": "#5c5b56",
+      "link": "#8bb07f",
+      "success": "#8bb07f",
+      "destructive": "#e55a3f",
+      "selection": "#ededec",
+      "selectionForeground": "#111110"
+    }
+  },
+
+  "layout": {
+    "contentMaxWidth": "680px",
+    "scrollOffset": "5rem",
+    "darkMode": "class-based (.dark)"
+  },
+
+  "motion": {
+    "fadeIn": "0.6s ease-out",
+    "fadeInUp": "0.6s ease-out, translateY 12px → 0",
+    "slideUp": "0.5s ease-out, translateY 24px → 0",
+    "reducedMotion": "respects prefers-reduced-motion: reduce"
+  },
+
+  "notes": [
+    "Warm, off-white backgrounds — never pure white in light mode",
+    "Accent and link color is forest/sage green — used sparingly",
+    "Dark mode uses very dark gray (not pure black) for comfort",
+    "Scrollbars are 4px thin with transparent track",
+    "Focus rings use --ring variable with ring-offset for accessibility",
+    "Screen-line utilities draw full-width horizontal rules via ::before/::after",
+    "font-synthesis-weight: none to prevent faux bold",
+    "text-rendering: optimizeLegibility for crisp type"
+  ]
+}
