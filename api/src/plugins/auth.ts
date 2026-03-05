@@ -1,8 +1,51 @@
 import fp from "fastify-plugin";
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { auth, type Session } from "@klariti/auth/server";
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { bearer } from "better-auth/plugins";
+import {
+  db,
+  authUser,
+  authSession,
+  authAccount,
+  authVerification,
+} from "@klariti/database";
 import { toWebHeaders } from "../utils/headers";
 
+// ── better-auth instance ────────────────────────────────────────────────────
+const trustedOrigins = (process.env.CORS_ORIGINS ?? "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+const auth = betterAuth({
+  secret: process.env.BETTER_AUTH_SECRET,
+  baseURL: process.env.BETTER_AUTH_URL,
+  trustedOrigins,
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    schema: {
+      user: authUser,
+      session: authSession,
+      account: authAccount,
+      verification: authVerification,
+    },
+  }),
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: false,
+  },
+  user: {
+    changeEmail: {
+      enabled: true,
+    },
+  },
+  plugins: [bearer()],
+});
+
+export type Session = typeof auth.$Infer.Session;
+
+// ── Fastify type augmentation ───────────────────────────────────────────────
 declare module "fastify" {
   interface FastifyRequest {
     session: Session | null;
