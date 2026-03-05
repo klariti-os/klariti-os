@@ -1,24 +1,8 @@
 import { FastifyInstance } from "fastify";
-import { auth } from "@klariti/auth/server";
+import { resolveStatus, resolveMessage } from "../utils/errors";
 
 type SignUpBody = { name: string; email: string; password: string };
 type SignInBody = { email: string; password: string };
-
-const STATUS_MAP: Record<string, number> = {
-  BAD_REQUEST: 400,
-  UNAUTHORIZED: 401,
-  FORBIDDEN: 403,
-  NOT_FOUND: 404,
-  CONFLICT: 409,
-  INTERNAL_SERVER_ERROR: 500,
-};
-
-function resolveStatus(err: any, fallback = 400): number {
-  const s = err?.status ?? err?.statusCode;
-  if (typeof s === "number") return s;
-  if (typeof s === "string") return STATUS_MAP[s] ?? fallback;
-  return fallback;
-}
 
 export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post<{ Body: SignUpBody }>("/api/sign-up", {
@@ -59,7 +43,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     },
     handler: async (request, reply) => {
       try {
-        const data = await auth.api.signUpEmail({
+        const data = await fastify.auth.api.signUpEmail({
           body: request.body,
         });
         return reply.send({
@@ -67,9 +51,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
           user: data.user,
         });
       } catch (err: any) {
-        return reply.status(resolveStatus(err, 400)).send({
-          error: err?.body?.message ?? err?.message ?? "Sign-up failed",
-        });
+        return reply
+          .status(resolveStatus(err, 400))
+          .send({ error: resolveMessage(err, "Sign-up failed") });
       }
     },
   });
@@ -111,7 +95,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     },
     handler: async (request, reply) => {
       try {
-        const data = await auth.api.signInEmail({
+        const data = await fastify.auth.api.signInEmail({
           body: request.body,
         });
         return reply.send({
@@ -119,9 +103,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
           user: data.user,
         });
       } catch (err: any) {
-        return reply.status(resolveStatus(err, 401)).send({
-          error: err?.body?.message ?? err?.message ?? "Invalid email or password",
-        });
+        return reply
+          .status(resolveStatus(err, 401))
+          .send({ error: resolveMessage(err, "Invalid email or password") });
       }
     },
   });
