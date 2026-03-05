@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@klariti/api-client": "workspace:*",
-    "@klariti/auth": "workspace:*",
     "better-auth": "^1.2.0",
     "@tanstack/query-sync-storage-persister": "^5.90.14",
     "@tanstack/react-query": "^5.90.12",
