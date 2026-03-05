@@ -1,5 +1,5 @@
-import { google } from "googleapis";
 import { config } from "dotenv";
+import { google } from "googleapis";
 
 config({ path: "../../../.env" });
 
@@ -13,8 +13,8 @@ const youtube = google.youtube({
 });
 
 class YouTubeCategoriesCache {
-  private lastUpdated = new Date(0);
-  private cacheDuration = 8.64e7; // 1 day in milliseconds
+  // private lastUpdated = new Date(0);
+  // private cacheDuration = 8.64e7; // 1 day in milliseconds
   private cache: Record<string, string> = {
     "1": "Film & Animation",
     "2": "Autos & Vehicles",
@@ -50,18 +50,16 @@ class YouTubeCategoriesCache {
     "44": "Trailers",
   };
 
-  constructor() {}
-
   /**
    * Checks if the cache is stale and updates it if necessary.
    * This method should be called before accessing the cache to ensure that the data is up to date.
    */
   private async updateCache() {
-    return // we can probably just use the hardcoded values.
-    if (Date.now() - this.lastUpdated.getTime() > this.cacheDuration) {
-      this.cache = await this.fetchCategories();
-      this.lastUpdated = new Date();
-    }
+    return; // we can probably just use the hardcoded values.
+    // if (Date.now() - this.lastUpdated.getTime() > this.cacheDuration) {
+    //   this.cache = await this.fetchCategories();
+    //   this.lastUpdated = new Date();
+    // }
   }
 
   /**
@@ -70,24 +68,24 @@ class YouTubeCategoriesCache {
    * @param regionCode The two-character string representing the region to fetch categories for.
    * @returns A mapping of category ID to category title.
    */
-  private async fetchCategories(regionCode: string = "US") {
-    const response = await youtube.videoCategories.list({
-      part: ["snippet"],
-      regionCode,
-    });
+  // private async fetchCategories(regionCode: string = "US") {
+  //   const response = await youtube.videoCategories.list({
+  //     part: ["snippet"],
+  //     regionCode,
+  //   });
 
-    return (
-      response.data.items?.reduce(
-        (acc, category) => {
-          if (category.id && category.snippet?.title) {
-            acc[category.id] = category.snippet.title;
-          }
-          return acc;
-        },
-        {} as Record<string, string>,
-      ) || {}
-    );
-  }
+  //   return (
+  //     response.data.items?.reduce(
+  //       (acc, category) => {
+  //         if (category.id && category.snippet?.title) {
+  //           acc[category.id] = category.snippet.title;
+  //         }
+  //         return acc;
+  //       },
+  //       {} as Record<string, string>,
+  //     ) || {}
+  //   );
+  // }
 
   /**
    * Get the title for a given category ID.
@@ -123,9 +121,9 @@ async function getVideoMetadata(id: string) {
   }
 
   return {
-    title: video.snippet?.title || "",
-    description: video.snippet?.description || "",
-    tags: video.snippet?.tags || [],
+    // title: video.snippet?.title || "",
+    // description: video.snippet?.description || "",
+    // tags: video.snippet?.tags || [],
     categoryId: video.snippet?.categoryId || "",
   };
 }
@@ -166,5 +164,5 @@ async function classifyUrl(url: string) {
 }
 
 (async () => {
-  console.log(await classifyUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ"));
+  console.log(await classifyUrl("https://www.youtube.com/watch?v=aR520g2_s_I"));
 })();
