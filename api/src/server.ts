@@ -8,6 +8,9 @@ import authPlugin from "./plugins/auth";
 import meRoutes from "./routes/me";
 import authRoutes from "./routes/auth";
 import profilesRoutes from "./routes/profiles";
+import groupsRoutes from "./routes/groups";
+import userPreferencesRoutes from "./routes/user-preferences";
+import groupPreferencesRoutes from "./routes/group-preferences";
 
 const fastify = Fastify({
   logger: {
@@ -22,11 +25,14 @@ fastify.register(formbody);
 fastify.register(swaggerPlugin);
 fastify.register(corsPlugin);
 fastify.register(authPlugin);
-fastify.register(profilesRoutes, { prefix: "/api/profiles" });
 
 // Routes
 fastify.register(authRoutes);
 fastify.register(meRoutes, { prefix: "/api/me" });
+fastify.register(profilesRoutes, { prefix: "/api/profiles" });
+fastify.register(groupsRoutes, { prefix: "/api/groups" });
+fastify.register(userPreferencesRoutes, { prefix: "/api/user-preferences" });
+fastify.register(groupPreferencesRoutes, { prefix: "/api/group-preferences" });
 
 fastify.get(
   "/",    
