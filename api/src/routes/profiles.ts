@@ -15,7 +15,6 @@ export default async function profilesRoutes(fastify: FastifyInstance) {
               id: { type: "string" },
               userId: { type: "string" },
               name: { type: "string" },
-              age: { type: "number" },
               isActive: { type: "boolean" },
               createdAt: { type: "string" },
               updatedAt: { type: "string" },
@@ -41,7 +40,7 @@ export default async function profilesRoutes(fastify: FastifyInstance) {
     },
   });
 
-  fastify.post<{ Body: { name: string; age?: number; is_active?: boolean } }>("/", {
+  fastify.post<{ Body: { name: string; is_active?: boolean } }>("/", {
     schema: {
       tags: ["Profiles"],
       security: [{ bearerAuth: [] }],
@@ -50,7 +49,6 @@ export default async function profilesRoutes(fastify: FastifyInstance) {
         required: ["name"],
         properties: {
           name: { type: "string" },
-          age: { type: "number" },
           is_active: { type: "boolean" },
         },
       },
@@ -61,7 +59,6 @@ export default async function profilesRoutes(fastify: FastifyInstance) {
             id: { type: "string", format: "uuid" },
             user_id: { type: "string" },
             name: { type: "string" },
-            age: { type: "number", nullable: true },
             is_active: { type: "boolean" },
             created_at: { type: "string", format: "date-time" },
             updated_at: { type: "string", format: "date-time" },
@@ -73,13 +70,12 @@ export default async function profilesRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
       const userId = request.session!.user.id;
-      const { name, age, is_active } = request.body;
+      const { name, is_active } = request.body;
       const [created] = await db
         .insert(profilesTable)
         .values({
           user_id: userId,
           name,
-          age: age ?? null,
           is_active: is_active ?? false,
         })
         .returning();
@@ -99,7 +95,6 @@ export default async function profilesRoutes(fastify: FastifyInstance) {
             id: { type: "string", format: "uuid" },
             user_id: { type: "string" },
             name: { type: "string" },
-            age: { type: "number", nullable: true },
             is_active: { type: "boolean" },
             created_at: { type: "string", format: "date-time" },
             updated_at: { type: "string", format: "date-time" },
@@ -111,13 +106,13 @@ export default async function profilesRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
       const { id } = request.params as { id: string };
-      const profile = await db.select().from(profilesTable).where(eq(profilesTable.id, id));
+      const [profile] = await db.select().from(profilesTable).where(eq(profilesTable.id, id));
       return reply.send(profile);
     },
   });
 
   // Update profile by id
-  fastify.put<{ Body: { name?: string; age?: number; is_active?: boolean } }>("/:id", {
+  fastify.put<{ Body: { name?: string; is_active?: boolean } }>("/:id", {
     schema: {
       tags: ["Profiles"],
       security: [{ bearerAuth: [] }],
@@ -125,7 +120,6 @@ export default async function profilesRoutes(fastify: FastifyInstance) {
         type: "object",
         properties: {
           name: { type: "string" },
-          age: { type: "number" },
           is_active: { type: "boolean" },
         },
       },
@@ -136,7 +130,6 @@ export default async function profilesRoutes(fastify: FastifyInstance) {
             id: { type: "string", format: "uuid" },
             user_id: { type: "string" },
             name: { type: "string" },
-            age: { type: "number", nullable: true },
             is_active: { type: "boolean" },
             created_at: { type: "string", format: "date-time" },
             updated_at: { type: "string", format: "date-time" },
@@ -148,12 +141,11 @@ export default async function profilesRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
       const { id } = request.params as { id: string };
-      const { name, age, is_active } = request.body;
+      const { name, is_active } = request.body;
       const [updated] = await db
         .update(profilesTable)
         .set({
           name: name ?? undefined,
-          age: age ?? undefined,
           is_active: is_active ?? undefined,
         })
         .where(eq(profilesTable.id, id))

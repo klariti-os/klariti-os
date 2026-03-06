@@ -29,6 +29,20 @@
       "when": 1772813642370,
       "tag": "0003_small_toad",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1772833686014,
+      "tag": "0004_sparkling_king_bedlam",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1772835134458,
+      "tag": "0005_cynical_sleepwalker",
+      "breakpoints": true
     }
   ]
 }

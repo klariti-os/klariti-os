@@ -1,15 +1,11 @@
 import {
   boolean,
   index,
-  integer,
-  jsonb,
-  pgEnum,
   pgTable,
   text,
   timestamp,
   uuid,
   varchar,
-  primaryKey,
 } from "drizzle-orm/pg-core";
 
 // ─── Better Auth tables ───────────────────────────────────────────────────────
@@ -74,7 +70,6 @@ export const profilesTable = pgTable(
       .notNull()
       .references(() => authUser.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 255 }).notNull(),
-    age: integer("age"),
     is_active: boolean("is_active").notNull().default(false),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
@@ -82,72 +77,6 @@ export const profilesTable = pgTable(
   (table) => [index("profiles_user_id_idx").on(table.user_id)]
 );
 
-export const ruleTypeEnum = pgEnum("rule_type", [
-  "BLOCK",
-  "BLUR",
-  "DELAY",
-  "HIGHLIGHT",
-]);
-
-export const userPreferencesTable = pgTable("user_preferences", {
-  user_id: text("user_id")
-    .primaryKey()
-    .references(() => authUser.id, { onDelete: "cascade" }),
-  global_kill_switch_enabled: boolean("global_kill_switch_enabled")
-    .notNull()
-    .default(false),
-  default_profile_id: uuid("default_profile_id").references(
-    () => profilesTable.id,
-    { onDelete: "set null" }
-  ),
-  sync_enabled: boolean("sync_enabled").notNull().default(false),
-  preferences: jsonb("preferences").$type<Record<string, unknown>>(),
-  updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
-
-export const groupTable = pgTable(
-  "groups",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    owner_id: text("owner_id")
-      .notNull()
-      .references(() => authUser.id, { onDelete: "cascade" }),
-    is_active: boolean("is_active").notNull().default(false),
-    created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-  });
-
-export const groupPreferencesTable = pgTable("group_preferences", {
-  group_id: uuid("group_id")
-    .primaryKey()
-    .references(() => groupTable.id, { onDelete: "cascade" }),
-  global_kill_switch_enabled: boolean("global_kill_switch_enabled")
-    .notNull()
-    .default(false),
-  default_profile_id: uuid("default_profile_id").references(
-    () => profilesTable.id,
-    { onDelete: "set null" }
-  ),
-  sync_enabled: boolean("sync_enabled").notNull().default(false),
-  preferences: jsonb("preferences").$type<Record<string, unknown>>(),
-  updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
-
-export const groupMemberships = pgTable(
-  "group_members",
-  {
-    group_id: uuid("group_id")
-      .notNull()
-      .references(() => groupTable.id, { onDelete: "cascade" }),
-    user_id: text("user_id")
-      .notNull()
-      .references(() => authUser.id, { onDelete: "cascade" }),
-    is_active: boolean("is_active").notNull().default(false),
-    created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-  },
-  (table) => [primaryKey({ columns: [table.group_id, table.user_id] }),]
-);
 
 export const connectedDevicesTable = pgTable("connected_devices", {
   id: uuid("id").primaryKey().defaultRandom(),
