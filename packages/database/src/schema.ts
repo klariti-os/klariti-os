@@ -1,7 +1,9 @@
 import {
   boolean,
   index,
+  pgEnum,
   pgTable,
+  real,
   text,
   timestamp,
   uuid,
@@ -62,19 +64,24 @@ export const authVerification = pgTable("verification", {
 
 // ─── Application tables ───────────────────────────────────────────────────────
 
-export const profilesTable = pgTable(
-  "profiles",
+export const goalEnum = pgEnum("goal", ["FOCUS", "WORK", "STUDY", "CASUAL"]);
+
+export const intentsTable = pgTable(
+  "intents",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     user_id: text("user_id")
       .notNull()
       .references(() => authUser.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 255 }).notNull(),
+    goal: goalEnum("goal").notNull(),
     is_active: boolean("is_active").notNull().default(false),
+    ends_at: timestamp("ends_at", { withTimezone: true }),
+    pause_threshold: real("pause_threshold"),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
-  (table) => [index("profiles_user_id_idx").on(table.user_id)]
+  (table) => [index("intents_user_id_idx").on(table.user_id)]
 );
 
 

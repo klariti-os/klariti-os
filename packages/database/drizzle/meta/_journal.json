@@ -43,6 +43,13 @@
       "when": 1772835134458,
       "tag": "0005_cynical_sleepwalker",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1772839823910,
+      "tag": "0006_aberrant_la_nuit",
+      "breakpoints": true
     }
   ]
 }
