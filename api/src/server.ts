@@ -7,6 +7,7 @@ import corsPlugin from "./plugins/cors";
 import authPlugin from "./plugins/auth";
 import meRoutes from "./routes/me";
 import authRoutes from "./routes/auth";
+import profilesRoutes from "./routes/profiles";
 
 const fastify = Fastify({
   logger: {
@@ -21,6 +22,7 @@ fastify.register(formbody);
 fastify.register(swaggerPlugin);
 fastify.register(corsPlugin);
 fastify.register(authPlugin);
+fastify.register(profilesRoutes, { prefix: "/api/profiles" });
 
 // Routes
 fastify.register(authRoutes);
