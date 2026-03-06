@@ -1,0 +1,11 @@
+{
+  "name": "@klariti/ios",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "xcodebuild -project klariti.xcodeproj -scheme klariti -configuration Release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO",
+    "dev": "open klariti.xcodeproj",
+    "lint": "swiftlint lint --quiet || true",
+    "check-types": "echo 'Type checking handled by Xcode'"
+  }
+}

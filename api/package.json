@@ -10,7 +10,8 @@
     "@fastify/formbody": "^8.0.2",
     "@fastify/swagger": "^9.5.0",
     "@fastify/swagger-ui": "^5.2.2",
-    "@klariti/auth": "workspace:*",
+    "@klariti/database": "workspace:*",
+    "better-auth": "^1.2.0",
     "fastify": "^5.7.2",
     "fastify-plugin": "^5.0.1"
   },

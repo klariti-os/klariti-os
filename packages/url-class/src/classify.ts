@@ -165,5 +165,6 @@ async function classifyUrl(url: string) {
 }
 
 (async () => {
-  console.log(await classifyUrl("https://www.youtube.com/watch?v=aR520g2_s_I"));
+  const result = await classifyUrl("https://youtu.be/EZQ_cME6yrU");
+  console.log(result?.categoryId);
 })();
