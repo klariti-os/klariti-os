@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
-import { auth } from "@klariti/auth/server";
+import { toWebHeaders } from "../../utils/headers";
+import { resolveStatus, resolveMessage } from "../../utils/errors";
 import {
   userObject,
   errorObject,
@@ -7,27 +8,6 @@ import {
   changeEmailBody,
   changePasswordBody,
 } from "./schema";
-
-/** Map better-auth string status codes to numeric HTTP codes */
-const STATUS_MAP: Record<string, number> = {
-  BAD_REQUEST: 400,
-  UNAUTHORIZED: 401,
-  FORBIDDEN: 403,
-  NOT_FOUND: 404,
-  CONFLICT: 409,
-  INTERNAL_SERVER_ERROR: 500,
-};
-
-function resolveStatus(err: any, fallback = 400): number {
-  const s = err?.status ?? err?.statusCode;
-  if (typeof s === "number") return s;
-  if (typeof s === "string") return STATUS_MAP[s] ?? fallback;
-  return fallback;
-}
-
-function resolveMessage(err: any, fallback: string): string {
-  return err?.body?.message ?? err?.message ?? fallback;
-}
 
 export default async function meRoutes(fastify: FastifyInstance) {
   // ── GET / ─ current user profile ──────────────────────────────────────────
@@ -55,19 +35,14 @@ export default async function meRoutes(fastify: FastifyInstance) {
     },
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
-      const headers = new Headers();
-      for (const [key, value] of Object.entries(request.headers)) {
-        if (value !== undefined) {
-          headers.set(key, Array.isArray(value) ? value.join(", ") : value);
-        }
-      }
+      const headers = toWebHeaders(request.headers);
 
       try {
-        await auth.api.updateUser({
+        await fastify.auth.api.updateUser({
           headers,
           body: request.body,
         });
-        const session = await auth.api.getSession({ headers });
+        const session = await fastify.auth.api.getSession({ headers });
         return reply.send(session!.user);
       } catch (err: any) {
         return reply
@@ -95,15 +70,10 @@ export default async function meRoutes(fastify: FastifyInstance) {
     },
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
-      const headers = new Headers();
-      for (const [key, value] of Object.entries(request.headers)) {
-        if (value !== undefined) {
-          headers.set(key, Array.isArray(value) ? value.join(", ") : value);
-        }
-      }
+      const headers = toWebHeaders(request.headers);
 
       try {
-        const result = await auth.api.changeEmail({
+        const result = await fastify.auth.api.changeEmail({
           headers,
           body: request.body,
         });
@@ -134,15 +104,10 @@ export default async function meRoutes(fastify: FastifyInstance) {
     },
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
-      const headers = new Headers();
-      for (const [key, value] of Object.entries(request.headers)) {
-        if (value !== undefined) {
-          headers.set(key, Array.isArray(value) ? value.join(", ") : value);
-        }
-      }
+      const headers = toWebHeaders(request.headers);
 
       try {
-        const result = await auth.api.changePassword({
+        const result = await fastify.auth.api.changePassword({
           headers,
           body: request.body,
         });

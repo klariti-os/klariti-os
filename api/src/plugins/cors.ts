@@ -10,7 +10,8 @@ export default fp(
     await fastify.register(cors, {
       origin: (origin, cb) => {
         // allow requests with no origin (curl, server-to-server)
-        if (!origin || allowedOrigins.has(origin)) {
+        // allow chrome-extension:// origins (browser extension)
+        if (!origin || allowedOrigins.has(origin) || origin.startsWith("chrome-extension://")) {
           cb(null, true);
         } else {
           cb(new Error(`Origin ${origin} not allowed`), false);
