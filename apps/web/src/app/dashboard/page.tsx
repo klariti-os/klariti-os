@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { Switch } from "@repo/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
-import { getApiIntents, postApiIntents } from "@klariti/api-client";
+import { getApiIntents, postApiIntents, putApiIntentsById } from "@klariti/api-client";
 import { NextPage } from "next";
 
 type Goal = "FOCUS" | "WORK" | "STUDY" | "CASUAL";
@@ -28,11 +29,36 @@ const DashboardPage: NextPage = () => {
   const { user } = useAuth();
 
   const [intents, setIntents] = useState<Intent[]>([]);
+  const [editingIntent, setEditingIntent] = useState<Intent | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
   const [formGoal, setFormGoal] = useState<Goal>("FOCUS");
+  const [formIsActive, setFormIsActive] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const openCreate = () => {
+    setEditingIntent(null);
+    setFormName("");
+    setFormGoal("FOCUS");
+    setFormIsActive(false);
+    setError(null);
+    setShowForm(true);
+  };
+
+  const openEdit = (intent: Intent) => {
+    setEditingIntent(intent);
+    setFormName(intent.name);
+    setFormGoal(intent.goal);
+    setFormIsActive(intent.is_active);
+    setError(null);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingIntent(null);
+  };
 
   useEffect(() => {
     getApiIntents().then(({ data }) => {
@@ -40,22 +66,35 @@ const DashboardPage: NextPage = () => {
     });
   }, []);
 
-  const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!formName.trim()) return;
     setIsSubmitting(true);
     setError(null);
-    const { data, error: apiError } = await postApiIntents({
-      body: { name: formName.trim(), goal: formGoal },
-    });
-    if (apiError || !data) {
-      setError("Failed to create intent. Please try again.");
+
+    if (editingIntent) {
+      const { data, error: apiError } = await putApiIntentsById({
+        path: { id: editingIntent.id },
+        body: { name: formName.trim(), goal: formGoal, is_active: formIsActive },
+      });
+      if (apiError || !data) {
+        setError("Failed to update intent. Please try again.");
+      } else {
+        setIntents((prev) => prev.map((i) => (i.id === editingIntent.id ? (data as Intent) : i)));
+        closeForm();
+      }
     } else {
-      setIntents((prev) => [data as Intent, ...prev]);
-      setFormName("");
-      setFormGoal("FOCUS");
-      setShowForm(false);
+      const { data, error: apiError } = await postApiIntents({
+        body: { name: formName.trim(), goal: formGoal, is_active: formIsActive },
+      });
+      if (apiError || !data) {
+        setError("Failed to create intent. Please try again.");
+      } else {
+        setIntents((prev) => [data as Intent, ...prev]);
+        closeForm();
+      }
     }
+
     setIsSubmitting(false);
   };
 
@@ -81,14 +120,16 @@ const DashboardPage: NextPage = () => {
         {showForm && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-6 backdrop-blur-sm"
-            onClick={(e) => e.target === e.currentTarget && setShowForm(false)}
+            onClick={(e) => e.target === e.currentTarget && closeForm()}
           >
             <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="font-serif text-xl text-foreground">New Intent</h2>
+                <h2 className="font-serif text-xl text-foreground">
+                  {editingIntent ? "Edit Intent" : "New Intent"}
+                </h2>
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={closeForm}
                   className="focus-ring rounded-full p-1 text-muted-foreground hover:text-foreground"
                   aria-label="Close"
                 >
@@ -96,7 +137,7 @@ const DashboardPage: NextPage = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleCreate} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <label className="mb-1.5 block font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                     Name
@@ -138,6 +179,14 @@ const DashboardPage: NextPage = () => {
                   </div>
                 </div>
 
+                <div className="flex items-center justify-between rounded-xl border border-border p-3">
+                  <div>
+                    <p className="font-mono text-xs font-medium uppercase tracking-wide text-foreground">Active</p>
+                    <p className="text-[11px] text-muted-foreground">Enable this intent now</p>
+                  </div>
+                  <Switch checked={formIsActive} onCheckedChange={setFormIsActive} />
+                </div>
+
                 {error && (
                   <p className="text-xs text-[var(--destructive)]">{error}</p>
                 )}
@@ -145,7 +194,7 @@ const DashboardPage: NextPage = () => {
                 <div className="flex gap-2 pt-1">
                   <button
                     type="button"
-                    onClick={() => setShowForm(false)}
+                    onClick={closeForm}
                     className="focus-ring flex-1 rounded-full border border-border py-2 font-mono text-xs uppercase tracking-wide text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
                   >
                     Cancel
@@ -155,7 +204,7 @@ const DashboardPage: NextPage = () => {
                     disabled={isSubmitting || !formName.trim()}
                     className="focus-ring flex-1 rounded-full border border-primary bg-primary py-2 font-mono text-xs uppercase tracking-wide text-primary-foreground transition-opacity hover:opacity-80 disabled:opacity-40"
                   >
-                    {isSubmitting ? "Creating…" : "Create"}
+                    {isSubmitting ? "Saving…" : editingIntent ? "Save" : "Create"}
                   </button>
                 </div>
               </form>
@@ -168,7 +217,7 @@ const DashboardPage: NextPage = () => {
             <h2 className="font-serif text-xl text-foreground">Intents</h2>
             <button
               type="button"
-              onClick={() => setShowForm(true)}
+              onClick={openCreate}
               className="focus-ring rounded-full border border-primary bg-primary px-4 py-1.5 font-mono text-[11px] uppercase tracking-wide text-primary-foreground transition-opacity hover:opacity-80"
             >
               + New Intent
@@ -182,9 +231,11 @@ const DashboardPage: NextPage = () => {
           ) : (
             <div className="space-y-3">
               {intents.map((intent) => (
-                <div
+                <button
                   key={intent.id}
-                  className="flex flex-col gap-2 rounded-xl border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
+                  type="button"
+                  onClick={() => openEdit(intent)}
+                  className="focus-ring flex w-full flex-col gap-2 rounded-xl border border-border p-4 text-left transition-colors hover:border-foreground/40 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <p className="text-sm text-foreground">{intent.name}</p>
                   <div className="flex items-center gap-2">
@@ -197,7 +248,7 @@ const DashboardPage: NextPage = () => {
                       </span>
                     )}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
