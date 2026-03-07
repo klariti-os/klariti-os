@@ -2,7 +2,7 @@ import fp from "fastify-plugin";
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { bearer } from "better-auth/plugins";
+import { bearer, admin } from "better-auth/plugins";
 import {
   db,
   authUser,
@@ -40,7 +40,7 @@ const auth = betterAuth({
       enabled: true,
     },
   },
-  plugins: [bearer()],
+  plugins: [bearer(), admin()],
 });
 
 export type Session = typeof auth.$Infer.Session;
@@ -53,6 +53,10 @@ declare module "fastify" {
   interface FastifyInstance {
     auth: typeof auth;
     verifySession: (
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ) => Promise<void>;
+    verifyAdmin: (
       request: FastifyRequest,
       reply: FastifyReply,
     ) => Promise<void>;
@@ -76,6 +80,21 @@ export default fp(
         const session = await auth.api.getSession({ headers });
         if (!session) {
           return reply.status(401).send({ error: "Unauthorized" });
+        }
+        request.session = session;
+      },
+    );
+
+    fastify.decorate(
+      "verifyAdmin",
+      async function (request: FastifyRequest, reply: FastifyReply) {
+        const headers = toWebHeaders(request.headers);
+        const session = await auth.api.getSession({ headers });
+        if (!session) {
+          return reply.status(401).send({ error: "Unauthorized" });
+        }
+        if (session.user.role !== "admin") {
+          return reply.status(403).send({ error: "Forbidden" });
         }
         request.session = session;
       },

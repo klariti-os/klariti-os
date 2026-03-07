@@ -9,6 +9,7 @@ import meRoutes from "./routes/me";
 import authRoutes from "./routes/auth";
 import intentsRoutes from "./routes/intents";
 import classifyRoutes from "./routes/classify";
+import ktagsRoutes from "./routes/ktags";
 
 const fastify = Fastify({
   logger: {
@@ -29,6 +30,7 @@ fastify.register(authRoutes);
 fastify.register(meRoutes, { prefix: "/api/me" });
 fastify.register(intentsRoutes, { prefix: "/api/intents" });
 fastify.register(classifyRoutes, { prefix: "/api/classify" });
+fastify.register(ktagsRoutes, { prefix: "/api/ktags" });
 
 fastify.get(
   "/",    
