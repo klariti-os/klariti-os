@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import { google } from "googleapis";
 
-config({ path: "../../../.env" });
+config({ path: "../../.env" });
 
 export const youtubeCategories: Record<string, string> = {
   "1": "Film & Animation",
@@ -148,23 +148,16 @@ async function classifyYoutubeVideo(url: string) {
 
 /**
  * Classify a piece of content from a URL.
- * Current supported platforms: YouTube.
  *
- * @param url URL to content to classify.
+ * @param url YouTube URL (youtube.com/watch?v= or youtu.be/ formats).
  * @returns Classification of the content.
  */
 async function classifyUrl(url: string) {
-  const youtubeRegexp = /^(https?:\/\/)?(www\.)?youtube\.com\/watch\?v=/;
-  if (youtubeRegexp.test(url)) {
-    return await classifyYoutubeVideo(url);
-  }
-
-  // Call model here to classify the video based on the metadata
-
-  return null;
+  return await classifyYoutubeVideo(url);
 }
 
 (async () => {
-  const result = await classifyUrl("https://youtu.be/EZQ_cME6yrU");
-  console.log(result?.categoryId);
+  let testURL = "https://youtu.be/Kourq_Lz03U?si=y9qkWUh4NimV3Qmf"
+  const result = await classifyUrl(testURL);
+  console.log(result);
 })();
