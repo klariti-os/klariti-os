@@ -2,7 +2,7 @@
   "name": "@klariti/api",
   "private": true,
   "scripts": {
-    "dev": "DOTENV_CONFIG_PATH=../.env tsx watch src/server.ts",
+    "dev": "tsx watch --env-file=../.env src/server.ts",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
