@@ -7,7 +7,6 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(AppStore.self) private var store
-
     var body: some View {
         @Bindable var store = store
         NavigationStack {
@@ -48,19 +47,6 @@ struct HomeView: View {
                     Text("Klariti")
                         .font(KlFont.headline)
                         .foregroundStyle(Color.klForeground)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button("Re-register NFC Tag") {
-                            store.registerNFC(alert: "Hold iPhone near the NFC tag to re-register.")
-                        }
-                        Divider()
-                        Button("Reset Setup", role: .destructive, action: store.resetSetup)
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 15, weight: .regular))
-                            .foregroundStyle(Color.klSubtle)
-                    }
                 }
             }
             .toolbarBackground(Color.klBackground, for: .navigationBar)

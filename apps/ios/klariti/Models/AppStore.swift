@@ -68,42 +68,68 @@ import FamilyControls
 
     // MARK: - NFC actions
 
-    func registerNFC(alert: String = "Hold iPhone near the NFC tag to register it as your focus key.") {
-        let token = UUID().uuidString
+    /// Starts an NFC write session to register a Klariti focus key.
+    /// Generates a token URL, writes it to the tag as a text (well-known) payload,
+    /// and updates persisted state on success.
+    func registerNFC() {
+        // Generate a stable token if we already have one, otherwise create a new one.
+        // Use a klariti.so URL so verifyTag() accepts it later during scans.
+        let token = nfcTagPayload.isEmpty ? "https://klariti.so/tag/\(UUID().uuidString)" : nfcTagPayload
+
         nfcScanner.onTextPayload = { [weak self] payload in
-            self?.nfcTagPayload = payload
-            self?.nfcRegistered = true
+            guard let self else { return }
+            // Persist what we wrote so later scans can be verified and matched.
+            self.nfcTagPayload = payload
+            self.nfcRegistered = true
         }
         nfcScanner.onError = { [weak self] error in
             self?.nfcErrorMessage = error
             self?.showNFCErrorAlert = true
         }
-        nfcScanner.beginWrite(token: token, alert: alert)
+        nfcScanner.onCancelled = { /* no-op */ }
+
+        nfcScanner.beginWrite(token: token, alert: "Hold iPhone near the tag to register your focus key.")
     }
 
     func scanToUnlock() {
+        nfcScanner.onVerifyPayload = { [weak self] payload in
+            guard let self else { return false }
+            guard verifyTag(payload) else { return false }
+            return payload == nfcTagPayload
+        }
         nfcScanner.onTextPayload = { [weak self] payload in
             guard let self else { return }
-            if !nfcTagPayload.isEmpty && payload == nfcTagPayload {
-                isLocked = false
-                screenTime.clearShields()
-            } else {
-                nfcErrorMessage = "Wrong NFC tag. Use your registered focus key."
-                showNFCErrorAlert = true
-            }
+            isLocked = false
+            screenTime.clearShields()
         }
         nfcScanner.onError = { [weak self] error in
             self?.nfcErrorMessage = error
             self?.showNFCErrorAlert = true
         }
-        nfcScanner.beginScan(alert: "Hold iPhone near your focus key to unlock.")
+        nfcScanner.beginScan(alert: "Hold iPhone near your Klariti tag to unlock.")
     }
 
     // MARK: - Focus actions
 
     func startFocus() {
-        isLocked = true
-        screenTime.applyShields(from: activitySelection)
+        nfcScanner.onVerifyPayload = { [weak self] payload in self?.verifyTag(payload) ?? false }
+        nfcScanner.onTextPayload = { [weak self] payload in
+            guard let self else { return }
+            nfcTagPayload = payload  // store the exact tag used to lock
+            isLocked = true
+            screenTime.applyShields(from: activitySelection)
+        }
+        nfcScanner.onError = { [weak self] error in
+            self?.nfcErrorMessage = error
+            self?.showNFCErrorAlert = true
+        }
+        nfcScanner.beginScan(alert: "Hold iPhone near your Klariti tag to start a focus session.")
+    }
+
+    // Checks that payload matches the klariti.so/tag/<id> URL format.
+    func verifyTag(_ payload: String) -> Bool {
+        let pattern = "^(https?://)?klariti\\.so/tag/[a-zA-Z0-9]+$"
+        return payload.range(of: pattern, options: .regularExpression) != nil
     }
 
     func requestAuthAndShowPicker() {
