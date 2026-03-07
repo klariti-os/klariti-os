@@ -2,9 +2,10 @@ import { defineConfig } from "wxt";
 
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
+  outDir: "output",
   manifest: {
     permissions: ["tabs"],
-    host_permissions: ["http://localhost:4200/*"],
+    host_permissions: ["http://localhost:4200/*", "*://*.youtube.com/*"],
     icons: {
       "16": "icon/16.png",
       "32": "icon/32.png",
@@ -22,9 +23,9 @@ export default defineConfig({
     },
   },
   webExt: {
-    binaries: {
-      chrome: "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
-    },
+    // binaries: {
+    //   chrome: "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+    // },
     chromiumArgs: ["--user-data-dir=./.wxt/chrome-data"],
     disabled: false,
   },

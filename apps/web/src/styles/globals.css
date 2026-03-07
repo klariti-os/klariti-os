@@ -19,6 +19,7 @@
     --card-foreground: #1a1a1a;
     --selection: #1a1a1a;
     --selection-foreground: #fafaf8;
+    --input: #d4d2cc;
     --ring: #a8a49c;
     --link: #4a6741;
     --destructive: #c23b22;
@@ -40,6 +41,7 @@
     --card-foreground: #ededec;
     --selection: #ededec;
     --selection-foreground: #111110;
+    --input: #3a3a38;
     --ring: #5c5b56;
     --link: #8bb07f;
     --destructive: #e55a3f;
