@@ -50,6 +50,13 @@
       "when": 1772839823910,
       "tag": "0006_aberrant_la_nuit",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1772924102563,
+      "tag": "0007_chubby_metal_master",
+      "breakpoints": true
     }
   ]
 }

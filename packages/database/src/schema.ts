@@ -85,6 +85,22 @@ export const intentsTable = pgTable(
 );
 
 
+export const ktagsTable = pgTable(
+  "ktags",
+  {
+    // The unique ID embedded in the tag URL: klariti.so/tag/<embedded_id>
+    embedded_id: varchar("embedded_id", { length: 255 }).primaryKey(),
+    // Full payload URL as written to the NFC tag
+    payload: varchar("payload", { length: 512 }).notNull(),
+    user_id: text("user_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    label: varchar("label", { length: 255 }),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [index("ktags_user_id_idx").on(table.user_id)]
+);
+
 export const connectedDevicesTable = pgTable("connected_devices", {
   id: uuid("id").primaryKey().defaultRandom(),
   user_id: text("user_id")
