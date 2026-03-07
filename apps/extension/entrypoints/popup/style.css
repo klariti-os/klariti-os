@@ -87,6 +87,13 @@ body {
   font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
 }
 
+.greeting {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--foreground);
+  margin: 0 0 4px 0;
+}
+
 .label {
   font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
   font-size: 10px;

@@ -97,6 +97,8 @@ export default function App() {
         </button>
       </div>
 
+      <p className="greeting">Hi, {user.name?.split(" ")[0] ?? "there"}</p>
+
       <p className="label" style={{ marginBottom: 10 }}>
         Intents
       </p>
