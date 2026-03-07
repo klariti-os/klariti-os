@@ -35,6 +35,9 @@ importers:
       '@klariti/database':
         specifier: workspace:*
         version: link:../packages/database
+      '@klariti/url-class':
+        specifier: workspace:*
+        version: link:../packages/url-class
       better-auth:
         specifier: ^1.2.0
         version: 1.4.20(drizzle-kit@0.31.9)(drizzle-orm@0.45.1(@types/pg@8.16.0)(kysely@0.28.11)(pg@8.18.0))(next@14.2.35(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.18.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -275,9 +278,6 @@ importers:
 
   packages/url-class:
     dependencies:
-      dotenv:
-        specifier: ^17.2.3
-        version: 17.3.1
       googleapis:
         specifier: ^171.4.0
         version: 171.4.0

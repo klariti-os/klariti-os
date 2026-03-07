@@ -1,7 +1,4 @@
-import { config } from "dotenv";
 import { google } from "googleapis";
-
-config({ path: "../../.env" });
 
 export const youtubeCategories: Record<string, string> = {
   "1": "Film & Animation",
@@ -152,12 +149,6 @@ async function classifyYoutubeVideo(url: string) {
  * @param url YouTube URL (youtube.com/watch?v= or youtu.be/ formats).
  * @returns Classification of the content.
  */
-async function classifyUrl(url: string) {
+export async function classifyUrl(url: string) {
   return await classifyYoutubeVideo(url);
 }
-
-(async () => {
-  let testURL = "https://youtu.be/Kourq_Lz03U?si=y9qkWUh4NimV3Qmf"
-  const result = await classifyUrl(testURL);
-  console.log(result);
-})();
