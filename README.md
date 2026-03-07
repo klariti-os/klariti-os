@@ -103,7 +103,31 @@ packages/
   shared/                   # shared types, schemas, utils
 
 
-## Team members 
+## iOS application
+
+The Klariti iOS app is a companion tool for enforcing focus sessions on your iPhone using physical NFC tags (ktags).
+
+**How it works:**
+1. Tap **Start Focus** — the app prompts you to scan your ktag (an NFC tag written with a `klariti.so/tag/<id>` URL)
+2. Matched apps are blocked via Screen Time / FamilyControls
+3. To end the session, scan the **same** tag — any other tag is rejected
+
+**Key features:**
+- NFC-gated lock/unlock — no software bypass
+- App blocking via native Screen Time (no VPN or proxy required)
+- Payload verification: only tags matching the `klariti.so/tag/` URL format are accepted
+- Session-bound: the exact tag used to lock is the only one that can unlock
+
+**Stack:** SwiftUI · CoreNFC · FamilyControls / ScreenTime
+
+```txt
+apps/ios/klariti/
+  Core/           # NFCScanner, ScreenTimeManager
+  Models/         # AppStore (Observable state + actions)
+  Features/       # HomeView, SetupCoordinator, AppSelectionView
+```
+
+## Team members
 - Ariella: - UI/UX
 - Benjamin - systems
 - Ebuka - full stack engineer
