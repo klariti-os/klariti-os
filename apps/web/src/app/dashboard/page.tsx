@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Switch } from "@repo/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
-import { getApiIntents, postApiIntents, putApiIntentsById } from "@klariti/api-client";
+import { getApiIntents, postApiIntents, putApiIntentsById, deleteApiIntentsById } from "@klariti/api-client";
 import { NextPage } from "next";
 
 type Goal = "FOCUS" | "WORK" | "STUDY" | "CASUAL";
@@ -35,6 +35,8 @@ const DashboardPage: NextPage = () => {
   const [formGoal, setFormGoal] = useState<Goal>("FOCUS");
   const [formIsActive, setFormIsActive] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const openCreate = () => {
@@ -58,6 +60,24 @@ const DashboardPage: NextPage = () => {
   const closeForm = () => {
     setShowForm(false);
     setEditingIntent(null);
+    setConfirmDelete(false);
+  };
+
+  const handleDelete = async () => {
+    if (!editingIntent) return;
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    setIsDeleting(true);
+    const { error: apiError } = await deleteApiIntentsById({ path: { id: editingIntent.id } });
+    if (apiError) {
+      setError("Failed to delete intent. Please try again.");
+    } else {
+      setIntents((prev) => prev.filter((i) => i.id !== editingIntent.id));
+      closeForm();
+    }
+    setIsDeleting(false);
   };
 
   useEffect(() => {
@@ -189,6 +209,19 @@ const DashboardPage: NextPage = () => {
 
                 {error && (
                   <p className="text-xs text-[var(--destructive)]">{error}</p>
+                )}
+
+                {editingIntent && (
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      className="focus-ring w-full rounded-full border border-[var(--destructive)]/30 py-2 font-mono text-xs uppercase tracking-wide text-[var(--destructive)] transition-colors hover:border-[var(--destructive)] hover:bg-[var(--destructive)]/5 disabled:opacity-40"
+                    >
+                      {isDeleting ? "Deleting…" : confirmDelete ? "Confirm Delete" : "Delete Intent"}
+                    </button>
+                  </div>
                 )}
 
                 <div className="flex gap-2 pt-1">
