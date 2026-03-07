@@ -146,7 +146,8 @@ export default defineContentScript({
       Object.assign(overlay.style, {
         position: "absolute",
         inset: "0",
-        background: "rgba(194, 59, 34, 0.85)",
+        background: "rgba(100, 100, 100, 1)",
+        // 225, 225, 212
         borderRadius: "12px",
         zIndex: "999",
         display: "flex",
