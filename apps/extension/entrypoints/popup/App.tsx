@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { client, getApiIntents } from "@klariti/api-client";
 import "./style.css";
 
 const API_URL = "http://localhost:4200";
@@ -10,25 +11,57 @@ interface User {
   email: string;
 }
 
+interface Intent {
+  id: string;
+  name: string;
+  goal: string;
+  is_active: boolean;
+}
+
+const goalLabels: Record<string, string> = {
+  FOCUS: "Focus",
+  WORK: "Work",
+  STUDY: "Study",
+  CASUAL: "Casual",
+};
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [intents, setIntents] = useState<Intent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    
+    client.setConfig({ baseUrl: API_URL });
+
     fetch(`${API_URL}/api/auth/get-session`, { credentials: "include" })
-
-
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.user?.id) setUser(data.user);
+      .then(async (data) => {
+        if (data?.user?.id) {
+          setUser(data.user);
+          const { data: intentData } = await getApiIntents();
+          if (intentData) setIntents(intentData as Intent[]);
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
+  // Poll for updated intents every second
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(async () => {
+      const { data } = await getApiIntents();
+      if (data) setIntents(data as Intent[]);
+    }, 500);
+    return () => clearInterval(interval);
+  }, [user]);
+
   const openSignIn = () => {
     browser.tabs.create({ url: `${WEB_URL}/auth` });
+  };
+
+  const openDashboard = () => {
+    browser.tabs.create({ url: `${WEB_URL}/dashboard` });
   };
 
   if (loading) {
@@ -42,9 +75,9 @@ export default function App() {
   if (!user) {
     return (
       <div className="container centered">
-        <img src="/logo.svg" alt="Klariti" className="logo" />
-        <h1 className="brand">Klariti</h1>
-        <p className="subtitle">Sign in to view your profile</p>
+        <img src="/icon/128.png" alt="Klariti" className="logo" />
+        <h1 className="sign-in-brand">Klariti</h1>
+        <p className="subtitle">Sign in to manage your intents</p>
         <button className="btn-primary" onClick={openSignIn}>
           Sign In
         </button>
@@ -55,14 +88,44 @@ export default function App() {
   return (
     <div className="container">
       <div className="header">
-        <img src="/logo.svg" alt="Klariti" className="logo-sm" />
-        <span className="brand-sm">Klariti</span>
+        <div className="header-left">
+          <img src="/icon/32.png" alt="Klariti" className="logo-sm" />
+          <span className="brand">Klariti</span>
+        </div>
+        <button className="header-link" onClick={openDashboard}>
+          Dashboard →
+        </button>
       </div>
-      <div className="profile">
-        <div className="avatar">{user.name.charAt(0).toUpperCase()}</div>
-        <div className="user-name">{user.name}</div>
-        <div className="user-email">{user.email}</div>
-      </div>
+
+      <p className="label" style={{ marginBottom: 10 }}>
+        Intents
+      </p>
+
+      {intents.length === 0 ? (
+        <div className="empty">
+          <p>No intents yet</p>
+        </div>
+      ) : (
+        <div className="intents-section">
+          {intents.map((intent) => (
+            <button
+              key={intent.id}
+              className="intent-item"
+              onClick={openDashboard}
+            >
+              <span className="intent-name">{intent.name}</span>
+              <div className="intent-meta">
+                <span className="badge">
+                  {goalLabels[intent.goal] ?? intent.goal}
+                </span>
+                {intent.is_active && (
+                  <span className="badge badge-active">Active</span>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

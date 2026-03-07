@@ -1,20 +1,60 @@
-* {
+/* ── Design tokens (matches web/globals.css) ── */
+:root {
+  --background: #fafaf8;
+  --foreground: #1a1a1a;
+  --muted: #f0efeb;
+  --muted-foreground: #737066;
+  --border: #e8e6e1;
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --primary: #1a1a1a;
+  --primary-foreground: #fafaf8;
+  --success: #4a6741;
+  --destructive: #c23b22;
+  --ring: #a8a49c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #111110;
+    --foreground: #ededec;
+    --muted: #1e1e1c;
+    --muted-foreground: #a1a09a;
+    --border: #2a2a28;
+    --card: #191918;
+    --card-foreground: #ededec;
+    --primary: #ededec;
+    --primary-foreground: #111110;
+    --success: #8bb07f;
+    --destructive: #e55a3f;
+    --ring: #5c5b56;
+  }
+}
+
+/* ── Reset ── */
+*,
+::after,
+::before {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  border-color: var(--border);
 }
 
 body {
   width: 320px;
   min-height: 200px;
-  background: #0c0c0f;
-  color: #ffffff;
+  background: var(--background);
+  color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
+/* ── Layout ── */
 .container {
-  padding: 24px 20px;
+  padding: 20px;
   min-height: 200px;
 }
 
@@ -23,17 +63,17 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   min-height: 240px;
   text-align: center;
 }
 
-/* Spinner */
+/* ── Spinner ── */
 .spinner {
-  width: 28px;
-  height: 28px;
-  border: 2px solid #27272a;
-  border-top-color: #ffffff;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--foreground);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -42,89 +82,182 @@ body {
   to { transform: rotate(360deg); }
 }
 
-/* Logo */
-.logo {
-  width: 48px;
-  height: 48px;
+/* ── Typography ── */
+.mono {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
 }
 
-.logo-sm {
-  width: 20px;
-  height: 20px;
+.label {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-foreground);
 }
 
-/* Unauthenticated */
-.brand {
-  font-size: 20px;
-  font-weight: 500;
-  letter-spacing: -0.02em;
+.title {
+  font-size: 16px;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
 }
 
 .subtitle {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.brand {
   font-size: 13px;
-  color: #71717a;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+.header-link {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+  text-decoration: none;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  background: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.header-link:hover {
+  border-color: var(--foreground);
+  color: var(--foreground);
+}
+
+/* ── Logo ── */
+.logo {
+  width: 40px;
+  height: 40px;
+}
+
+.logo-sm {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Sign-in ── */
+.sign-in-brand {
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
 }
 
 .btn-primary {
   margin-top: 4px;
-  padding: 9px 24px;
-  background: #ffffff;
-  color: #0c0c0f;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
+  padding: 8px 20px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   cursor: pointer;
   transition: opacity 0.15s;
 }
 
 .btn-primary:hover {
-  opacity: 0.85;
+  opacity: 0.8;
 }
 
-/* Header */
-.header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 24px;
-}
-
-.brand-sm {
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
-
-/* Profile */
-.profile {
+/* ── Intents list ── */
+.intents-section {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 20px 0 4px;
+  gap: 6px;
 }
 
-.avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #27272a;
+.intent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  text-decoration: none;
+  color: inherit;
+}
+
+.intent-item:hover {
+  border-color: var(--muted-foreground);
+}
+
+.intent-name {
+  font-size: 13px;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+
+.intent-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.badge {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.badge-active {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  color: var(--success);
+}
+
+/* ── Empty state ── */
+.empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  font-weight: 500;
-  color: #ffffff;
-  border: 1px solid #3f3f46;
+  padding: 32px 0;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
 }
 
-.user-name {
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.user-email {
+.empty p {
   font-size: 12px;
-  color: #71717a;
+  color: var(--muted-foreground);
 }
