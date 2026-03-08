@@ -1,3 +1,3 @@
 export { db } from "./db";
 export * from "./schema";
-export { eq, and } from "drizzle-orm";
+export { eq, and, or, ne } from "drizzle-orm";

@@ -3,6 +3,7 @@ import {
   index,
   pgEnum,
   pgTable,
+  primaryKey,
   real,
   text,
   timestamp,
@@ -70,23 +71,70 @@ export const authVerification = pgTable("verification", {
 // ─── Application tables ───────────────────────────────────────────────────────
 
 export const goalEnum = pgEnum("goal", ["FOCUS", "WORK", "STUDY", "CASUAL"]);
+export const friendshipStatusEnum = pgEnum("friendship_status", ["pending", "accepted", "blocked"]);
+export const participantStatusEnum = pgEnum("participant_status", ["invited", "active", "paused", "declined", "completed"]);
 
-export const intentsTable = pgTable(
-  "intents",
+// A challenge is the canonical entity. A solo "intent" is just a challenge with one participant.
+export const challengesTable = pgTable(
+  "challenges",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    user_id: text("user_id")
+    creator_id: text("creator_id")
       .notNull()
       .references(() => authUser.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 255 }).notNull(),
     goal: goalEnum("goal").notNull(),
-    is_active: boolean("is_active").notNull().default(false),
-    ends_at: timestamp("ends_at", { withTimezone: true }),
-    pause_threshold: real("pause_threshold"),
+    ends_at: timestamp("ends_at", { withTimezone: true }),         // set = time-bound
+    pause_threshold: real("pause_threshold"),                      // set = group pause mechanic
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
-  (table) => [index("intents_user_id_idx").on(table.user_id)]
+  (table) => [index("challenges_creator_id_idx").on(table.creator_id)]
+);
+
+// One row per (challenge, user). Composite PK — a user can only join a challenge once.
+export const challengeParticipantsTable = pgTable(
+  "challenge_participants",
+  {
+    challenge_id: uuid("challenge_id")
+      .notNull()
+      .references(() => challengesTable.id, { onDelete: "cascade" }),
+    user_id: text("user_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    status: participantStatusEnum("status").notNull().default("invited"),
+    joined_at: timestamp("joined_at", { withTimezone: true }),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.challenge_id, table.user_id] }),
+    index("challenge_participants_user_id_idx").on(table.user_id),
+  ]
+);
+
+// Symmetric friendship. user_a_id < user_b_id enforced at the application layer.
+// requester_id tracks who sent the request despite canonical ordering.
+export const friendshipsTable = pgTable(
+  "friendships",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    user_a_id: text("user_a_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    user_b_id: text("user_b_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    requester_id: text("requester_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    status: friendshipStatusEnum("status").notNull().default("pending"),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("friendships_user_a_idx").on(table.user_a_id),
+    index("friendships_user_b_idx").on(table.user_b_id),
+  ]
 );
 
 

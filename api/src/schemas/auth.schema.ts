@@ -1,30 +1,29 @@
-/** JSON-Schema fragments shared across /api/me endpoints */
+import { userObject } from "./shared.schema";
 
-export const userObject = {
+export const signUpBody = {
   type: "object",
+  required: ["name", "email", "password"],
   properties: {
-    id: { type: "string" },
     name: { type: "string" },
-    email: { type: "string" },
-    emailVerified: { type: "boolean" },
-    image: { type: "string", nullable: true },
-    createdAt: { type: "string" },
-    updatedAt: { type: "string" },
+    email: { type: "string", format: "email" },
+    password: { type: "string", minLength: 8 },
   },
 } as const;
 
-export const errorObject = {
+export const signInBody = {
   type: "object",
+  required: ["email", "password"],
   properties: {
-    error: { type: "string" },
+    email: { type: "string", format: "email" },
+    password: { type: "string" },
   },
 } as const;
 
-export const updateProfileBody = {
+export const authResponse = {
   type: "object",
   properties: {
-    name: { type: "string", minLength: 1 },
-    image: { type: "string", nullable: true },
+    token: { type: "string", nullable: true },
+    user: userObject,
   },
 } as const;
 

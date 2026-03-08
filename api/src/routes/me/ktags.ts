@@ -1,18 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { db, ktagsTable, eq, and } from "@klariti/database";
-
-const ktagResponseSchema = {
-  type: "object",
-  properties: {
-    embedded_id: { type: "string" },
-    payload: { type: "string" },
-    user_id: { type: "string" },
-    label: { type: "string", nullable: true },
-    created_at: { type: "string", format: "date-time", nullable: true },
-  },
-};
-
-const errorObject = { type: "object", properties: { error: { type: "string" } } };
+import { errorObject } from "../../schemas/shared.schema";
+import { ktagObject } from "../../schemas/ktags.schema";
 
 export default async function meKtagsRoutes(fastify: FastifyInstance) {
   // List own ktags
@@ -21,7 +10,7 @@ export default async function meKtagsRoutes(fastify: FastifyInstance) {
       tags: ["Me"],
       security: [{ bearerAuth: [] }],
       response: {
-        200: { type: "array", items: ktagResponseSchema },
+        200: { type: "array", items: ktagObject },
         401: errorObject,
       },
     },
@@ -43,11 +32,7 @@ export default async function meKtagsRoutes(fastify: FastifyInstance) {
         required: ["label"],
         properties: { label: { type: "string", nullable: true } },
       },
-      response: {
-        200: ktagResponseSchema,
-        401: errorObject,
-        404: errorObject,
-      },
+      response: { 200: ktagObject, 401: errorObject, 404: errorObject },
     },
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
@@ -59,9 +44,7 @@ export default async function meKtagsRoutes(fastify: FastifyInstance) {
         .set({ label })
         .where(and(eq(ktagsTable.embedded_id, embedded_id), eq(ktagsTable.user_id, userId)))
         .returning();
-      if (!updated) {
-        return reply.status(404).send({ error: "KTag not found." });
-      }
+      if (!updated) return reply.status(404).send({ error: "KTag not found." });
       return reply.send(updated);
     },
   });
