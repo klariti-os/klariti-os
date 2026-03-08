@@ -8,10 +8,8 @@ export const config = {
   // Must match BETTER_AUTH_URL in the auth package.
   appUrl: process.env.APP_URL ?? `http://localhost:${port}`,
 
-  corsOrigins: (
-    process.env.CORS_ORIGINS ??
-    `http://localhost:${port},http://127.0.0.1:${port},http://localhost:3001,http://localhost:4200`
-  )
+  corsOrigins: (process.env.CORS_ORIGINS ?? "")
+  
     .split(",")
     .map((o) => o.trim())
     .filter(Boolean),
