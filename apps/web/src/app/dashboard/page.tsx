@@ -217,7 +217,11 @@ const DashboardPage: NextPage = () => {
                       type="button"
                       onClick={handleDelete}
                       disabled={isDeleting}
-                      className="focus-ring w-full rounded-full border border-[var(--destructive)]/30 py-2 font-mono text-xs uppercase tracking-wide text-[var(--destructive)] transition-colors hover:border-[var(--destructive)] hover:bg-[var(--destructive)]/5 disabled:opacity-40"
+                      className={`focus-ring w-full rounded-full border py-2 font-mono text-xs uppercase tracking-wide transition-colors disabled:opacity-40 ${
+                        confirmDelete
+                          ? "border-[var(--destructive)] bg-[var(--destructive)] text-white hover:bg-[var(--destructive)]/90"
+                          : "border-[var(--destructive)]/30 text-[var(--destructive)] hover:border-[var(--destructive)] hover:bg-[var(--destructive)]/5"
+                      }`}
                     >
                       {isDeleting ? "Deleting…" : confirmDelete ? "Confirm Delete" : "Delete Intent"}
                     </button>
