@@ -122,12 +122,11 @@ final class NFCScanner: NSObject, NFCNDEFReaderSessionDelegate {
         tag.readNDEF { [weak self] message, error in
             guard let self else { return }
             if let error {
-                session.invalidate(errorMessage: error.localizedDescription)
-                DispatchQueue.main.async { self.onError?(error.localizedDescription) }
+                session.invalidate(errorMessage: "Couldn't read tag. Hold it still and try again.")
                 return
             }
             guard let record = message?.records.first else {
-                session.invalidate(errorMessage: "No data found on tag.")
+                session.invalidate(errorMessage: "This doesn't look like a valid Klariti tag.")
                 return
             }
             let text = decodeText(record)
