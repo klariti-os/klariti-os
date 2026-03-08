@@ -23,13 +23,13 @@ type Friendship = typeof friendshipsTable.$inferSelect;
 type FriendRequest = typeof friendRequestsTable.$inferSelect;
 type User = typeof authUser.$inferSelect;
 
-function toFriendUser(f: Friendship, userId: string, users: User[]) {
+function formatFriend(f: Friendship, userId: string, users: User[]) {
   const friendId = f.user_a_id === userId ? f.user_b_id : f.user_a_id;
   const user = users.find((u) => u.id === friendId)!;
   return { friendship_id: f.id, id: user.id, name: user.name, email: user.email, image: user.image, createdAt: user.createdAt };
 }
 
-function toRequestUser(r: FriendRequest, otherId: string, users: User[]) {
+function formatFriendRequest(r: FriendRequest, otherId: string, users: User[]) {
   const user = users.find((u) => u.id === otherId)!;
   return { request_id: r.id, status: r.status, id: user.id, name: user.name, email: user.email, image: user.image, createdAt: user.createdAt };
 }
@@ -88,7 +88,7 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
       if (friendships.length === 0) return reply.send([]);
       const otherIds = friendships.map((f) => f.user_a_id === userId ? f.user_b_id : f.user_a_id);
       const users = await db.select().from(authUser).where(inArray(authUser.id, otherIds));
-      return reply.send(friendships.map((f) => toFriendUser(f, userId, users)));
+      return reply.send(friendships.map((f) => formatFriend(f, userId, users)));
     },
   });
 
@@ -142,7 +142,7 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
         );
       if (requests.length === 0) return reply.send([]);
       const users = await db.select().from(authUser).where(inArray(authUser.id, requests.map((r) => r.from_id)));
-      return reply.send(requests.map((r) => toRequestUser(r, r.from_id, users)));
+      return reply.send(requests.map((r) => formatFriendRequest(r, r.from_id, users)));
     },
   });
 
