@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { db, friendshipsTable, eq, and, or, ne } from "@klariti/database";
-import { errorObject } from "../../schemas/shared.schema";
-import { friendshipObject } from "../../schemas/friends.schema";
+import { errorObject } from "../schemas/shared.schema";
+import { friendshipObject } from "../schemas/friends.schema";
 
 export default async function friendsRoutes(fastify: FastifyInstance) {
   // List accepted friends

@@ -1,4 +1,4 @@
-import { userObject } from "./shared.schema";
+import { userObject } from "./user.schema";
 
 export const signUpBody = {
   type: "object",

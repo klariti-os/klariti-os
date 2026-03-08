@@ -1,9 +1,10 @@
 import { FastifyInstance } from "fastify";
-import { toWebHeaders } from "../../utils/headers";
-import { resolveStatus, resolveMessage } from "../../utils/errors";
-import { errorObject, userObject } from "../../schemas/shared.schema";
-import { updateProfileBody } from "../../schemas/user.schema";
-import { changeEmailBody, changePasswordBody } from "../../schemas/auth.schema";
+import { toWebHeaders } from "../utils/headers";
+import { resolveStatus, resolveMessage } from "../utils/errors";
+import { errorObject } from "../schemas/shared.schema";
+import { userObject } from "../schemas/user.schema";
+import { updateProfileBody } from "../schemas/user.schema";
+import { changeEmailBody, changePasswordBody } from "../schemas/auth.schema";
 
 export default async function meRoutes(fastify: FastifyInstance) {
   // ── GET / ─ current user profile ──────────────────────────────────────────

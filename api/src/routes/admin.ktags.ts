@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { db, ktagsTable, eq } from "@klariti/database";
-import { errorObject, successObject } from "../../schemas/shared.schema";
-import { ktagObject } from "../../schemas/ktags.schema";
+import { errorObject, successObject } from "../schemas/shared.schema";
+import { ktagObject } from "../schemas/ktags.schema";
 
 export default async function adminKtagsRoutes(fastify: FastifyInstance) {
   // Register a new ktag
