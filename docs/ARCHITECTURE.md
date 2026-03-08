@@ -4,33 +4,39 @@ Technical decisions, data models, and design rationale for the Klariti monorepo.
 
 ## Monorepo layout
 
-Turborepo monorepo with pnpm workspaces.
+Turborepo monorepo with pnpm workspaces (`apps/*`, `packages/*`, `api`). All workspace packages use the `@klariti/*` prefix — except `typescript-config` which stays as `@repo/typescript-config`.
 
 ```
 apps/
-  web/          # Next.js dashboard
-  extension/    # MV3 browser extension (DOM observation + enforcement)
+  web/          # Next.js dashboard (@klariti/web)
+  extension/    # MV3 browser extension (@klariti/xt)
   ios/          # SwiftUI iOS companion app
 
-api/            # Fastify API (plugin-first)
+api/            # Fastify API server (@klariti/api, port 4200)
 
 packages/
   database/     # Drizzle ORM schema + pg client (@klariti/database)
+  auth/         # Better Auth server + client split exports (@klariti/auth)
   api-client/   # typed fetch client for the API
   url-class/    # URL → category classifier
   ui/           # shared UI components
-  auth/         # Better Auth (server + client split exports)
   eslint-config/
   typescript-config/
 ```
-
-All workspace packages use the `@klariti/*` prefix. Exception: `typescript-config` stays as `@repo/typescript-config`.
 
 ## API
 
 Fastify on port 4200. Plugin-first: auth, session verification, and Swagger are registered as plugins before routes. Routes are flat files named `<domain>.<resource>.ts` (e.g. `me.friends.ts`, `me.challenges.ts`).
 
 Auth is handled by Better Auth with a Drizzle adapter. The bearer plugin enables token-based auth for mobile and extension clients. Sessions are attached to every request via a `verifySession` preHandler decorator.
+
+Dev: `tsx watch src/server.ts`
+
+## Auth package
+
+`@klariti/auth` has split exports to keep server-only code out of client bundles:
+- `@klariti/auth/server` — `auth`, `toNodeHandler`, `Session` type
+- `@klariti/auth/client` — `authClient`, `signIn`, `signUp`, `signOut`, `useSession`
 
 ## Data models
 
@@ -128,14 +134,6 @@ apps/ios/klariti/
     Locked/LockedView.swift
     Setup/AppSelectionView.swift
 ```
-
-## Auth package
-
-`@klariti/auth` has split exports to keep server-only code out of client bundles:
-- `@klariti/auth/server` — `auth`, `toNodeHandler`, `Session` type
-- `@klariti/auth/client` — `authClient`, `signIn`, `signUp`, `signOut`, `useSession`
-
-Required env vars: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`.
 
 ## Testing
 

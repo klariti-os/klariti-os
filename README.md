@@ -34,6 +34,42 @@ Everything is predictable, explainable, reversible, and user-controlled.
 | iOS app | NFC-gated focus sessions with native app blocking |
 | API | Orchestrates context classification and rule enforcement |
 
+## Getting started
+
+**Prerequisites:** Node.js, pnpm, a PostgreSQL database (we use [Neon](https://neon.tech)).
+
+```bash
+# Install dependencies
+pnpm install
+
+# Copy env and fill in values
+cp .env.example .env
+
+# Run database migrations
+pnpm db:migrate
+
+# Start everything in dev mode
+pnpm dev
+```
+
+### Environment variables
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `BETTER_AUTH_SECRET` | Random secret for session signing |
+| `BETTER_AUTH_URL` | Public URL of the API server (e.g. `http://localhost:4200`) |
+| `APP_URL` | Same as `BETTER_AUTH_URL` |
+| `CORS_ORIGINS` | Comma-separated list of allowed origins |
+
+### Running individual apps
+
+```bash
+pnpm --filter @klariti/api dev       # API only (port 4200)
+pnpm --filter @klariti/web dev       # Web dashboard
+pnpm --filter @klariti/api test      # API integration tests
+```
+
 ## Prototype scope
 
 In scope:
