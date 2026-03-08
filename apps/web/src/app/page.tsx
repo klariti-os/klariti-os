@@ -280,7 +280,6 @@ const HomePage: NextPage = () => {
             <div className="mt-12 grid gap-4 sm:grid-cols-2">
               {capabilities.map((cap) => (
                 <div key={cap.label} className="rounded-xl border border-border bg-card p-6 transition-colors hover:border-muted-foreground/30">
-                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-muted">{cap.icon}</div>
                   <h3 className="mb-1 text-sm font-semibold text-foreground">{cap.label}</h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">{cap.description}</p>
                 </div>
@@ -307,7 +306,6 @@ const HomePage: NextPage = () => {
             <div className="mt-12 flex flex-col gap-4">
               {features.map((feature) => (
                 <article key={feature.title} className="rounded-xl border border-border bg-card p-6 transition-colors hover:border-muted-foreground/30">
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">{feature.icon}</div>
                   <h3 className="mb-2 text-base font-semibold text-foreground">{feature.title}</h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">{feature.description}</p>
                   <div className="mt-6 rounded-lg border border-border bg-background p-4">
@@ -320,7 +318,6 @@ const HomePage: NextPage = () => {
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               {smallFeatures.map((feature) => (
                 <article key={feature.title} className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-muted-foreground/30">
-                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-muted">{feature.icon}</div>
                   <h3 className="mb-1 text-sm font-semibold text-foreground">{feature.title}</h3>
                   <p className="text-xs leading-relaxed text-muted-foreground">{feature.description}</p>
                 </article>
