@@ -58,7 +58,8 @@ describe("POST /api/me/friends/request", () => {
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.status).toBe("pending");
-    expect(body.requester_id).toBe(userAId);
+    expect(body.from_id).toBe(userAId);
+    expect(body.to_id).toBe(userBId);
   });
 
   it("rejects duplicate request", async () => {
@@ -72,24 +73,49 @@ describe("POST /api/me/friends/request", () => {
   });
 });
 
-describe("GET /api/me/friends/requests", () => {
-  it("addressee sees the pending request", async () => {
+describe("GET /api/me/friends/requests/sent", () => {
+  it("requester sees their outgoing request", async () => {
     const res = await app.inject({
       method: "GET",
-      url: "/api/me/friends/requests",
+      url: "/api/me/friends/requests/sent",
+      headers: authHeader(tokenA),
+    });
+    expect(res.statusCode).toBe(200);
+    const requests = res.json();
+    expect(requests.length).toBe(1);
+    expect(requests[0].status).toBe("pending");
+    expect(requests[0].id).toBe(userBId);
+  });
+
+  it("addressee sees nothing in sent", async () => {
+    const res = await app.inject({
+      method: "GET",
+      url: "/api/me/friends/requests/sent",
+      headers: authHeader(tokenB),
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual([]);
+  });
+});
+
+describe("GET /api/me/friends/requests/received", () => {
+  it("addressee sees the incoming request", async () => {
+    const res = await app.inject({
+      method: "GET",
+      url: "/api/me/friends/requests/received",
       headers: authHeader(tokenB),
     });
     expect(res.statusCode).toBe(200);
     const requests = res.json();
     expect(requests.length).toBeGreaterThan(0);
-    expect(requests[0].friendship_id).toBeTypeOf("string");
+    expect(requests[0].status).toBe("pending");
     expect(requests[0].id).toBe(userAId);
   });
 
-  it("requester does not see it in their requests list", async () => {
+  it("requester sees nothing in received", async () => {
     const res = await app.inject({
       method: "GET",
-      url: "/api/me/friends/requests",
+      url: "/api/me/friends/requests/received",
       headers: authHeader(tokenA),
     });
     expect(res.statusCode).toBe(200);
@@ -97,35 +123,34 @@ describe("GET /api/me/friends/requests", () => {
   });
 });
 
-describe("PATCH /api/me/friends/:id (accept)", () => {
-  let friendshipId: string;
+describe("PATCH /api/me/friends/requests/:requestId (respond)", () => {
+  let requestId: string;
 
   beforeAll(async () => {
-    // Get the friendship id from B's requests
     const res = await app.inject({
       method: "GET",
-      url: "/api/me/friends/requests",
+      url: "/api/me/friends/requests/received",
       headers: authHeader(tokenB),
     });
-    friendshipId = res.json()[0].friendship_id;
+    requestId = res.json()[0].request_id;
   });
 
-  it("requester cannot accept their own request", async () => {
+  it("requester cannot accept their own sent request", async () => {
     const res = await app.inject({
       method: "PATCH",
-      url: `/api/me/friends/${friendshipId}`,
+      url: `/api/me/friends/requests/${requestId}`,
       headers: authHeader(tokenA),
-      payload: { status: "accepted" },
+      payload: { action: "accept" },
     });
     expect(res.statusCode).toBe(403);
   });
 
-  it("addressee can accept", async () => {
+  it("addressee can accept the request", async () => {
     const res = await app.inject({
       method: "PATCH",
-      url: `/api/me/friends/${friendshipId}`,
+      url: `/api/me/friends/requests/${requestId}`,
       headers: authHeader(tokenB),
-      payload: { status: "accepted" },
+      payload: { action: "accept" },
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().status).toBe("accepted");
@@ -147,7 +172,7 @@ describe("PATCH /api/me/friends/:id (accept)", () => {
   });
 });
 
-describe("DELETE /api/me/friends/:id", () => {
+describe("DELETE /api/me/friends/:friendshipId", () => {
   let friendshipId: string;
 
   beforeAll(async () => {
@@ -176,5 +201,41 @@ describe("DELETE /api/me/friends/:id", () => {
       headers: authHeader(tokenA),
     });
     expect(res.json()).toEqual([]);
+  });
+});
+
+describe("PATCH /api/me/friends/requests/:requestId (cancel)", () => {
+  let requestId: string;
+
+  beforeAll(async () => {
+    // Send a new request from B to A
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/me/friends/request",
+      headers: authHeader(tokenB),
+      payload: { addressee_id: userAId },
+    });
+    requestId = res.json().id;
+  });
+
+  it("recipient cannot cancel sender's request", async () => {
+    const res = await app.inject({
+      method: "PATCH",
+      url: `/api/me/friends/requests/${requestId}`,
+      headers: authHeader(tokenA),
+      payload: { action: "cancel" },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it("sender can cancel their own pending request", async () => {
+    const res = await app.inject({
+      method: "PATCH",
+      url: `/api/me/friends/requests/${requestId}`,
+      headers: authHeader(tokenB),
+      payload: { action: "cancel" },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().status).toBe("cancelled");
   });
 });
