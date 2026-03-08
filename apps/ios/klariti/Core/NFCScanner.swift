@@ -2,7 +2,7 @@
 //  NFCScanner.swift
 //  klariti
 //
-//  Handles NFC read and write sessions.
+//  Handles NFC read sessions.
 //  Callbacks always fire on the main thread.
 //
 
@@ -18,18 +18,11 @@ final class NFCScanner: NSObject, NFCNDEFReaderSessionDelegate {
     var onVerifyPayload: ((String) -> String?)?
 
     private var session: NFCNDEFReaderSession?
-    private var writeToken: String?
     private var sessionActive = false
 
     // MARK: - Public API
 
-    func beginWrite(token: String, alert: String) {
-        writeToken = token
-        start(alert: alert)
-    }
-
     func beginScan(alert: String) {
-        writeToken = nil
         start(alert: alert)
     }
 
@@ -77,44 +70,13 @@ final class NFCScanner: NSObject, NFCNDEFReaderSessionDelegate {
                     DispatchQueue.main.async { self.onError?(error.localizedDescription) }
                     return
                 }
-                if let token = self.writeToken {
-                    self.write(token: token, to: tag, session: session)
-                } else {
-                    self.read(from: tag, session: session)
-                }
+                self.read(from: tag, session: session)
             }
         }
     }
 
     func readerSessionDidBecomeActive(_ session: NFCNDEFReaderSession) {}
     func readerSession(_ session: NFCNDEFReaderSession, didDetectNDEFs messages: [NFCNDEFMessage]) {}
-
-    // MARK: - Write
-
-    private func write(token: String, to tag: NFCNDEFTag, session: NFCNDEFReaderSession) {
-        let langBytes = [UInt8]("en".utf8)
-        let textBytes = [UInt8](token.utf8)
-        var payload = Data()
-        payload.append(UInt8(langBytes.count))
-        payload.append(contentsOf: langBytes)
-        payload.append(contentsOf: textBytes)
-        let record = NFCNDEFPayload(
-            format: .nfcWellKnown,
-            type: "T".data(using: .utf8)!,
-            identifier: Data(),
-            payload: payload
-        )
-        tag.writeNDEF(NFCNDEFMessage(records: [record])) { [weak self] error in
-            if let error {
-                session.invalidate(errorMessage: error.localizedDescription)
-                DispatchQueue.main.async { self?.onError?(error.localizedDescription) }
-                return
-            }
-            session.alertMessage = "Focus key registered!"
-            session.invalidate()
-            DispatchQueue.main.async { self?.onTextPayload?(token) }
-        }
-    }
 
     // MARK: - Read
 

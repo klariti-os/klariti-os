@@ -16,7 +16,7 @@ struct ContentView: View {
             if store.isLocked {
                 LockedView()
             } else if !store.setupComplete {
-                SetupCoordinator()
+                AppSelectionView()
             } else {
                 HomeView()
             }
@@ -26,11 +26,6 @@ struct ContentView: View {
         .onAppear { store.onLaunch() }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             store.refreshAuthStatus()
-        }
-        .alert("Something went wrong", isPresented: $store.showNFCErrorAlert, presenting: store.nfcErrorMessage) { _ in
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text($0).font(KlFont.body)
         }
     }
 }
