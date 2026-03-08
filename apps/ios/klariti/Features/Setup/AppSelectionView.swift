@@ -2,7 +2,7 @@
 //  AppSelectionView.swift
 //  klariti
 //
-//  Setup step 2: choose apps to block.
+//  Setup: choose apps to block.
 //
 
 import SwiftUI
@@ -55,11 +55,6 @@ struct AppSelectionView: View {
                     Button("Done — Start using Klariti") { store.setupComplete = true }
                         .buttonStyle(KlButtonStyle())
                 }
-
-                Button("Back") { store.setupStep = 0 }
-                    .font(KlFont.subhead)
-                    .foregroundStyle(Color.klSubtle)
-                    .padding(.top, 4)
             }
             .padding(.horizontal, 32)
             .padding(.bottom, 52)

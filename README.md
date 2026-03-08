@@ -39,32 +39,48 @@ A challenge is an intent with a commitment layer. Any intent can be turned into 
 - **Time-bound** — ends after N days, or at a set date
 - **Group** — shared with others, with a collective pause condition (e.g. pauses for everyone once 50% of participants choose to pause)
 
-Under the hood, intents and challenges are the same thing. A plain intent is solo with no end date — active until the user turns it off. A challenge is an intent with a deadline, a group, or both.
+A challenge is the canonical entity. A solo "intent" is just a challenge with one participant and no deadline — the distinction is UX framing, not a different data shape.
 
-The distinction is derived, not stored. An intent with `ends_at` and/or `pause_threshold` set is a challenge. Without them, it's a plain intent. Same data shape, different UX framing.
-
-Each intent owns a set of rules. A rule maps a URL pattern to an action the Gray Engine should take. The extension fetches the active intent with its rules in a single call — everything it needs to enforce the user's configuration.
+The extension fetches the user's active challenge (via their participant row) in a single call.
 
 ```ts
-interface Intent {
+interface Challenge {
   id: string
-  user_id: string
+  creator_id: string
   name: string
   goal: "FOCUS" | "WORK" | "STUDY" | "CASUAL"
-  is_active: boolean
-  ends_at?: Date        // set = challenge
-  pause_threshold?: number  // 0.0–1.0, group pause condition
+  ends_at?: Date           // set = time-bound
+  pause_threshold?: number // 0.0–1.0, group pause condition
   created_at: Date
   updated_at: Date
 }
 
-interface Rule {
+// One row per (challenge, user). Composite PK.
+interface ChallengeParticipant {
+  challenge_id: string
+  user_id: string
+  status: "invited" | "active" | "paused" | "declined" | "completed"
+  joined_at?: Date
+  created_at: Date
+}
+
+// Symmetric friendship. user_a_id < user_b_id (canonical ordering, enforced in app).
+interface Friendship {
   id: string
-  intent_id: string     // belongs to an intent
-  url_pattern: string   // "youtube.com", "*.reddit.com"
-  action: "BLOCK" | "BLUR" | "DELAY" | "HIGHLIGHT" | "HIDE"
-  target?: string       // "feed", "sidebar" — null = whole page
-  is_enabled: boolean
+  user_a_id: string
+  user_b_id: string
+  requester_id: string  // who sent the request
+  status: "pending" | "accepted" | "blocked"
+  created_at: Date
+  updated_at: Date
+}
+
+// Physical NFC tag registered to a user
+interface Ktag {
+  embedded_id: string  // unique ID from the tag URL: klariti.so/tag/<embedded_id>
+  payload: string      // full URL written to the tag
+  user_id: string
+  label?: string
   created_at: Date
 }
 ```
@@ -88,43 +104,56 @@ Out of scope:
 
 ## Monorepo layout
 
-This is a Turborepo monorepo. Fastify is used for the API layer using a plugin-first structure.
+Turborepo monorepo. Fastify for the API layer using a plugin-first structure.
 
 ```txt
 apps/
-  api/                      # Fastify API + proxy layer (decision router)
-  dashboard/                # Next.js dashboard (rules, profiles, kill switch)
-  extension/                # MV3 extension (DOM observation + enforcement)
+  web/          # Next.js dashboard
+  extension/    # MV3 browser extension (DOM observation + enforcement)
+  ios/          # SwiftUI iOS companion app
+
+api/            # Fastify API (plugin-first, auth + intent routes)
 
 packages/
-  grey-engine/              # core decision logic (rules + scoring)
-  url-classifier/           # URL -> category (ex: YouTube URL -> category)
-  youtube-intel/            # YouTube metadata parsing (optional split)
-  shared/                   # shared types, schemas, utils
-
+  database/     # Drizzle ORM schema + pg client
+  api-client/   # typed fetch client for the API
+  url-class/    # URL → category classifier
+  ui/           # shared UI components
+  auth/         # Better Auth (server + client split exports)
+  eslint-config/
+  typescript-config/
+```
 
 ## iOS application
 
 The Klariti iOS app is a companion tool for enforcing focus sessions on your iPhone using physical NFC tags (ktags).
 
 **How it works:**
-1. Tap **Start Focus** — the app prompts you to scan your ktag (an NFC tag written with a `klariti.so/tag/<id>` URL)
-2. Matched apps are blocked via Screen Time / FamilyControls
-3. To end the session, scan the **same** tag — any other tag is rejected
+1. On first launch, select the apps to block during focus sessions
+2. Tap **Start Focus** — the app prompts you to scan your ktag (an NFC tag with a `klariti.so/tag/<id>` URL)
+3. Selected apps are blocked via Screen Time / FamilyControls and the device enters Locked state
+4. To end the session, scan the **same** tag — any other tag is rejected
 
 **Key features:**
 - NFC-gated lock/unlock — no software bypass
 - App blocking via native Screen Time (no VPN or proxy required)
-- Payload verification: only tags matching the `klariti.so/tag/` URL format are accepted
+- Payload verification: only tags matching `klariti.so/tag/<id>` are accepted
 - Session-bound: the exact tag used to lock is the only one that can unlock
+- NFC errors are surfaced directly in the system NFC sheet — no extra in-app dialogs
 
 **Stack:** SwiftUI · CoreNFC · FamilyControls / ScreenTime
 
 ```txt
 apps/ios/klariti/
-  Core/           # NFCScanner, ScreenTimeManager
-  Models/         # AppStore (Observable state + actions)
-  Features/       # HomeView, SetupCoordinator, AppSelectionView
+  Core/
+    NFCScanner.swift        # NFC session handling + payload verification
+    ScreenTimeManager.swift # FamilyControls shield management
+  Models/
+    AppStore.swift          # Observable state + all actions (single source of truth)
+  Features/
+    Home/HomeView.swift           # Ready state — start focus
+    Locked/LockedView.swift       # Locked state — scan to unlock
+    Setup/AppSelectionView.swift  # First-run app selection
 ```
 
 ## Team members

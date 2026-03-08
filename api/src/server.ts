@@ -5,12 +5,13 @@ import { config } from "./config";
 import swaggerPlugin from "./plugins/swagger";
 import corsPlugin from "./plugins/cors";
 import authPlugin from "./plugins/auth";
-import meRoutes from "./routes/me";
 import authRoutes from "./routes/auth";
-import intentsRoutes from "./routes/intents";
+import meRoutes from "./routes/me";
+import meKtagsRoutes from "./routes/me.ktags";
+import meChallengesRoutes from "./routes/me.challenges";
+import meFriendsRoutes from "./routes/me.friends";
 import classifyRoutes from "./routes/classify";
-import adminKtagsRoutes from "./routes/admin/ktags";
-import meKtagsRoutes from "./routes/me/ktags";
+import adminKtagsRoutes from "./routes/admin.ktags";
 
 const fastify = Fastify({
   logger: {
@@ -29,7 +30,8 @@ fastify.register(authPlugin);
 // Routes
 fastify.register(authRoutes);
 fastify.register(meRoutes, { prefix: "/api/me" });
-fastify.register(intentsRoutes, { prefix: "/api/intents" });
+fastify.register(meChallengesRoutes, { prefix: "/api/me/challenges" });
+fastify.register(meFriendsRoutes, { prefix: "/api/me/friends" });
 fastify.register(classifyRoutes, { prefix: "/api/classify" });
 fastify.register(adminKtagsRoutes, { prefix: "/api/admin/ktags" });
 fastify.register(meKtagsRoutes, { prefix: "/api/me/ktags" });

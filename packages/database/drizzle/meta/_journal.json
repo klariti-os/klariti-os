@@ -64,6 +64,13 @@
       "when": 1772924542303,
       "tag": "0008_concerned_dreadnoughts",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1772990695712,
+      "tag": "0009_social_challenges",
+      "breakpoints": true
     }
   ]
 }

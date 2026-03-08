@@ -2,7 +2,7 @@
 //  NFCScanner.swift
 //  klariti
 //
-//  Handles NFC read and write sessions.
+//  Handles NFC read sessions.
 //  Callbacks always fire on the main thread.
 //
 
@@ -13,23 +13,16 @@ final class NFCScanner: NSObject, NFCNDEFReaderSessionDelegate {
     var onTextPayload: ((String) -> Void)?
     var onError: ((String) -> Void)?
     var onCancelled: (() -> Void)?
-    /// Called inside the session before invalidation. Return false to reject the tag
-    /// with an error shown inside the NFC sheet (not as a separate alert).
-    var onVerifyPayload: ((String) -> Bool)?
+    /// Called inside the session before invalidation.
+    /// Return nil to accept the tag, or a non-nil string to reject it with that message shown in the NFC sheet.
+    var onVerifyPayload: ((String) -> String?)?
 
     private var session: NFCNDEFReaderSession?
-    private var writeToken: String?
     private var sessionActive = false
 
     // MARK: - Public API
 
-    func beginWrite(token: String, alert: String) {
-        writeToken = token
-        start(alert: alert)
-    }
-
     func beginScan(alert: String) {
-        writeToken = nil
         start(alert: alert)
     }
 
@@ -77,11 +70,7 @@ final class NFCScanner: NSObject, NFCNDEFReaderSessionDelegate {
                     DispatchQueue.main.async { self.onError?(error.localizedDescription) }
                     return
                 }
-                if let token = self.writeToken {
-                    self.write(token: token, to: tag, session: session)
-                } else {
-                    self.read(from: tag, session: session)
-                }
+                self.read(from: tag, session: session)
             }
         }
     }
@@ -89,54 +78,22 @@ final class NFCScanner: NSObject, NFCNDEFReaderSessionDelegate {
     func readerSessionDidBecomeActive(_ session: NFCNDEFReaderSession) {}
     func readerSession(_ session: NFCNDEFReaderSession, didDetectNDEFs messages: [NFCNDEFMessage]) {}
 
-    // MARK: - Write
-
-    private func write(token: String, to tag: NFCNDEFTag, session: NFCNDEFReaderSession) {
-        let langBytes = [UInt8]("en".utf8)
-        let textBytes = [UInt8](token.utf8)
-        var payload = Data()
-        payload.append(UInt8(langBytes.count))
-        payload.append(contentsOf: langBytes)
-        payload.append(contentsOf: textBytes)
-        let record = NFCNDEFPayload(
-            format: .nfcWellKnown,
-            type: "T".data(using: .utf8)!,
-            identifier: Data(),
-            payload: payload
-        )
-        tag.writeNDEF(NFCNDEFMessage(records: [record])) { [weak self] error in
-            if let error {
-                session.invalidate(errorMessage: error.localizedDescription)
-                DispatchQueue.main.async { self?.onError?(error.localizedDescription) }
-                return
-            }
-            session.alertMessage = "Focus key registered!"
-            session.invalidate()
-            DispatchQueue.main.async { self?.onTextPayload?(token) }
-        }
-    }
-
     // MARK: - Read
 
     private func read(from tag: NFCNDEFTag, session: NFCNDEFReaderSession) {
         tag.readNDEF { [weak self] message, error in
             guard let self else { return }
             if let error {
-                session.invalidate(errorMessage: error.localizedDescription)
-                DispatchQueue.main.async { self.onError?(error.localizedDescription) }
+                session.invalidate(errorMessage: "Couldn't read tag. Hold it still and try again.")
                 return
             }
             guard let record = message?.records.first else {
-                session.invalidate(errorMessage: "No data found on tag.")
+                session.invalidate(errorMessage: "This doesn't look like a valid Klariti tag.")
                 return
             }
             let text = decodeText(record)
-            if let text, let verify = self.onVerifyPayload, !verify(text) {
-                let isKlaritiTag = text.range(of: "klariti\\.so/tag/", options: .regularExpression) != nil
-                let message = isKlaritiTag
-                    ? "Use the same tag you used to start this session."
-                    : "This doesn't look like a valid Klariti tag."
-                session.invalidate(errorMessage: message)
+            if let text, let verify = self.onVerifyPayload, let errorMessage = verify(text) {
+                session.invalidate(errorMessage: errorMessage)
                 return
             }
             session.invalidate()

@@ -45,18 +45,12 @@ extension Color {
     static let klMuted       = Color(uiColor: .adaptive(light: "#f0efeb", dark: "#1e1e1c"))
     /// Mid-tone text — subtitles, captions, secondary labels
     static let klSubtle      = Color(uiColor: .adaptive(light: "#737066", dark: "#a1a09a"))
-    /// Hairline borders
-    static let klBorder      = Color(uiColor: .adaptive(light: "#e8e6e1", dark: "#2a2a28"))
     /// Primary button background  (inverts with mode)
     static let klPrimary     = Color(uiColor: .adaptive(light: "#1a1a1a", dark: "#ededec"))
     /// Text on primary buttons
     static let klPrimaryFg   = Color(uiColor: .adaptive(light: "#fafaf8", dark: "#111110"))
-    /// Card / sheet background
-    static let klCard        = Color(uiColor: .adaptive(light: "#ffffff", dark: "#191918"))
     /// Sage green — success states, confirmations
     static let klSuccess     = Color(uiColor: .adaptive(light: "#4a6741", dark: "#8bb07f"))
-    /// Brick red — destructive actions
-    static let klDestructive = Color(uiColor: .adaptive(light: "#c23b22", dark: "#e55a3f"))
 }
 
 // MARK: - Typography
