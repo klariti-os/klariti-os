@@ -13,9 +13,9 @@ final class NFCScanner: NSObject, NFCNDEFReaderSessionDelegate {
     var onTextPayload: ((String) -> Void)?
     var onError: ((String) -> Void)?
     var onCancelled: (() -> Void)?
-    /// Called inside the session before invalidation. Return false to reject the tag
-    /// with an error shown inside the NFC sheet (not as a separate alert).
-    var onVerifyPayload: ((String) -> Bool)?
+    /// Called inside the session before invalidation.
+    /// Return nil to accept the tag, or a non-nil string to reject it with that message shown in the NFC sheet.
+    var onVerifyPayload: ((String) -> String?)?
 
     private var session: NFCNDEFReaderSession?
     private var writeToken: String?
@@ -131,12 +131,8 @@ final class NFCScanner: NSObject, NFCNDEFReaderSessionDelegate {
                 return
             }
             let text = decodeText(record)
-            if let text, let verify = self.onVerifyPayload, !verify(text) {
-                let isKlaritiTag = text.range(of: "klariti\\.so/tag/", options: .regularExpression) != nil
-                let message = isKlaritiTag
-                    ? "Use the same tag you used to start this session."
-                    : "This doesn't look like a valid Klariti tag."
-                session.invalidate(errorMessage: message)
+            if let text, let verify = self.onVerifyPayload, let errorMessage = verify(text) {
+                session.invalidate(errorMessage: errorMessage)
                 return
             }
             session.invalidate()

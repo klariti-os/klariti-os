@@ -93,9 +93,10 @@ import FamilyControls
 
     func scanToUnlock() {
         nfcScanner.onVerifyPayload = { [weak self] payload in
-            guard let self else { return false }
-            guard verifyTag(payload) else { return false }
-            return payload == nfcTagPayload
+            guard let self else { return nil }
+            guard verifyTag(payload) else { return "This doesn't look like a valid Klariti tag." }
+            guard payload == nfcTagPayload else { return "Use the same tag you used to start this session." }
+            return nil
         }
         nfcScanner.onTextPayload = { [weak self] payload in
             guard let self else { return }
@@ -112,7 +113,10 @@ import FamilyControls
     // MARK: - Focus actions
 
     func startFocus() {
-        nfcScanner.onVerifyPayload = { [weak self] payload in self?.verifyTag(payload) ?? false }
+        nfcScanner.onVerifyPayload = { [weak self] payload in
+            guard let self else { return nil }
+            return verifyTag(payload) ? nil : "This doesn't look like a valid Klariti tag."
+        }
         nfcScanner.onTextPayload = { [weak self] payload in
             guard let self else { return }
             nfcTagPayload = payload  // store the exact tag used to lock
