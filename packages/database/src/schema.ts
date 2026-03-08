@@ -20,6 +20,11 @@ export const authUser = pgTable("user", {
   image: text("image"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
+  // Better Auth admin plugin fields
+  role: text("role").default("user"),
+  banned: boolean("banned").default(false),
+  banReason: text("ban_reason"),
+  banExpires: timestamp("ban_expires"),
 });
 
 export const authSession = pgTable("session", {
@@ -84,6 +89,22 @@ export const intentsTable = pgTable(
   (table) => [index("intents_user_id_idx").on(table.user_id)]
 );
 
+
+export const ktagsTable = pgTable(
+  "ktags",
+  {
+    // The unique ID embedded in the tag URL: klariti.so/tag/<embedded_id>
+    embedded_id: varchar("embedded_id", { length: 255 }).primaryKey(),
+    // Full payload URL as written to the NFC tag
+    payload: varchar("payload", { length: 512 }).notNull(),
+    user_id: text("user_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    label: varchar("label", { length: 255 }),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [index("ktags_user_id_idx").on(table.user_id)]
+);
 
 export const connectedDevicesTable = pgTable("connected_devices", {
   id: uuid("id").primaryKey().defaultRandom(),
