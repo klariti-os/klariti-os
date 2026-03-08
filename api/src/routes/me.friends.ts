@@ -35,7 +35,7 @@ function toRequestUser(r: FriendRequest, otherId: string, users: User[]) {
 }
 
 // Verifies the caller is the sender of a pending request, then attaches it to request.friendRequest
-async function verifyFriendRequestSender(request: FastifyRequest, reply: FastifyReply) {
+async function ensureSender(request: FastifyRequest, reply: FastifyReply) {
   const userId = request.session!.user.id;
   const { requestId } = request.params as { requestId: string };
   const [req] = await db
@@ -52,7 +52,7 @@ async function verifyFriendRequestSender(request: FastifyRequest, reply: Fastify
 }
 
 // Verifies the caller is the recipient of a pending request, then attaches it to request.friendRequest
-async function verifyFriendRequestRecipient(request: FastifyRequest, reply: FastifyReply) {
+async function ensureRecipient(request: FastifyRequest, reply: FastifyReply) {
   const userId = request.session!.user.id;
   const { requestId } = request.params as { requestId: string };
   const [req] = await db
@@ -213,7 +213,7 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
       },
       response: { 200: friendRequestObject, 401: errorObject, 403: errorObject },
     },
-    preHandler: [fastify.verifySession, verifyFriendRequestRecipient],
+    preHandler: [fastify.verifySession, ensureRecipient],
     handler: async (request, reply) => {
       const { action } = request.body;
       const req = request.friendRequest!;
@@ -248,7 +248,7 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
       security: [{ bearerAuth: [] }],
       response: { 200: friendRequestObject, 401: errorObject, 403: errorObject },
     },
-    preHandler: [fastify.verifySession, verifyFriendRequestSender],
+    preHandler: [fastify.verifySession, ensureSender],
     handler: async (request, reply) => {
       const req = request.friendRequest!;
       const [updated] = await db
