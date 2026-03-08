@@ -87,13 +87,15 @@ interface FriendRequest {
   id: string
   from_id: string
   to_id: string
-  status: "pending" | "accepted" | "declined" | "cancelled"
+  status: "pending" | "accepted" | "declined" | "withdrawn"
   created_at: Date
   updated_at: Date
 }
 ```
 
-**Privacy rule**: the sender of a request can only see `pending` or `accepted` — `declined` and `cancelled` are both returned as `pending` to prevent inferring rejection.
+**Withdrawal**: the sender can withdraw a pending request (`DELETE /requests/:requestId`). Withdrawn requests are hidden from the recipient immediately — `GET /requests/received` filters to `status = 'pending'` only. The sender can re-send a request after withdrawing because the duplicate check only blocks an actively `pending` request.
+
+**Privacy rule**: the sender's view of sent requests masks `declined` as `pending` to prevent inferring rejection. `withdrawn` is shown as-is since the sender initiated it.
 
 **Accept flow**: accepting a request upserts the `friendships` row via `ON CONFLICT DO UPDATE`, which either creates the friendship or reactivates a previously removed one.
 
