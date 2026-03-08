@@ -10,3 +10,16 @@ export const friendshipObject = {
     updated_at: { type: "string", format: "date-time" },
   },
 } as const;
+
+// User object enriched with the friendship context (returned from list/request endpoints)
+export const friendUserObject = {
+  type: "object",
+  properties: {
+    friendship_id: { type: "string", format: "uuid" },
+    id: { type: "string" },
+    name: { type: "string" },
+    email: { type: "string" },
+    image: { type: "string", nullable: true },
+    createdAt: { type: "string" },
+  },
+} as const;
