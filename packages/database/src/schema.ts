@@ -7,6 +7,7 @@ import {
   real,
   text,
   timestamp,
+  unique,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -71,7 +72,8 @@ export const authVerification = pgTable("verification", {
 // ─── Application tables ───────────────────────────────────────────────────────
 
 export const goalEnum = pgEnum("goal", ["FOCUS", "WORK", "STUDY", "CASUAL"]);
-export const friendshipStatusEnum = pgEnum("friendship_status", ["pending", "accepted", "blocked"]);
+export const friendshipStateEnum = pgEnum("friendship_state", ["active", "removed"]);
+export const friendRequestStatusEnum = pgEnum("friend_request_status", ["pending", "accepted", "declined", "cancelled"]);
 export const participantStatusEnum = pgEnum("participant_status", ["invited", "active", "paused", "declined", "completed"]);
 
 // A challenge is the canonical entity. A solo "intent" is just a challenge with one participant.
@@ -112,8 +114,8 @@ export const challengeParticipantsTable = pgTable(
   ]
 );
 
-// Symmetric friendship. user_a_id < user_b_id enforced at the application layer.
-// requester_id tracks who sent the request despite canonical ordering.
+// Canonical relationship between two users. user_a_id < user_b_id enforced at application layer.
+// Persists across friend/unfriend cycles via status instead of deletion.
 export const friendshipsTable = pgTable(
   "friendships",
   {
@@ -124,16 +126,35 @@ export const friendshipsTable = pgTable(
     user_b_id: text("user_b_id")
       .notNull()
       .references(() => authUser.id, { onDelete: "cascade" }),
-    requester_id: text("requester_id")
-      .notNull()
-      .references(() => authUser.id, { onDelete: "cascade" }),
-    status: friendshipStatusEnum("status").notNull().default("pending"),
+    status: friendshipStateEnum("status").notNull().default("active"),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [
+    unique("friendships_pair_unique").on(table.user_a_id, table.user_b_id),
     index("friendships_user_a_idx").on(table.user_a_id),
     index("friendships_user_b_idx").on(table.user_b_id),
+  ]
+);
+
+// Each friend request is a distinct row. Accepting creates/reactivates a friendship row.
+export const friendRequestsTable = pgTable(
+  "friend_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    from_id: text("from_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    to_id: text("to_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    status: friendRequestStatusEnum("status").notNull().default("pending"),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("friend_requests_from_idx").on(table.from_id),
+    index("friend_requests_to_idx").on(table.to_id),
   ]
 );
 

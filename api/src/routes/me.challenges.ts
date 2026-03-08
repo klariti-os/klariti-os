@@ -198,7 +198,7 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
           and(
             eq(friendshipsTable.user_a_id, userA),
             eq(friendshipsTable.user_b_id, userB),
-            eq(friendshipsTable.status, "accepted"),
+            eq(friendshipsTable.status, "active"),
           )
         );
       if (!friendship) return reply.status(403).send({ error: "Not friends with this user" });
