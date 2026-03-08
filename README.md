@@ -1,54 +1,44 @@
 # Klariti
 
-Klariti is a **local-first** layer that sits between you and the web and helps you use the internet with more intention.
+Klariti is an **antisocial social platform** — it uses the social dynamics that keep you hooked on the internet to help you spend less time on it.
 
-The internet was meant to strengthen human connection, speed up learning, and support growth. Over time, it became one of the most distracting environments ever built. Most of what we see online is shaped by engagement algorithms we do not control. Klariti flips that. It prioritizes **wellbeing, focus, and user agency**.
+Most apps compete for your attention. Klariti does the opposite. It gives you the tools to set intentions, block what pulls you off course, and hold each other accountable — without feeding you a feed.
 
-## What it does
+## The idea
 
-At the core is the **Gray Engine** — a context-aware system that decides how to modify a webpage based on what you are trying to do right now. It does not treat the internet as "good vs bad". It treats content as context-dependent. The same platform can help you learn in one moment and wreck your focus in the next.
+The internet stopped being a tool and became an environment designed to keep you inside it. The social mechanics that power that — streaks, challenges, peer pressure, shared commitments — are not inherently bad. Klariti borrows them and points them at focus instead of engagement.
 
-Given your current goal and rules, the Gray Engine can:
-- Hide or blur distracting sections of a page
-- Highlight content that matches your goal
-- Delay or reroute access to low-value destinations
-
-Everything is predictable, explainable, reversible, and user-controlled.
+You set a goal. You invite friends into a challenge. You use a physical NFC tag to lock your phone. The social layer is there to make it stick, not to pull you back in.
 
 ## Key concepts
 
-**Intents** — the basic unit of configuration. An intent bundles a goal (focus, work, study, casual) with a set of rules that tell the Gray Engine how to behave. Intents can be toggled on or off at any time.
+**Intents** — the basic unit. An intent bundles a goal (focus, work, study, casual) with rules for the Gray Engine. Toggle on or off at any time.
 
-**Challenges** — an intent with a commitment layer. Challenges can be time-bound (ends after N days) or shared with a group (pauses for everyone once enough participants choose to pause). A solo intent and a group challenge are the same underlying concept — the distinction is in framing, not data.
+**Challenges** — an intent with commitment. Add a deadline, share it with friends, set a group pause condition (e.g. pauses for everyone once 50% choose to pause). The social pressure is the feature.
 
-**Ktags** — physical NFC tags that gate focus sessions on iOS. Tap to lock, tap the same tag to unlock. No software bypass.
+**Friends** — the accountability layer. Add people you actually want to focus with. Shared challenges only work if the group is real.
 
-**Friends** — users can add each other to share challenges and accountability.
+**Ktags** — physical NFC tags that gate focus sessions on iOS. No software bypass. Tap to lock, tap the same tag to unlock.
+
+**Gray Engine** — the content mediation layer. Given your goal and rules, it decides how to modify a webpage: hide distracting modules, blur low-value sections, highlight what matters. Predictable, explainable, reversible.
 
 ## Platforms
 
 | Platform | Purpose |
 |----------|---------|
-| Browser extension | Observes and modifies page content in real time |
-| Web dashboard | Manage intents, challenges, and rules |
+| Browser extension | Applies Gray Engine rules to pages in real time |
+| Web dashboard | Manage intents, challenges, friends, and rules |
 | iOS app | NFC-gated focus sessions with native app blocking |
-| API | Orchestrates context classification and rule enforcement |
+| API | Orchestrates classification, rules, and social state |
 
 ## Getting started
 
 **Prerequisites:** Node.js, pnpm, a PostgreSQL database (we use [Neon](https://neon.tech)).
 
 ```bash
-# Install dependencies
 pnpm install
-
-# Copy env and fill in values
-cp .env.example .env
-
-# Run database migrations
+cp .env.example .env   # fill in values
 pnpm db:migrate
-
-# Start everything in dev mode
 pnpm dev
 ```
 
@@ -70,11 +60,11 @@ pnpm --filter @klariti/web dev       # Web dashboard
 pnpm --filter @klariti/api test      # API integration tests
 ```
 
-## Prototype scope
+## Scope (prototype)
 
 In scope:
 - Desktop browser extension (context-aware page modification)
-- Web dashboard (intents, challenges, rules, kill switch)
+- Web dashboard (intents, challenges, friends, rules)
 - API layer (context + rules → action plan)
 - iOS companion app (NFC-gated focus sessions)
 
@@ -97,4 +87,4 @@ Out of scope:
 
 ---
 
-For technical architecture, data models, and design decisions see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+For technical architecture and data models see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
