@@ -73,7 +73,7 @@ export const authVerification = pgTable("verification", {
 
 export const goalEnum = pgEnum("goal", ["FOCUS", "WORK", "STUDY", "CASUAL"]);
 export const friendshipStateEnum = pgEnum("friendship_state", ["active", "removed"]);
-export const friendRequestStatusEnum = pgEnum("friend_request_status", ["pending", "accepted", "declined", "cancelled"]);
+export const friendRequestStatusEnum = pgEnum("friend_request_status", ["pending", "accepted", "declined", "cancelled", "withdrawn"]);
 export const participantStatusEnum = pgEnum("participant_status", ["invited", "active", "paused", "declined", "completed"]);
 
 // A challenge is the canonical entity. A solo "intent" is just a challenge with one participant.

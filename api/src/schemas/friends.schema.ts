@@ -51,12 +51,12 @@ export const friendRequestUserObject = {
   },
 } as const;
 
-// Sent request enriched with recipient's info — status masked to pending|accepted only
+// Sent request enriched with recipient's info — declined/cancelled masked as pending, withdrawn shown
 export const sentRequestUserObject = {
   type: "object",
   properties: {
     request_id: { type: "string", format: "uuid" },
-    status: { type: "string", enum: ["pending", "accepted"] },
+    status: { type: "string", enum: ["pending", "withdrawn"] },
     id: { type: "string" },
     name: { type: "string" },
     email: { type: "string" },

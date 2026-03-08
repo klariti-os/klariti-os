@@ -85,6 +85,13 @@
       "when": 1773072001000,
       "tag": "0011_friendship_model_v2",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1773072002000,
+      "tag": "0012_friend_request_withdrawn",
+      "breakpoints": true
     }
   ]
 }

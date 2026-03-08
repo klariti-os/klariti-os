@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
   db,
   friendshipsTable,
@@ -13,6 +13,12 @@ import {
 import { errorObject, successObject } from "../schemas/shared.schema";
 import { friendUserObject, friendRequestObject, friendRequestUserObject, sentRequestUserObject } from "../schemas/friends.schema";
 
+declare module "fastify" {
+  interface FastifyRequest {
+    friendRequest?: typeof friendRequestsTable.$inferSelect;
+  }
+}
+
 type Friendship = typeof friendshipsTable.$inferSelect;
 type FriendRequest = typeof friendRequestsTable.$inferSelect;
 type User = typeof authUser.$inferSelect;
@@ -26,6 +32,37 @@ function toFriendUser(f: Friendship, userId: string, users: User[]) {
 function toRequestUser(r: FriendRequest, otherId: string, users: User[]) {
   const user = users.find((u) => u.id === otherId)!;
   return { request_id: r.id, status: r.status, id: user.id, name: user.name, email: user.email, image: user.image, createdAt: user.createdAt };
+}
+
+// Verifies the caller is the sender of a pending request, then attaches it to request.friendRequest
+async function verifyFriendRequestSender(request: FastifyRequest, reply: FastifyReply) {
+  const userId = request.session!.user.id;
+  const { requestId } = request.params as { requestId: string };
+  const [req] = await db
+    .select()
+    .from(friendRequestsTable)
+    .where(eq(friendRequestsTable.id, requestId));
+  if (!req || req.from_id !== userId) {
+    return reply.status(403).send({ error: "Not found or not the sender" });
+  }
+  if (req.status !== "pending") {
+    return reply.status(403).send({ error: "Request is no longer pending" });
+  }
+  request.friendRequest = req;
+}
+
+// Verifies the caller is the recipient of a pending request, then attaches it to request.friendRequest
+async function verifyFriendRequestRecipient(request: FastifyRequest, reply: FastifyReply) {
+  const userId = request.session!.user.id;
+  const { requestId } = request.params as { requestId: string };
+  const [req] = await db
+    .select()
+    .from(friendRequestsTable)
+    .where(and(eq(friendRequestsTable.id, requestId), eq(friendRequestsTable.status, "pending")));
+  if (!req || req.to_id !== userId) {
+    return reply.status(403).send({ error: "Not found or not the recipient" });
+  }
+  request.friendRequest = req;
 }
 
 export default async function friendsRoutes(fastify: FastifyInstance) {
@@ -55,7 +92,7 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
     },
   });
 
-  // Requests I sent — declined/cancelled masked as pending (sender only sees pending|accepted)
+  // Requests I sent — declined/cancelled masked as pending; withdrawn shown as withdrawn
   fastify.get("/requests/sent", {
     schema: {
       tags: ["Friends"],
@@ -78,13 +115,13 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
       const users = await db.select().from(authUser).where(inArray(authUser.id, requests.map((r) => r.to_id)));
       return reply.send(requests.map((r) => {
         const user = users.find((u) => u.id === r.to_id)!;
-        const status = r.status === "accepted" ? "accepted" : "pending";
+        const status = r.status === "withdrawn" ? "withdrawn" : "pending";
         return { request_id: r.id, status, id: user.id, name: user.name, email: user.email, image: user.image, createdAt: user.createdAt };
       }));
     },
   });
 
-  // Requests I received — full status shown
+  // Requests I received — pending only (withdrawn requests are hidden from recipient)
   fastify.get("/requests/received", {
     schema: {
       tags: ["Friends"],
@@ -100,7 +137,7 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
         .where(
           and(
             eq(friendRequestsTable.to_id, userId),
-            ne(friendRequestsTable.status, "accepted"),
+            eq(friendRequestsTable.status, "pending"),
           )
         );
       if (requests.length === 0) return reply.send([]);
@@ -141,7 +178,7 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
         );
       if (friendship) return reply.status(400).send({ error: "Already friends" });
 
-      // Check for an existing pending request in either direction
+      // Block only if there's a currently pending request in either direction
       const [existing] = await db
         .select()
         .from(friendRequestsTable)
@@ -151,7 +188,7 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
               and(eq(friendRequestsTable.from_id, userId), eq(friendRequestsTable.to_id, addressee_id)),
               and(eq(friendRequestsTable.from_id, addressee_id), eq(friendRequestsTable.to_id, userId)),
             ),
-            ne(friendRequestsTable.status, "accepted"),
+            eq(friendRequestsTable.status, "pending"),
           )
         );
       if (existing) return reply.status(400).send({ error: "A pending request already exists" });
@@ -164,58 +201,30 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
     },
   });
 
-  // Respond to a received request (accept or decline)
-  // Respond to a request (recipient: accept/decline) or cancel it (sender: cancel)
-  fastify.patch<{ Body: { action: "accept" | "decline" | "cancel" } }>("/requests/:requestId", {
+  // Respond to a received request (recipient: accept or decline)
+  fastify.patch<{ Body: { action: "accept" | "decline" } }>("/requests/:requestId", {
     schema: {
       tags: ["Friends"],
       security: [{ bearerAuth: [] }],
       body: {
         type: "object",
         required: ["action"],
-        properties: { action: { type: "string", enum: ["accept", "decline", "cancel"] } },
+        properties: { action: { type: "string", enum: ["accept", "decline"] } },
       },
       response: { 200: friendRequestObject, 401: errorObject, 403: errorObject },
     },
-    preHandler: [fastify.verifySession],
+    preHandler: [fastify.verifySession, verifyFriendRequestRecipient],
     handler: async (request, reply) => {
-      const userId = request.session!.user.id;
-      const { requestId } = request.params as { requestId: string };
       const { action } = request.body;
+      const req = request.friendRequest!;
 
-      if (action === "cancel") {
-        // Sender cancels their own pending request
-        const [updated] = await db
-          .update(friendRequestsTable)
-          .set({ status: "cancelled", updated_at: new Date() })
-          .where(
-            and(
-              eq(friendRequestsTable.id, requestId),
-              eq(friendRequestsTable.from_id, userId),
-              ne(friendRequestsTable.status, "accepted"),
-            )
-          )
-          .returning();
-        if (!updated) return reply.status(403).send({ error: "Not found or not the sender" });
-        return reply.send(updated);
-      }
-
-      // Recipient accepts or declines
       const [updated] = await db
         .update(friendRequestsTable)
         .set({ status: action === "accept" ? "accepted" : "declined", updated_at: new Date() })
-        .where(
-          and(
-            eq(friendRequestsTable.id, requestId),
-            eq(friendRequestsTable.to_id, userId),
-            ne(friendRequestsTable.status, "accepted"),
-          )
-        )
+        .where(eq(friendRequestsTable.id, req.id))
         .returning();
-      if (!updated) return reply.status(403).send({ error: "Not found or not the recipient" });
 
       if (action === "accept") {
-        // Upsert the canonical friendship row (creates or reactivates)
         const [userA, userB] = updated.from_id < updated.to_id
           ? [updated.from_id, updated.to_id]
           : [updated.to_id, updated.from_id];
@@ -228,6 +237,25 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
           });
       }
 
+      return reply.send(updated);
+    },
+  });
+
+  // Withdraw a sent request (sender only) — hidden from recipient once withdrawn
+  fastify.delete("/requests/:requestId", {
+    schema: {
+      tags: ["Friends"],
+      security: [{ bearerAuth: [] }],
+      response: { 200: friendRequestObject, 401: errorObject, 403: errorObject },
+    },
+    preHandler: [fastify.verifySession, verifyFriendRequestSender],
+    handler: async (request, reply) => {
+      const req = request.friendRequest!;
+      const [updated] = await db
+        .update(friendRequestsTable)
+        .set({ status: "withdrawn", updated_at: new Date() })
+        .where(eq(friendRequestsTable.id, req.id))
+        .returning();
       return reply.send(updated);
     },
   });

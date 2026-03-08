@@ -204,7 +204,7 @@ describe("DELETE /api/me/friends/:friendshipId", () => {
   });
 });
 
-describe("PATCH /api/me/friends/requests/:requestId (cancel)", () => {
+describe("DELETE /api/me/friends/requests/:requestId (withdraw)", () => {
   let requestId: string;
 
   beforeAll(async () => {
@@ -218,24 +218,43 @@ describe("PATCH /api/me/friends/requests/:requestId (cancel)", () => {
     requestId = res.json().id;
   });
 
-  it("recipient cannot cancel sender's request", async () => {
+  it("recipient cannot withdraw sender's request", async () => {
     const res = await app.inject({
-      method: "PATCH",
+      method: "DELETE",
       url: `/api/me/friends/requests/${requestId}`,
       headers: authHeader(tokenA),
-      payload: { action: "cancel" },
     });
     expect(res.statusCode).toBe(403);
   });
 
-  it("sender can cancel their own pending request", async () => {
+  it("sender can withdraw their pending request", async () => {
     const res = await app.inject({
-      method: "PATCH",
+      method: "DELETE",
       url: `/api/me/friends/requests/${requestId}`,
       headers: authHeader(tokenB),
-      payload: { action: "cancel" },
     });
     expect(res.statusCode).toBe(200);
-    expect(res.json().status).toBe("cancelled");
+    expect(res.json().status).toBe("withdrawn");
+  });
+
+  it("withdrawn request is hidden from recipient's received list", async () => {
+    const res = await app.inject({
+      method: "GET",
+      url: "/api/me/friends/requests/received",
+      headers: authHeader(tokenA),
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual([]);
+  });
+
+  it("sender can re-send a request after withdrawing", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/me/friends/request",
+      headers: authHeader(tokenB),
+      payload: { addressee_id: userAId },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().status).toBe("pending");
   });
 });
