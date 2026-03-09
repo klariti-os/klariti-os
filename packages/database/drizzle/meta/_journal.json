@@ -92,6 +92,13 @@
       "when": 1773072002000,
       "tag": "0012_friend_request_withdrawn",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1773072003000,
+      "tag": "0013_challenge_requests",
+      "breakpoints": true
     }
   ]
 }
