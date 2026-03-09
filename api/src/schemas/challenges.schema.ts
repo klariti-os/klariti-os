@@ -17,18 +17,30 @@ export const participantObject = {
   properties: {
     challenge_id: { type: "string", format: "uuid" },
     user_id: { type: "string" },
-    status: { type: "string", enum: ["invited", "active", "paused", "declined", "completed"] },
+    status: { type: "string", enum: ["active", "paused", "completed"] },
     joined_at: { type: "string", format: "date-time", nullable: true },
     created_at: { type: "string", format: "date-time" },
   },
 } as const;
 
-// Challenge row as returned from the list endpoint (includes participant status)
 export const challengeWithStatusObject = {
   type: "object",
   properties: {
     ...challengeObject.properties,
-    participant_status: { type: "string", enum: ["invited", "active", "paused", "declined", "completed"] },
+    participant_status: { type: "string", enum: ["active", "paused", "completed"] },
     joined_at: { type: "string", format: "date-time", nullable: true },
+  },
+} as const;
+
+export const challengeRequestObject = {
+  type: "object",
+  properties: {
+    id: { type: "string", format: "uuid" },
+    challenge_id: { type: "string", format: "uuid" },
+    from_id: { type: "string" },
+    to_id: { type: "string" },
+    status: { type: "string", enum: ["pending", "accepted", "declined", "withdrawn", "ignored"] },
+    created_at: { type: "string", format: "date-time" },
+    updated_at: { type: "string", format: "date-time" },
   },
 } as const;

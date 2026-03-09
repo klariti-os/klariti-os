@@ -1,22 +1,88 @@
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
   db,
   challengesTable,
   challengeParticipantsTable,
+  challengeRequestsTable,
   friendshipsTable,
   eq,
   and,
   ne,
 } from "@klariti/database";
 import { errorObject, successObject } from "../schemas/shared.schema";
-import { challengeObject, participantObject, challengeWithStatusObject } from "../schemas/challenges.schema";
+import { challengeObject, participantObject, challengeWithStatusObject, challengeRequestObject } from "../schemas/challenges.schema";
 
 type Goal = "FOCUS" | "WORK" | "STUDY" | "CASUAL";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+declare module "fastify" {
+  interface FastifyRequest {
+    challenge?: typeof challengesTable.$inferSelect;
+    participant?: typeof challengeParticipantsTable.$inferSelect;
+    challengeRequest?: typeof challengeRequestsTable.$inferSelect;
+  }
+}
+
+async function ensureChallengeCreator(request: FastifyRequest, reply: FastifyReply) {
+  const userId = request.session!.user.id;
+  const { id } = request.params as { id: string };
+  if (!UUID_RE.test(id)) return reply.status(403).send({ error: "Not found or not creator" });
+  const [challenge] = await db.select().from(challengesTable).where(eq(challengesTable.id, id));
+  if (!challenge || challenge.creator_id !== userId) {
+    return reply.status(403).send({ error: "Not found or not creator" });
+  }
+  request.challenge = challenge;
+}
+
+async function ensureChallengeParticipant(request: FastifyRequest, reply: FastifyReply) {
+  const userId = request.session!.user.id;
+  const { id } = request.params as { id: string };
+  if (!UUID_RE.test(id)) return reply.status(403).send({ error: "Not a participant" });
+  const [row] = await db
+    .select()
+    .from(challengeParticipantsTable)
+    .innerJoin(challengesTable, eq(challengeParticipantsTable.challenge_id, challengesTable.id))
+    .where(and(
+      eq(challengeParticipantsTable.challenge_id, id),
+      eq(challengeParticipantsTable.user_id, userId),
+    ));
+  if (!row) return reply.status(403).send({ error: "Not a participant" });
+  request.challenge = row.challenges;
+  request.participant = row.challenge_participants;
+}
+
+async function ensureChallengeRecipient(request: FastifyRequest, reply: FastifyReply) {
+  const userId = request.session!.user.id;
+  const { requestId } = request.params as { requestId: string };
+  const [req] = await db
+    .select()
+    .from(challengeRequestsTable)
+    .where(and(eq(challengeRequestsTable.id, requestId), eq(challengeRequestsTable.status, "pending")));
+  if (!req || req.to_id !== userId) {
+    return reply.status(403).send({ error: "Not found or not the recipient" });
+  }
+  request.challengeRequest = req;
+}
+
+async function ensureChallengeSender(request: FastifyRequest, reply: FastifyReply) {
+  const userId = request.session!.user.id;
+  const { requestId } = request.params as { requestId: string };
+  const [req] = await db
+    .select()
+    .from(challengeRequestsTable)
+    .where(eq(challengeRequestsTable.id, requestId));
+  if (!req || req.from_id !== userId) {
+    return reply.status(403).send({ error: "Not found or not the sender" });
+  }
+  if (req.status !== "pending") {
+    return reply.status(403).send({ error: "Request is no longer pending" });
+  }
+  request.challengeRequest = req;
+}
+
 export default async function challengesRoutes(fastify: FastifyInstance) {
-  // List challenges the user participates in (excluding declined)
+  // List challenges the user participates in
   fastify.get("/", {
     schema: {
       tags: ["Challenges"],
@@ -33,12 +99,7 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
         .select()
         .from(challengeParticipantsTable)
         .innerJoin(challengesTable, eq(challengeParticipantsTable.challenge_id, challengesTable.id))
-        .where(
-          and(
-            eq(challengeParticipantsTable.user_id, userId),
-            ne(challengeParticipantsTable.status, "declined"),
-          )
-        );
+        .where(eq(challengeParticipantsTable.user_id, userId));
       return reply.send(
         rows.map(({ challenges, challenge_participants }) => ({
           ...challenges,
@@ -95,20 +156,11 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
     schema: {
       tags: ["Challenges"],
       security: [{ bearerAuth: [] }],
-      response: { 200: challengeObject, 401: errorObject, 404: errorObject },
+      response: { 200: challengeObject, 401: errorObject, 403: errorObject },
     },
-    preHandler: [fastify.verifySession],
+    preHandler: [fastify.verifySession, ensureChallengeParticipant],
     handler: async (request, reply) => {
-      const userId = request.session!.user.id;
-      const { id } = request.params as { id: string };
-      if (!UUID_RE.test(id)) return reply.status(404).send({ error: "Not found" });
-      const [row] = await db
-        .select()
-        .from(challengeParticipantsTable)
-        .innerJoin(challengesTable, eq(challengeParticipantsTable.challenge_id, challengesTable.id))
-        .where(and(eq(challengeParticipantsTable.user_id, userId), eq(challengesTable.id, id)));
-      if (!row) return reply.status(404).send({ error: "Not found" });
-      return reply.send(row.challenges);
+      return reply.send(request.challenge!);
     },
   });
 
@@ -128,11 +180,8 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
       },
       response: { 200: challengeObject, 401: errorObject, 403: errorObject },
     },
-    preHandler: [fastify.verifySession],
+    preHandler: [fastify.verifySession, ensureChallengeCreator],
     handler: async (request, reply) => {
-      const userId = request.session!.user.id;
-      const { id } = request.params as { id: string };
-      if (!UUID_RE.test(id)) return reply.status(403).send({ error: "Not found or not creator" });
       const { name, goal, ends_at, pause_threshold } = request.body;
       const [updated] = await db
         .update(challengesTable)
@@ -143,9 +192,8 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
           pause_threshold: pause_threshold !== undefined ? pause_threshold : undefined,
           updated_at: new Date(),
         })
-        .where(and(eq(challengesTable.id, id), eq(challengesTable.creator_id, userId)))
+        .where(eq(challengesTable.id, request.challenge!.id))
         .returning();
-      if (!updated) return reply.status(403).send({ error: "Not found or not creator" });
       return reply.send(updated);
     },
   });
@@ -157,16 +205,9 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
       security: [{ bearerAuth: [] }],
       response: { 200: successObject, 401: errorObject, 403: errorObject },
     },
-    preHandler: [fastify.verifySession],
+    preHandler: [fastify.verifySession, ensureChallengeCreator],
     handler: async (request, reply) => {
-      const userId = request.session!.user.id;
-      const { id } = request.params as { id: string };
-      if (!UUID_RE.test(id)) return reply.status(403).send({ error: "Not found or not creator" });
-      const result = await db
-        .delete(challengesTable)
-        .where(and(eq(challengesTable.id, id), eq(challengesTable.creator_id, userId)))
-        .returning();
-      if (result.length === 0) return reply.status(403).send({ error: "Not found or not creator" });
+      await db.delete(challengesTable).where(eq(challengesTable.id, request.challenge!.id));
       return reply.send({ success: true });
     },
   });
@@ -181,77 +222,145 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
         required: ["user_id"],
         properties: { user_id: { type: "string" } },
       },
-      response: { 200: participantObject, 401: errorObject, 403: errorObject },
+      response: { 200: challengeRequestObject, 400: errorObject, 401: errorObject, 403: errorObject },
     },
-    preHandler: [fastify.verifySession],
+    preHandler: [fastify.verifySession, ensureChallengeCreator],
     handler: async (request, reply) => {
       const userId = request.session!.user.id;
-      const { id } = request.params as { id: string };
       const { user_id: inviteeId } = request.body;
-
-      if (!UUID_RE.test(id)) return reply.status(403).send({ error: "Not found or not creator" });
-
-      const [challenge] = await db
-        .select()
-        .from(challengesTable)
-        .where(and(eq(challengesTable.id, id), eq(challengesTable.creator_id, userId)));
-      if (!challenge) return reply.status(403).send({ error: "Not found or not creator" });
+      const challenge = request.challenge!;
 
       const [userA, userB] = userId < inviteeId ? [userId, inviteeId] : [inviteeId, userId];
       const [friendship] = await db
         .select()
         .from(friendshipsTable)
-        .where(
-          and(
-            eq(friendshipsTable.user_a_id, userA),
-            eq(friendshipsTable.user_b_id, userB),
-            eq(friendshipsTable.status, "active"),
-          )
-        );
+        .where(and(
+          eq(friendshipsTable.user_a_id, userA),
+          eq(friendshipsTable.user_b_id, userB),
+          eq(friendshipsTable.status, "active"),
+        ));
       if (!friendship) return reply.status(403).send({ error: "Not friends with this user" });
 
-      const [participant] = await db
-        .insert(challengeParticipantsTable)
-        .values({ challenge_id: id, user_id: inviteeId, status: "invited" })
-        .onConflictDoNothing()
+      const [existingParticipant] = await db
+        .select()
+        .from(challengeParticipantsTable)
+        .where(and(
+          eq(challengeParticipantsTable.challenge_id, challenge.id),
+          eq(challengeParticipantsTable.user_id, inviteeId),
+        ));
+      if (existingParticipant) return reply.status(400).send({ error: "User is already a participant" });
+
+      const [pendingReq] = await db
+        .select()
+        .from(challengeRequestsTable)
+        .where(and(
+          eq(challengeRequestsTable.challenge_id, challenge.id),
+          eq(challengeRequestsTable.to_id, inviteeId),
+          eq(challengeRequestsTable.status, "pending"),
+        ));
+      if (pendingReq) return reply.status(400).send({ error: "A pending invite already exists" });
+
+      const [req] = await db
+        .insert(challengeRequestsTable)
+        .values({ challenge_id: challenge.id, from_id: userId, to_id: inviteeId })
         .returning();
-      return reply.send(participant ?? { error: "Already invited" });
+      return reply.send(req);
     },
   });
 
-  // Accept or decline a challenge invitation
-  fastify.post<{ Body: { accept: boolean } }>("/:id/respond", {
+  // Withdraw a sent challenge invite (sender/creator only)
+  fastify.delete("/requests/:requestId", {
+    schema: {
+      tags: ["Challenges"],
+      security: [{ bearerAuth: [] }],
+      response: { 200: challengeRequestObject, 401: errorObject, 403: errorObject },
+    },
+    preHandler: [fastify.verifySession, ensureChallengeSender],
+    handler: async (request, reply) => {
+      const [updated] = await db
+        .update(challengeRequestsTable)
+        .set({ status: "withdrawn", updated_at: new Date() })
+        .where(eq(challengeRequestsTable.id, request.challengeRequest!.id))
+        .returning();
+      return reply.send(updated);
+    },
+  });
+
+  // List pending challenge invites received by the current user
+  fastify.get("/requests/received", {
+    schema: {
+      tags: ["Challenges"],
+      security: [{ bearerAuth: [] }],
+      response: { 200: { type: "array", items: challengeRequestObject }, 401: errorObject },
+    },
+    preHandler: [fastify.verifySession],
+    handler: async (request, reply) => {
+      const userId = request.session!.user.id;
+      const reqs = await db
+        .select()
+        .from(challengeRequestsTable)
+        .where(and(
+          eq(challengeRequestsTable.to_id, userId),
+          eq(challengeRequestsTable.status, "pending"),
+        ));
+      return reply.send(reqs);
+    },
+  });
+
+  // List challenge invites sent by the current user (excluding accepted)
+  fastify.get("/requests/sent", {
+    schema: {
+      tags: ["Challenges"],
+      security: [{ bearerAuth: [] }],
+      response: { 200: { type: "array", items: challengeRequestObject }, 401: errorObject },
+    },
+    preHandler: [fastify.verifySession],
+    handler: async (request, reply) => {
+      const userId = request.session!.user.id;
+      const reqs = await db
+        .select()
+        .from(challengeRequestsTable)
+        .where(and(
+          eq(challengeRequestsTable.from_id, userId),
+          ne(challengeRequestsTable.status, "accepted"),
+        ));
+      return reply.send(reqs);
+    },
+  });
+
+  // Respond to a challenge invite (recipient: accept, decline, or ignore)
+  fastify.patch<{ Body: { action: "accept" | "decline" | "ignore" } }>("/requests/:requestId", {
     schema: {
       tags: ["Challenges"],
       security: [{ bearerAuth: [] }],
       body: {
         type: "object",
-        required: ["accept"],
-        properties: { accept: { type: "boolean" } },
+        required: ["action"],
+        properties: { action: { type: "string", enum: ["accept", "decline", "ignore"] } },
       },
-      response: { 200: participantObject, 401: errorObject, 404: errorObject },
+      response: { 200: challengeRequestObject, 401: errorObject, 403: errorObject },
     },
-    preHandler: [fastify.verifySession],
+    preHandler: [fastify.verifySession, ensureChallengeRecipient],
     handler: async (request, reply) => {
+      const { action } = request.body;
+      const req = request.challengeRequest!;
       const userId = request.session!.user.id;
-      const { id } = request.params as { id: string };
-      if (!UUID_RE.test(id)) return reply.status(404).send({ error: "No pending invitation found" });
-      const { accept } = request.body;
       const [updated] = await db
-        .update(challengeParticipantsTable)
+        .update(challengeRequestsTable)
         .set({
-          status: accept ? "active" : "declined",
-          joined_at: accept ? new Date() : null,
+          status: action === "accept" ? "accepted" : action === "decline" ? "declined" : "ignored",
+          updated_at: new Date(),
         })
-        .where(
-          and(
-            eq(challengeParticipantsTable.challenge_id, id),
-            eq(challengeParticipantsTable.user_id, userId),
-            eq(challengeParticipantsTable.status, "invited"),
-          )
-        )
+        .where(eq(challengeRequestsTable.id, req.id))
         .returning();
-      if (!updated) return reply.status(404).send({ error: "No pending invitation found" });
+      if (action === "accept") {
+        await db.insert(challengeParticipantsTable).values({
+          challenge_id: req.challenge_id,
+          user_id: userId,
+          status: "active",
+          joined_at: new Date(),
+        });
+      }
       return reply.send(updated);
     },
   });
@@ -266,25 +375,19 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
         required: ["status"],
         properties: { status: { type: "string", enum: ["active", "paused"] } },
       },
-      response: { 200: participantObject, 401: errorObject, 404: errorObject },
+      response: { 200: participantObject, 401: errorObject, 403: errorObject },
     },
-    preHandler: [fastify.verifySession],
+    preHandler: [fastify.verifySession, ensureChallengeParticipant],
     handler: async (request, reply) => {
-      const userId = request.session!.user.id;
-      const { id } = request.params as { id: string };
-      if (!UUID_RE.test(id)) return reply.status(404).send({ error: "Not a participant" });
       const { status } = request.body;
       const [updated] = await db
         .update(challengeParticipantsTable)
         .set({ status })
-        .where(
-          and(
-            eq(challengeParticipantsTable.challenge_id, id),
-            eq(challengeParticipantsTable.user_id, userId),
-          )
-        )
+        .where(and(
+          eq(challengeParticipantsTable.challenge_id, request.challenge!.id),
+          eq(challengeParticipantsTable.user_id, request.session!.user.id),
+        ))
         .returning();
-      if (!updated) return reply.status(404).send({ error: "Not a participant" });
       return reply.send(updated);
     },
   });
