@@ -1,100 +1,72 @@
 # Klariti
 
-Klariti is a **local-first** layer that sits between you and the web and helps you use the internet with more intention.
+Klariti is an **antisocial social platform** — it uses the social dynamics that keep you hooked on the internet to help you spend less time on it.
 
-The internet was meant to strengthen human connection, speed up learning, and support growth. Over time, it became one of the most distracting environments ever built. Most of what we see online is shaped by engagement algorithms we do not control. Klariti flips that. It prioritizes **wellbeing, focus, and user agency**.
+Most apps compete for your attention. Klariti does the opposite. It gives you the tools to set intentions, block what pulls you off course, and hold each other accountable — without feeding you a feed.
 
-At the core is the **Gray Engine**.
+## The idea
 
-It does not treat the internet as “good vs bad”. It treats content as **context-dependent**. The same platform can help you learn in one moment and wreck your focus in the next. Klariti responds to that reality by applying lightweight, reversible interventions.
+The internet stopped being a tool and became an environment designed to keep you inside it. The social mechanics that power that — streaks, challenges, peer pressure, shared commitments — are not inherently bad. Klariti borrows them and points them at focus instead of engagement.
 
-## What the Gray Engine does
+You set a goal. You invite friends into a challenge. You use a physical NFC tag to lock your phone. The social layer is there to make it stick, not to pull you back in.
 
-Given:
-- your goal (study, work, casual)
-- your rules (what you allow, what you want to avoid)
-- a sanitized view of the page context (title, headings, known modules)
+## Key concepts
 
-It returns a structured action plan like:
-- **HIDE** a distracting module
-- **BLUR** or **GRAYSCALE** low-value sections
-- **HIGHLIGHT** what matches your goal
-- **DELAY** access (optional)
-- **REROUTE** to a calmer view (optional)
+**Intents** — the basic unit. An intent bundles a goal (focus, work, study, casual) with rules for the Gray Engine. Toggle on or off at any time.
 
-Everything is designed to be:
-- **predictable**
-- **explainable**
-- **reversible**
-- **user-controlled**
+**Challenges** — an intent with commitment. Add a deadline, share it with friends, set a group pause condition (e.g. pauses for everyone once 50% choose to pause). The social pressure is the feature.
 
-## Core concepts
+**Friends** — the accountability layer. Add people you actually want to focus with. Shared challenges only work if the group is real.
 
-### Intents
-Everything in Klariti starts as an intent. An intent is a named configuration that bundles a goal with a set of rules — it tells the Gray Engine how to behave and can be toggled on or off at any time.
+**Ktags** — physical NFC tags that gate focus sessions on iOS. No software bypass. Tap to lock, tap the same tag to unlock.
 
-### Challenges
-A challenge is an intent with a commitment layer. Any intent can be turned into a challenge by adding:
+**Gray Engine** — the content mediation layer. Given your goal and rules, it decides how to modify a webpage: hide distracting modules, blur low-value sections, highlight what matters. Predictable, explainable, reversible.
 
-- **Time-bound** — ends after N days, or at a set date
-- **Group** — shared with others, with a collective pause condition (e.g. pauses for everyone once 50% of participants choose to pause)
+## Platforms
 
-A challenge is the canonical entity. A solo "intent" is just a challenge with one participant and no deadline — the distinction is UX framing, not a different data shape.
+| Platform | Purpose |
+|----------|---------|
+| Browser extension | Applies Gray Engine rules to pages in real time |
+| Web dashboard | Manage intents, challenges, friends, and rules |
+| iOS app | NFC-gated focus sessions with native app blocking |
+| API | Orchestrates classification, rules, and social state |
 
-The extension fetches the user's active challenge (via their participant row) in a single call.
+## Getting started
 
-```ts
-interface Challenge {
-  id: string
-  creator_id: string
-  name: string
-  goal: "FOCUS" | "WORK" | "STUDY" | "CASUAL"
-  ends_at?: Date           // set = time-bound
-  pause_threshold?: number // 0.0–1.0, group pause condition
-  created_at: Date
-  updated_at: Date
-}
+**Prerequisites:** Node.js, pnpm, a PostgreSQL database (we use [Neon](https://neon.tech)).
 
-// One row per (challenge, user). Composite PK.
-interface ChallengeParticipant {
-  challenge_id: string
-  user_id: string
-  status: "invited" | "active" | "paused" | "declined" | "completed"
-  joined_at?: Date
-  created_at: Date
-}
+```bash
+pnpm install
+cp .env.example .env   # fill in values
+pnpm db:migrate
+pnpm dev
+```
 
-// Symmetric friendship. user_a_id < user_b_id (canonical ordering, enforced in app).
-interface Friendship {
-  id: string
-  user_a_id: string
-  user_b_id: string
-  requester_id: string  // who sent the request
-  status: "pending" | "accepted" | "blocked"
-  created_at: Date
-  updated_at: Date
-}
+### Environment variables
 
-// Physical NFC tag registered to a user
-interface Ktag {
-  embedded_id: string  // unique ID from the tag URL: klariti.so/tag/<embedded_id>
-  payload: string      // full URL written to the tag
-  user_id: string
-  label?: string
-  created_at: Date
-}
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `BETTER_AUTH_SECRET` | Random secret for session signing |
+| `BETTER_AUTH_URL` | Public URL of the API server (e.g. `http://localhost:4200`) |
+| `APP_URL` | Same as `BETTER_AUTH_URL` |
+| `CORS_ORIGINS` | Comma-separated list of allowed origins |
+
+### Running individual apps
+
+```bash
+pnpm --filter @klariti/api dev       # API only (port 4200)
+pnpm --filter @klariti/web dev       # Web dashboard
+pnpm --filter @klariti/api test      # API integration tests
 ```
 
 ## Scope (prototype)
 
-This repo focuses on a working prototype that demonstrates **context-aware mediation** inside a desktop browser.
-
 In scope:
-- Desktop browser extension that observes and modifies page content
-- Web dashboard for intents, challenges, rules, and a global kill switch
-- API layer that turns context + rules into a constrained action plan
-- Local storage for settings and basic state
-- Optional cloud sync for configuration portability (stretch)
+- Desktop browser extension (context-aware page modification)
+- Web dashboard (intents, challenges, friends, rules)
+- API layer (context + rules → action plan)
+- iOS companion app (NFC-gated focus sessions)
 
 Out of scope:
 - Mobile browser support
@@ -102,64 +74,17 @@ Out of scope:
 - Commercial deployment or large-scale user studies
 - Always-on, heavy AI analysis of every page
 
-## Monorepo layout
+## Team
 
-Turborepo monorepo. Fastify for the API layer using a plugin-first structure.
+| Name | Role |
+|------|------|
+| Ariella | UI/UX |
+| Benjamin | Systems |
+| Ebuka | Full-stack |
+| Myah | Data |
+| Praveen | AI |
+| Ignas | Vibes |
 
-```txt
-apps/
-  web/          # Next.js dashboard
-  extension/    # MV3 browser extension (DOM observation + enforcement)
-  ios/          # SwiftUI iOS companion app
+---
 
-api/            # Fastify API (plugin-first, auth + intent routes)
-
-packages/
-  database/     # Drizzle ORM schema + pg client
-  api-client/   # typed fetch client for the API
-  url-class/    # URL → category classifier
-  ui/           # shared UI components
-  auth/         # Better Auth (server + client split exports)
-  eslint-config/
-  typescript-config/
-```
-
-## iOS application
-
-The Klariti iOS app is a companion tool for enforcing focus sessions on your iPhone using physical NFC tags (ktags).
-
-**How it works:**
-1. On first launch, select the apps to block during focus sessions
-2. Tap **Start Focus** — the app prompts you to scan your ktag (an NFC tag with a `klariti.so/tag/<id>` URL)
-3. Selected apps are blocked via Screen Time / FamilyControls and the device enters Locked state
-4. To end the session, scan the **same** tag — any other tag is rejected
-
-**Key features:**
-- NFC-gated lock/unlock — no software bypass
-- App blocking via native Screen Time (no VPN or proxy required)
-- Payload verification: only tags matching `klariti.so/tag/<id>` are accepted
-- Session-bound: the exact tag used to lock is the only one that can unlock
-- NFC errors are surfaced directly in the system NFC sheet — no extra in-app dialogs
-
-**Stack:** SwiftUI · CoreNFC · FamilyControls / ScreenTime
-
-```txt
-apps/ios/klariti/
-  Core/
-    NFCScanner.swift        # NFC session handling + payload verification
-    ScreenTimeManager.swift # FamilyControls shield management
-  Models/
-    AppStore.swift          # Observable state + all actions (single source of truth)
-  Features/
-    Home/HomeView.swift           # Ready state — start focus
-    Locked/LockedView.swift       # Locked state — scan to unlock
-    Setup/AppSelectionView.swift  # First-run app selection
-```
-
-## Team members
-- Ariella: - UI/UX
-- Benjamin - systems
-- Ebuka - full stack engineer
-- Myah - Data 
-- Praveen - AI 
-- ignas - vibes
+For technical architecture and data models see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

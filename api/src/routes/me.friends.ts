@@ -1,58 +1,153 @@
-import { FastifyInstance } from "fastify";
-import { db, friendshipsTable, eq, and, or, ne } from "@klariti/database";
-import { errorObject } from "../schemas/shared.schema";
-import { friendshipObject } from "../schemas/friends.schema";
+import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import {
+  db,
+  friendshipsTable,
+  friendRequestsTable,
+  authUser,
+  eq,
+  ne,
+  and,
+  or,
+  inArray,
+} from "@klariti/database";
+import { errorObject, successObject } from "../schemas/shared.schema";
+import { friendUserObject, friendRequestObject, friendRequestUserObject, sentRequestUserObject } from "../schemas/friends.schema";
+
+declare module "fastify" {
+  interface FastifyRequest {
+    friendRequest?: typeof friendRequestsTable.$inferSelect;
+  }
+}
+
+type Friendship = typeof friendshipsTable.$inferSelect;
+type FriendRequest = typeof friendRequestsTable.$inferSelect;
+type User = typeof authUser.$inferSelect;
+
+function formatFriend(f: Friendship, userId: string, users: User[]) {
+  const friendId = f.user_a_id === userId ? f.user_b_id : f.user_a_id;
+  const user = users.find((u) => u.id === friendId)!;
+  return { friendship_id: f.id, id: user.id, name: user.name, email: user.email, image: user.image, createdAt: user.createdAt };
+}
+
+function formatFriendRequest(r: FriendRequest, otherId: string, users: User[]) {
+  const user = users.find((u) => u.id === otherId)!;
+  return { request_id: r.id, status: r.status, id: user.id, name: user.name, email: user.email, image: user.image, createdAt: user.createdAt };
+}
+
+// Verifies the caller is the sender of a pending request, then attaches it to request.friendRequest
+async function ensureSender(request: FastifyRequest, reply: FastifyReply) {
+  const userId = request.session!.user.id;
+  const { requestId } = request.params as { requestId: string };
+  const [req] = await db
+    .select()
+    .from(friendRequestsTable)
+    .where(eq(friendRequestsTable.id, requestId));
+  if (!req || req.from_id !== userId) {
+    return reply.status(403).send({ error: "Not found or not the sender" });
+  }
+  if (req.status !== "pending") {
+    return reply.status(403).send({ error: "Request is no longer pending" });
+  }
+  request.friendRequest = req;
+}
+
+// Verifies the caller is the recipient of a pending request, then attaches it to request.friendRequest
+async function ensureRecipient(request: FastifyRequest, reply: FastifyReply) {
+  const userId = request.session!.user.id;
+  const { requestId } = request.params as { requestId: string };
+  const [req] = await db
+    .select()
+    .from(friendRequestsTable)
+    .where(and(eq(friendRequestsTable.id, requestId), eq(friendRequestsTable.status, "pending")));
+  if (!req || req.to_id !== userId) {
+    return reply.status(403).send({ error: "Not found or not the recipient" });
+  }
+  request.friendRequest = req;
+}
 
 export default async function friendsRoutes(fastify: FastifyInstance) {
-  // List accepted friends
+  // List active friends
   fastify.get("/", {
     schema: {
       tags: ["Friends"],
       security: [{ bearerAuth: [] }],
-      response: { 200: { type: "array", items: friendshipObject }, 401: errorObject },
+      response: { 200: { type: "array", items: friendUserObject }, 401: errorObject },
     },
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
       const userId = request.session!.user.id;
-      const friends = await db
+      const friendships = await db
         .select()
         .from(friendshipsTable)
         .where(
           and(
             or(eq(friendshipsTable.user_a_id, userId), eq(friendshipsTable.user_b_id, userId)),
-            eq(friendshipsTable.status, "accepted"),
+            eq(friendshipsTable.status, "active"),
           )
         );
-      return reply.send(friends);
+      if (friendships.length === 0) return reply.send([]);
+      const otherIds = friendships.map((f) => f.user_a_id === userId ? f.user_b_id : f.user_a_id);
+      const users = await db.select().from(authUser).where(inArray(authUser.id, otherIds));
+      return reply.send(friendships.map((f) => formatFriend(f, userId, users)));
     },
   });
 
-  // Pending incoming requests (where I'm the addressee)
-  fastify.get("/requests", {
+  // Requests I sent — declined/cancelled masked as pending; withdrawn shown as withdrawn
+  fastify.get("/requests/sent", {
     schema: {
       tags: ["Friends"],
       security: [{ bearerAuth: [] }],
-      response: { 200: { type: "array", items: friendshipObject }, 401: errorObject },
+      response: { 200: { type: "array", items: sentRequestUserObject }, 401: errorObject },
     },
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
       const userId = request.session!.user.id;
       const requests = await db
         .select()
-        .from(friendshipsTable)
+        .from(friendRequestsTable)
         .where(
           and(
-            or(eq(friendshipsTable.user_a_id, userId), eq(friendshipsTable.user_b_id, userId)),
-            eq(friendshipsTable.status, "pending"),
-            ne(friendshipsTable.requester_id, userId),
+            eq(friendRequestsTable.from_id, userId),
+            ne(friendRequestsTable.status, "accepted"),
           )
         );
-      return reply.send(requests);
+      if (requests.length === 0) return reply.send([]);
+      const users = await db.select().from(authUser).where(inArray(authUser.id, requests.map((r) => r.to_id)));
+      return reply.send(requests.map((r) => {
+        const user = users.find((u) => u.id === r.to_id)!;
+        const status = r.status === "withdrawn" ? "withdrawn" : "pending";
+        return { request_id: r.id, status, id: user.id, name: user.name, email: user.email, image: user.image, createdAt: user.createdAt };
+      }));
+    },
+  });
+
+  // Requests I received — pending only (withdrawn requests are hidden from recipient)
+  fastify.get("/requests/received", {
+    schema: {
+      tags: ["Friends"],
+      security: [{ bearerAuth: [] }],
+      response: { 200: { type: "array", items: friendRequestUserObject }, 401: errorObject },
+    },
+    preHandler: [fastify.verifySession],
+    handler: async (request, reply) => {
+      const userId = request.session!.user.id;
+      const requests = await db
+        .select()
+        .from(friendRequestsTable)
+        .where(
+          and(
+            eq(friendRequestsTable.to_id, userId),
+            eq(friendRequestsTable.status, "pending"),
+          )
+        );
+      if (requests.length === 0) return reply.send([]);
+      const users = await db.select().from(authUser).where(inArray(authUser.id, requests.map((r) => r.from_id)));
+      return reply.send(requests.map((r) => formatFriendRequest(r, r.from_id, users)));
     },
   });
 
   // Send a friend request
-  fastify.post<{ Body: { addressee_id: string } }>("/", {
+  fastify.post<{ Body: { addressee_id: string } }>("/request", {
     schema: {
       tags: ["Friends"],
       security: [{ bearerAuth: [] }],
@@ -61,7 +156,7 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
         required: ["addressee_id"],
         properties: { addressee_id: { type: "string" } },
       },
-      response: { 200: friendshipObject, 400: errorObject, 401: errorObject },
+      response: { 200: friendRequestObject, 400: errorObject, 401: errorObject },
     },
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
@@ -69,82 +164,125 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
       const { addressee_id } = request.body;
       if (userId === addressee_id) return reply.status(400).send({ error: "Cannot friend yourself" });
 
-      // Canonical ordering: user_a_id is always the lexicographically smaller id
+      // Check for an active friendship
       const [userA, userB] = userId < addressee_id ? [userId, addressee_id] : [addressee_id, userId];
-
-      const [existing] = await db
+      const [friendship] = await db
         .select()
         .from(friendshipsTable)
-        .where(and(eq(friendshipsTable.user_a_id, userA), eq(friendshipsTable.user_b_id, userB)));
-      if (existing) return reply.status(400).send({ error: "Friend request already exists" });
+        .where(
+          and(
+            eq(friendshipsTable.user_a_id, userA),
+            eq(friendshipsTable.user_b_id, userB),
+            eq(friendshipsTable.status, "active"),
+          )
+        );
+      if (friendship) return reply.status(400).send({ error: "Already friends" });
 
-      const [friendship] = await db
-        .insert(friendshipsTable)
-        .values({ user_a_id: userA, user_b_id: userB, requester_id: userId, status: "pending" })
+      // Block only if there's a currently pending request in either direction
+      const [existing] = await db
+        .select()
+        .from(friendRequestsTable)
+        .where(
+          and(
+            or(
+              and(eq(friendRequestsTable.from_id, userId), eq(friendRequestsTable.to_id, addressee_id)),
+              and(eq(friendRequestsTable.from_id, addressee_id), eq(friendRequestsTable.to_id, userId)),
+            ),
+            eq(friendRequestsTable.status, "pending"),
+          )
+        );
+      if (existing) return reply.status(400).send({ error: "A pending request already exists" });
+
+      const [req] = await db
+        .insert(friendRequestsTable)
+        .values({ from_id: userId, to_id: addressee_id })
         .returning();
-      return reply.send(friendship);
+      return reply.send(req);
     },
   });
 
-  // Accept or block a pending request (addressee only)
-  fastify.patch<{ Body: { status: "accepted" | "blocked" } }>("/:id", {
+  // Respond to a received request (recipient: accept or decline)
+  fastify.patch<{ Body: { action: "accept" | "decline" } }>("/requests/:requestId", {
     schema: {
       tags: ["Friends"],
       security: [{ bearerAuth: [] }],
       body: {
         type: "object",
-        required: ["status"],
-        properties: { status: { type: "string", enum: ["accepted", "blocked"] } },
+        required: ["action"],
+        properties: { action: { type: "string", enum: ["accept", "decline"] } },
       },
-      response: { 200: friendshipObject, 401: errorObject, 403: errorObject },
+      response: { 200: friendRequestObject, 401: errorObject, 403: errorObject },
     },
-    preHandler: [fastify.verifySession],
+    preHandler: [fastify.verifySession, ensureRecipient],
     handler: async (request, reply) => {
-      const userId = request.session!.user.id;
-      const { id } = request.params as { id: string };
-      const { status } = request.body;
+      const { action } = request.body;
+      const req = request.friendRequest!;
+
       const [updated] = await db
-        .update(friendshipsTable)
-        .set({ status, updated_at: new Date() })
-        .where(
-          and(
-            eq(friendshipsTable.id, id),
-            or(eq(friendshipsTable.user_a_id, userId), eq(friendshipsTable.user_b_id, userId)),
-            ne(friendshipsTable.requester_id, userId),
-            eq(friendshipsTable.status, "pending"),
-          )
-        )
+        .update(friendRequestsTable)
+        .set({ status: action === "accept" ? "accepted" : "declined", updated_at: new Date() })
+        .where(eq(friendRequestsTable.id, req.id))
         .returning();
-      if (!updated) return reply.status(403).send({ error: "Not found or not addressee" });
+
+      if (action === "accept") {
+        const [userA, userB] = updated.from_id < updated.to_id
+          ? [updated.from_id, updated.to_id]
+          : [updated.to_id, updated.from_id];
+        await db
+          .insert(friendshipsTable)
+          .values({ user_a_id: userA, user_b_id: userB, status: "active" })
+          .onConflictDoUpdate({
+            target: [friendshipsTable.user_a_id, friendshipsTable.user_b_id],
+            set: { status: "active", updated_at: new Date() },
+          });
+      }
+
       return reply.send(updated);
     },
   });
 
-  // Remove a friendship
-  fastify.delete("/:id", {
+  // Withdraw a sent request (sender only) — hidden from recipient once withdrawn
+  fastify.delete("/requests/:requestId", {
     schema: {
       tags: ["Friends"],
       security: [{ bearerAuth: [] }],
-      response: {
-        200: { type: "object", properties: { success: { type: "boolean" } } },
-        401: errorObject,
-        403: errorObject,
-      },
+      response: { 200: friendRequestObject, 401: errorObject, 403: errorObject },
+    },
+    preHandler: [fastify.verifySession, ensureSender],
+    handler: async (request, reply) => {
+      const req = request.friendRequest!;
+      const [updated] = await db
+        .update(friendRequestsTable)
+        .set({ status: "withdrawn", updated_at: new Date() })
+        .where(eq(friendRequestsTable.id, req.id))
+        .returning();
+      return reply.send(updated);
+    },
+  });
+
+  // Remove an active friendship (soft delete)
+  fastify.delete("/:friendshipId", {
+    schema: {
+      tags: ["Friends"],
+      security: [{ bearerAuth: [] }],
+      response: { 200: successObject, 401: errorObject, 403: errorObject },
     },
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
       const userId = request.session!.user.id;
-      const { id } = request.params as { id: string };
-      const result = await db
-        .delete(friendshipsTable)
+      const { friendshipId } = request.params as { friendshipId: string };
+      const [updated] = await db
+        .update(friendshipsTable)
+        .set({ status: "removed", updated_at: new Date() })
         .where(
           and(
-            eq(friendshipsTable.id, id),
+            eq(friendshipsTable.id, friendshipId),
             or(eq(friendshipsTable.user_a_id, userId), eq(friendshipsTable.user_b_id, userId)),
+            eq(friendshipsTable.status, "active"),
           )
         )
         .returning();
-      if (result.length === 0) return reply.status(403).send({ error: "Not found" });
+      if (!updated) return reply.status(403).send({ error: "Not found" });
       return reply.send({ success: true });
     },
   });

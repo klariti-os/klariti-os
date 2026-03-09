@@ -13,6 +13,8 @@ import { challengeObject, participantObject, challengeWithStatusObject } from ".
 
 type Goal = "FOCUS" | "WORK" | "STUDY" | "CASUAL";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default async function challengesRoutes(fastify: FastifyInstance) {
   // List challenges the user participates in (excluding declined)
   fastify.get("/", {
@@ -99,6 +101,7 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       const userId = request.session!.user.id;
       const { id } = request.params as { id: string };
+      if (!UUID_RE.test(id)) return reply.status(404).send({ error: "Not found" });
       const [row] = await db
         .select()
         .from(challengeParticipantsTable)
@@ -129,6 +132,7 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       const userId = request.session!.user.id;
       const { id } = request.params as { id: string };
+      if (!UUID_RE.test(id)) return reply.status(403).send({ error: "Not found or not creator" });
       const { name, goal, ends_at, pause_threshold } = request.body;
       const [updated] = await db
         .update(challengesTable)
@@ -157,6 +161,7 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       const userId = request.session!.user.id;
       const { id } = request.params as { id: string };
+      if (!UUID_RE.test(id)) return reply.status(403).send({ error: "Not found or not creator" });
       const result = await db
         .delete(challengesTable)
         .where(and(eq(challengesTable.id, id), eq(challengesTable.creator_id, userId)))
@@ -184,6 +189,8 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
       const { id } = request.params as { id: string };
       const { user_id: inviteeId } = request.body;
 
+      if (!UUID_RE.test(id)) return reply.status(403).send({ error: "Not found or not creator" });
+
       const [challenge] = await db
         .select()
         .from(challengesTable)
@@ -198,7 +205,7 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
           and(
             eq(friendshipsTable.user_a_id, userA),
             eq(friendshipsTable.user_b_id, userB),
-            eq(friendshipsTable.status, "accepted"),
+            eq(friendshipsTable.status, "active"),
           )
         );
       if (!friendship) return reply.status(403).send({ error: "Not friends with this user" });
@@ -228,6 +235,7 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       const userId = request.session!.user.id;
       const { id } = request.params as { id: string };
+      if (!UUID_RE.test(id)) return reply.status(404).send({ error: "No pending invitation found" });
       const { accept } = request.body;
       const [updated] = await db
         .update(challengeParticipantsTable)
@@ -264,6 +272,7 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       const userId = request.session!.user.id;
       const { id } = request.params as { id: string };
+      if (!UUID_RE.test(id)) return reply.status(404).send({ error: "Not a participant" });
       const { status } = request.body;
       const [updated] = await db
         .update(challengeParticipantsTable)
