@@ -57,14 +57,36 @@ interface Challenge {
 }
 
 // One row per (challenge, user). Composite PK — a user joins a challenge once.
+// Only created once an invite is accepted. Creator is auto-inserted as "active" on challenge creation.
 interface ChallengeParticipant {
   challenge_id: string
   user_id: string
-  status: "invited" | "active" | "paused" | "declined" | "completed"
+  status: "active" | "paused" | "completed"
   joined_at?: Date
   created_at: Date
 }
+
+// One row per invite. Mirrors the friend_requests design.
+interface ChallengeRequest {
+  id: string
+  challenge_id: string
+  from_id: string  // always the challenge creator
+  to_id: string
+  status: "pending" | "accepted" | "declined" | "withdrawn" | "ignored"
+  created_at: Date
+  updated_at: Date
+}
 ```
+
+Challenges use the same two-table pattern as friendships. The `challenge_requests` table is the invite audit log; `challenge_participants` only contains users who have actively joined.
+
+**Invite flow**: `POST /:id/invite` creates a `challenge_request` (creator-only, friendship required). The recipient responds via `PATCH /requests/:requestId` with `accept`, `decline`, or `ignore`. Accepting inserts a participant row with `status = "active"`. Declining and ignoring leave no participant row.
+
+**Ignore vs decline**: both prevent joining, but `ignore` is surfaced separately so the UI can present it differently (e.g. silently dismiss vs explicitly decline).
+
+**Withdrawal**: the sender can withdraw a pending invite (`DELETE /requests/:requestId`). Withdrawn invites are immediately hidden from the recipient's `GET /requests/received` list (filtered to `status = 'pending'` only).
+
+**Prehandlers**: `ensureChallengeCreator`, `ensureChallengeParticipant`, `ensureChallengeRecipient`, and `ensureChallengeSender` attach the resolved entity to the request object and short-circuit with the appropriate 4xx before the handler runs.
 
 ### Friendships (two-table model)
 
