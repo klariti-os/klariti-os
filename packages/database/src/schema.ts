@@ -74,7 +74,8 @@ export const authVerification = pgTable("verification", {
 export const goalEnum = pgEnum("goal", ["FOCUS", "WORK", "STUDY", "CASUAL"]);
 export const friendshipStateEnum = pgEnum("friendship_state", ["active", "removed"]);
 export const friendRequestStatusEnum = pgEnum("friend_request_status", ["pending", "accepted", "declined", "cancelled", "withdrawn"]);
-export const participantStatusEnum = pgEnum("participant_status", ["invited", "active", "paused", "declined", "completed"]);
+export const participantStatusEnum = pgEnum("participant_status", ["active", "paused", "completed"]);
+export const challengeRequestStatusEnum = pgEnum("challenge_request_status", ["pending", "accepted", "declined", "withdrawn", "ignored"]);
 
 // A challenge is the canonical entity. A solo "intent" is just a challenge with one participant.
 export const challengesTable = pgTable(
@@ -104,13 +105,38 @@ export const challengeParticipantsTable = pgTable(
     user_id: text("user_id")
       .notNull()
       .references(() => authUser.id, { onDelete: "cascade" }),
-    status: participantStatusEnum("status").notNull().default("invited"),
+    status: participantStatusEnum("status").notNull().default("active"),
     joined_at: timestamp("joined_at", { withTimezone: true }),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [
     primaryKey({ columns: [table.challenge_id, table.user_id] }),
     index("challenge_participants_user_id_idx").on(table.user_id),
+  ]
+);
+
+// Each challenge invite is a distinct row. Accepting creates a participant row.
+export const challengeRequestsTable = pgTable(
+  "challenge_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    challenge_id: uuid("challenge_id")
+      .notNull()
+      .references(() => challengesTable.id, { onDelete: "cascade" }),
+    from_id: text("from_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    to_id: text("to_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    status: challengeRequestStatusEnum("status").notNull().default("pending"),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("challenge_requests_challenge_id_idx").on(table.challenge_id),
+    index("challenge_requests_from_idx").on(table.from_id),
+    index("challenge_requests_to_idx").on(table.to_id),
   ]
 );
 
