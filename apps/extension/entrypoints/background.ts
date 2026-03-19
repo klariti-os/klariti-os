@@ -4,7 +4,7 @@ interface Intent {
   id: string;
   name: string;
   goal: string;
-  is_active: boolean;
+  participant_status: "active" | "paused" | "completed";
 }
 
 /** Fetch the session cookie to get auth, then call an API endpoint */
@@ -42,10 +42,10 @@ async function classifyUrl(url: string): Promise<string | null> {
 /** Get the currently active intent's goal */
 async function getActiveGoal(): Promise<string | null> {
   try {
-    const res = await apiFetch("/api/intents/");
+    const res = await apiFetch("/api/me/challenges");
     if (!res.ok) return null;
     const intents: Intent[] = await res.json();
-    const active = intents.find((i) => i.is_active);
+    const active = intents.find((i) => i.participant_status === "active");
     return active?.goal ?? null;
   } catch {
     return null;

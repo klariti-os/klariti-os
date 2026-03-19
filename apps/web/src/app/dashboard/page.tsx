@@ -1,19 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import { Switch } from "@repo/ui/switch";
-import { useAuth } from "@/contexts/AuthContext";
-import { getApiIntents, postApiIntents, putApiIntentsById, deleteApiIntentsById } from "@klariti/api-client";
 import { NextPage } from "next";
-
-type Goal = "FOCUS" | "WORK" | "STUDY" | "CASUAL";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  deleteApiMeChallengesById,
+  getApiMeChallenges,
+  patchApiMeChallengesByIdStatus,
+  postApiMeChallenges,
+  putApiMeChallengesById,
+  type ChallengeWithStatus,
+  type Goal,
+  type ParticipantStatus,
+} from "@klariti/api-client";
+import { Switch } from "@repo/ui/switch";
 
 interface Intent {
   id: string;
+  creator_id: string;
   name: string;
   goal: Goal;
-  is_active: boolean;
+  participant_status: ParticipantStatus;
   ends_at: string | null;
   created_at: string;
 }
@@ -24,6 +32,18 @@ const goalMeta: Record<Goal, { label: string; description: string }> = {
   STUDY: { label: "Study", description: "Learning and knowledge retention" },
   CASUAL: { label: "Casual", description: "Light browsing, relaxed mode" },
 };
+
+function challengeToIntent(challenge: ChallengeWithStatus): Intent {
+  return {
+    id: challenge.id,
+    creator_id: challenge.creator_id,
+    name: challenge.name,
+    goal: challenge.goal,
+    participant_status: challenge.participant_status,
+    ends_at: challenge.ends_at,
+    created_at: challenge.created_at,
+  };
+}
 
 const DashboardPage: NextPage = () => {
   const { user } = useAuth();
@@ -39,6 +59,15 @@ const DashboardPage: NextPage = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isIntentOwner = (intent: Intent | null) => !!intent && intent.creator_id === user?.id;
+
+  const loadIntents = async () => {
+    const { data, error: apiError } = await getApiMeChallenges();
+    if (apiError || !data) return false;
+    setIntents((data as ChallengeWithStatus[]).map(challengeToIntent));
+    return true;
+  };
+
   const openCreate = () => {
     setEditingIntent(null);
     setFormName("");
@@ -52,7 +81,7 @@ const DashboardPage: NextPage = () => {
     setEditingIntent(intent);
     setFormName(intent.name);
     setFormGoal(intent.goal);
-    setFormIsActive(intent.is_active);
+    setFormIsActive(intent.participant_status === "active");
     setError(null);
     setShowForm(true);
   };
@@ -61,29 +90,31 @@ const DashboardPage: NextPage = () => {
     setShowForm(false);
     setEditingIntent(null);
     setConfirmDelete(false);
+    setError(null);
   };
 
   const handleDelete = async () => {
-    if (!editingIntent) return;
+    if (!editingIntent || !isIntentOwner(editingIntent)) {
+      setError("Only the creator can delete this intent.");
+      return;
+    }
     if (!confirmDelete) {
       setConfirmDelete(true);
       return;
     }
     setIsDeleting(true);
-    const { error: apiError } = await deleteApiIntentsById({ path: { id: editingIntent.id } });
+    const { error: apiError } = await deleteApiMeChallengesById({ path: { id: editingIntent.id } });
     if (apiError) {
       setError("Failed to delete intent. Please try again.");
     } else {
-      setIntents((prev) => prev.filter((i) => i.id !== editingIntent.id));
+      await loadIntents();
       closeForm();
     }
     setIsDeleting(false);
   };
 
   useEffect(() => {
-    getApiIntents().then(({ data }) => {
-      if (data) setIntents(data as Intent[]);
-    });
+    void loadIntents();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -92,29 +123,53 @@ const DashboardPage: NextPage = () => {
     setIsSubmitting(true);
     setError(null);
 
-    if (editingIntent) {
-      const { data, error: apiError } = await putApiIntentsById({
+    let challengeId: string | null = editingIntent?.id ?? null;
+    const canEditDetails = isIntentOwner(editingIntent);
+
+    if (editingIntent && canEditDetails) {
+      const { data, error: apiError } = await putApiMeChallengesById({
         path: { id: editingIntent.id },
-        body: { name: formName.trim(), goal: formGoal, is_active: formIsActive },
+        body: { name: formName.trim(), goal: formGoal },
       });
       if (apiError || !data) {
         setError("Failed to update intent. Please try again.");
-      } else {
-        setIntents((prev) => prev.map((i) => (i.id === editingIntent.id ? (data as Intent) : i)));
-        closeForm();
+        setIsSubmitting(false);
+        return;
       }
-    } else {
-      const { data, error: apiError } = await postApiIntents({
-        body: { name: formName.trim(), goal: formGoal, is_active: formIsActive },
+      challengeId = data.id;
+    } else if (!editingIntent) {
+      const { data, error: apiError } = await postApiMeChallenges({
+        body: { name: formName.trim(), goal: formGoal },
       });
       if (apiError || !data) {
         setError("Failed to create intent. Please try again.");
-      } else {
-        setIntents((prev) => [data as Intent, ...prev]);
-        closeForm();
+        setIsSubmitting(false);
+        return;
+      }
+      challengeId = data.id;
+    }
+
+    const shouldUpdateStatus = editingIntent
+      ? (editingIntent.participant_status === "active") !== formIsActive
+      : !formIsActive;
+
+    if (challengeId && shouldUpdateStatus) {
+      const { error: statusError } = await patchApiMeChallengesByIdStatus({
+        path: { id: challengeId },
+        body: { status: formIsActive ? "active" : "paused" },
+      });
+      if (statusError) {
+        setError(editingIntent
+          ? "Saved intent details, but failed to update its active state."
+          : "Created the intent, but failed to update its active state.");
+        await loadIntents();
+        setIsSubmitting(false);
+        return;
       }
     }
 
+    await loadIntents();
+    closeForm();
     setIsSubmitting(false);
   };
 
@@ -168,6 +223,7 @@ const DashboardPage: NextPage = () => {
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder="e.g. No social media after 9pm"
                     className="focus-ring w-full rounded-lg border border-border bg-background px-4 py-2.5 font-mono text-sm text-foreground placeholder:text-muted-foreground/50"
+                    disabled={!!editingIntent && !isIntentOwner(editingIntent)}
                     autoFocus
                   />
                 </div>
@@ -182,11 +238,12 @@ const DashboardPage: NextPage = () => {
                         key={goal}
                         type="button"
                         onClick={() => setFormGoal(goal)}
+                        disabled={!!editingIntent && !isIntentOwner(editingIntent)}
                         className={`focus-ring rounded-xl border p-3 text-left transition-colors ${
                           formGoal === goal
                             ? "border-primary bg-primary/5 text-foreground"
                             : "border-border text-muted-foreground hover:border-foreground/40"
-                        }`}
+                        } ${editingIntent && !isIntentOwner(editingIntent) ? "cursor-not-allowed opacity-50" : ""}`}
                       >
                         <p className="mb-0.5 font-mono text-xs font-medium uppercase tracking-wide">
                           {goalMeta[goal].label}
@@ -211,7 +268,13 @@ const DashboardPage: NextPage = () => {
                   <p className="text-xs text-[var(--destructive)]">{error}</p>
                 )}
 
-                {editingIntent && (
+                {editingIntent && !isIntentOwner(editingIntent) && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Only the creator can rename or delete this challenge. You can still toggle your own active status.
+                  </p>
+                )}
+
+                {editingIntent && isIntentOwner(editingIntent) && (
                   <div className="pt-1">
                     <button
                       type="button"
@@ -241,7 +304,7 @@ const DashboardPage: NextPage = () => {
                     disabled={isSubmitting || !formName.trim()}
                     className="focus-ring flex-1 rounded-full border border-primary bg-primary py-2 font-mono text-xs uppercase tracking-wide text-primary-foreground transition-opacity hover:opacity-80 disabled:opacity-40"
                   >
-                    {isSubmitting ? "Saving…" : editingIntent ? "Save" : "Create"}
+                    {isSubmitting ? "Saving…" : editingIntent ? (isIntentOwner(editingIntent) ? "Save" : "Update Status") : "Create"}
                   </button>
                 </div>
               </form>
@@ -279,7 +342,12 @@ const DashboardPage: NextPage = () => {
                     <span className="rounded-full border border-border px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                       {goalMeta[intent.goal].label}
                     </span>
-                    {intent.is_active && (
+                    {!isIntentOwner(intent) && (
+                      <span className="rounded-full border border-border px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                        Shared
+                      </span>
+                    )}
+                    {intent.participant_status === "active" && (
                       <span className="rounded-full bg-[var(--success)]/10 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-[var(--success)]">
                         Active
                       </span>
