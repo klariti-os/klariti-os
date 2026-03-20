@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { client, getApiIntents } from "@klariti/api-client";
+import { client, getApiMeChallenges, type ChallengeWithStatus } from "@klariti/api-client";
 import "./style.css";
 
 const API_URL = "http://localhost:4200";
@@ -15,7 +15,7 @@ interface Intent {
   id: string;
   name: string;
   goal: string;
-  is_active: boolean;
+  participant_status: "active" | "paused" | "completed";
 }
 
 const goalLabels: Record<string, string> = {
@@ -25,33 +25,53 @@ const goalLabels: Record<string, string> = {
   CASUAL: "Casual",
 };
 
+function challengeToIntent(challenge: ChallengeWithStatus): Intent {
+  return {
+    id: challenge.id,
+    name: challenge.name,
+    goal: challenge.goal,
+    participant_status: challenge.participant_status,
+  };
+}
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [intents, setIntents] = useState<Intent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    client.setConfig({ baseUrl: API_URL });
+    let cancelled = false;
+    client.setConfig({ baseUrl: API_URL, credentials: "include" });
 
     fetch(`${API_URL}/api/auth/get-session`, { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then(async (data) => {
-        if (data?.user?.id) {
+        if (data?.user?.id && !cancelled) {
           setUser(data.user);
-          const { data: intentData } = await getApiIntents();
-          if (intentData) setIntents(intentData as Intent[]);
+          const { data: challengeData } = await getApiMeChallenges();
+          if (challengeData && !cancelled) {
+            setIntents((challengeData as ChallengeWithStatus[]).map(challengeToIntent));
+          }
         }
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Poll for updated intents every second
   useEffect(() => {
     if (!user) return;
     const interval = setInterval(async () => {
-      const { data } = await getApiIntents();
-      if (data) setIntents(data as Intent[]);
+      const { data } = await getApiMeChallenges();
+      if (data) {
+        setIntents((data as ChallengeWithStatus[]).map(challengeToIntent));
+      }
     }, 500);
     return () => clearInterval(interval);
   }, [user]);
@@ -120,7 +140,7 @@ export default function App() {
                 <span className="badge">
                   {goalLabels[intent.goal] ?? intent.goal}
                 </span>
-                {intent.is_active && (
+                {intent.participant_status === "active" && (
                   <span className="badge badge-active">Active</span>
                 )}
               </div>
