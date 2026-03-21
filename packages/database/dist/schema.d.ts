@@ -678,7 +678,6 @@ export declare const friendRequestStatusEnum: import("drizzle-orm/pg-core").PgEn
 export declare const participantStatusEnum: import("drizzle-orm/pg-core").PgEnum<["active", "paused", "completed"]>;
 export declare const challengeRequestStatusEnum: import("drizzle-orm/pg-core").PgEnum<["pending", "accepted", "declined", "withdrawn", "ignored"]>;
 export declare const ktagStatusEnum: import("drizzle-orm/pg-core").PgEnum<["active", "revoked"]>;
-export declare const ktagTypeValues: readonly ["WALL", "MOBILE", "DESK"];
 export declare const ktagTypeEnum: import("drizzle-orm/pg-core").PgEnum<["WALL", "MOBILE", "DESK"]>;
 export declare const challengesTable: import("drizzle-orm/pg-core").PgTableWithColumns<{
     name: "challenges";

@@ -78,8 +78,7 @@ export const friendRequestStatusEnum = pgEnum("friend_request_status", ["pending
 export const participantStatusEnum = pgEnum("participant_status", ["active", "paused", "completed"]);
 export const challengeRequestStatusEnum = pgEnum("challenge_request_status", ["pending", "accepted", "declined", "withdrawn", "ignored"]);
 export const ktagStatusEnum = pgEnum("ktag_status", ["active", "revoked"]);
-export const ktagTypeValues = ["WALL", "MOBILE", "DESK"] as const;
-export const ktagTypeEnum = pgEnum("ktag_type", ktagTypeValues);
+export const ktagTypeEnum = pgEnum("ktag_type", ["WALL", "MOBILE", "DESK"]);
 
 // A challenge is the canonical entity. A solo "intent" is just a challenge with one participant.
 export const challengesTable = pgTable(

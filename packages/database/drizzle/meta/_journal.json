@@ -127,6 +127,13 @@
       "when": 1774051201000,
       "tag": "0017_ktag_type_enum",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1774224001000,
+      "tag": "0019_fix_ktag_type_enum_apply",
+      "breakpoints": true
     }
   ]
 }
