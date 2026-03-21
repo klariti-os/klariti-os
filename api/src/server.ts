@@ -14,6 +14,11 @@ import classifyRoutes from "./routes/classify";
 import adminKtagsRoutes from "./routes/admin.ktags";
 
 const fastify = Fastify({
+  ajv: {
+    customOptions: {
+      removeAdditional: false,
+    },
+  },
   logger: {
     transport: {
       target: "pino-pretty",

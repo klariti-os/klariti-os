@@ -9,7 +9,14 @@ import meFriendsRoutes from "../../src/routes/me.friends";
 import adminKtagsRoutes from "../../src/routes/admin.ktags";
 
 export function buildApp() {
-  const app = Fastify({ logger: false });
+  const app = Fastify({
+    ajv: {
+      customOptions: {
+        removeAdditional: false,
+      },
+    },
+    logger: false,
+  });
   app.register(formbody);
   app.register(authPlugin);
   app.register(authRoutes);
