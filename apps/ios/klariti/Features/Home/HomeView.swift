@@ -52,13 +52,13 @@ struct HomeView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
-                        NFCUtilityView()
+                        ProfileView()
                     } label: {
-                        Image(systemName: "wave.3.right.circle")
+                        Image(systemName: "person.crop.circle")
                             .font(.system(size: 18, weight: .medium))
                             .foregroundStyle(Color.klForeground)
                     }
-                    .accessibilityLabel("Open NFC utilities")
+                    .accessibilityLabel("Open profile")
                 }
             }
             .toolbarBackground(Color.klBackground, for: .navigationBar)
