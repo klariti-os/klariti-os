@@ -130,7 +130,7 @@ interface Ktag {
 
 **Ownership model**: `owner_id` uses `ON DELETE SET NULL` so tags return to unassigned inventory if the owning user is removed.
 
-**Issuance model**: all Klariti tag IDs use the `kt_` prefix and are generated server-side. On issuance, the admin client submits the raw NFC `uid` plus safe metadata (`owner_id`, `label`, `tag_type`). The server normalizes and hashes the UID, signs `v<sig_version>|<tag_id>|<uid_hash>` with its private key, and writes the resulting message into the payload URL as `https://klariti.so/tag/v<sig_version>.<tag_id>.<signature>`.
+**Issuance model**: all Klariti tag IDs use the `kt_` prefix and are generated server-side. Tag registration happens through `POST /api/admin/ktag/register`. The admin client submits the raw NFC `uid` plus `tag_type`, and the server normalizes and hashes the UID, signs `v<sig_version>|<tag_id>|<uid_hash>` with its private key, generates a friendly two-word label, and writes the resulting message into the payload URL as `https://klariti.so/tag/v<sig_version>.<tag_id>.<signature>`.
 
 **Verification model**:
 - Web: the payload URL identifies the issued tag and can route to a Klariti page.

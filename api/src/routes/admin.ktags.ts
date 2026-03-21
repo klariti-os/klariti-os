@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 import { db, ktagsTable, eq } from "@klariti/database";
 import { errorObject, successObject } from "../schemas/shared.schema";
 import { ktagObject } from "../schemas/ktags.schema";
-import { issueKtag, hashKtagUid } from "../lib/ktag-issuance";
+import { generateKtagLabel, issueKtag, hashKtagUid } from "../lib/ktag-issuance";
 
 function isUniqueViolation(error: unknown, constraintName: string): boolean {
   if (!error || typeof error !== "object") return false;
@@ -23,11 +23,9 @@ export default async function adminKtagsRoutes(fastify: FastifyInstance) {
   fastify.post<{
     Body: {
       uid: string;
-      owner_id?: string | null;
-      label?: string;
       tag_type?: string | null;
     };
-  }>("/", {
+  }>("/register", {
     schema: {
       tags: ["Admin - KTags"],
       security: [{ bearerAuth: [] }],
@@ -37,8 +35,6 @@ export default async function adminKtagsRoutes(fastify: FastifyInstance) {
         required: ["uid"],
         properties: {
           uid: { type: "string", minLength: 1 },
-          owner_id: { type: "string", nullable: true },
-          label: { type: "string" },
           tag_type: { type: "string", nullable: true },
         },
       },
@@ -46,7 +42,7 @@ export default async function adminKtagsRoutes(fastify: FastifyInstance) {
     },
     preHandler: [fastify.verifyAdmin],
     handler: async (request, reply) => {
-      const { uid, owner_id, label, tag_type } = request.body;
+      const { uid, tag_type } = request.body;
 
       let uidHash: string;
       try {
@@ -75,8 +71,8 @@ export default async function adminKtagsRoutes(fastify: FastifyInstance) {
             .values({
               ...issued,
               status: "active",
-              owner_id: owner_id ?? null,
-              label,
+              owner_id: null,
+              label: generateKtagLabel(),
               tag_type: tag_type ?? null,
             })
             .onConflictDoNothing({ target: ktagsTable.tag_id })

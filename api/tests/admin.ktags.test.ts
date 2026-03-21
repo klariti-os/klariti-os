@@ -19,18 +19,17 @@ async function createAdminToken() {
   return token;
 }
 
-describe("POST /api/admin/ktags", () => {
+describe("POST /api/admin/ktag/register", () => {
   it("issues a signed ktag from the raw NFC uid", async () => {
     const token = await createAdminToken();
     const uid = "04:A1:B2:C3:D4:E5:F6";
 
     const res = await app.inject({
       method: "POST",
-      url: "/api/admin/ktags",
+      url: "/api/admin/ktag/register",
       headers: authHeader(token),
       payload: {
         uid,
-        label: "__test__ issued ktag",
         tag_type: "test-suite",
       },
     });
@@ -46,6 +45,7 @@ describe("POST /api/admin/ktags", () => {
     expect(body.payload).toBe(`https://klariti.so/tag/v1.${body.tag_id}.${body.signature}`);
     expect(body.status).toBe("active");
     expect(body.owner_id).toBeNull();
+    expect(body.label).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+$/);
   });
 
   it("rejects duplicate uids even when they are formatted differently", async () => {
@@ -53,11 +53,10 @@ describe("POST /api/admin/ktags", () => {
 
     const first = await app.inject({
       method: "POST",
-      url: "/api/admin/ktags",
+      url: "/api/admin/ktag/register",
       headers: authHeader(token),
       payload: {
         uid: "0x04A1B2C3D4E5F7",
-        label: "__test__ duplicate one",
         tag_type: "test-suite",
       },
     });
@@ -66,11 +65,10 @@ describe("POST /api/admin/ktags", () => {
 
     const second = await app.inject({
       method: "POST",
-      url: "/api/admin/ktags",
+      url: "/api/admin/ktag/register",
       headers: authHeader(token),
       payload: {
         uid: "04:A1:B2:C3:D4:E5:F7",
-        label: "__test__ duplicate two",
         tag_type: "test-suite",
       },
     });
@@ -84,7 +82,7 @@ describe("POST /api/admin/ktags", () => {
 
     const res = await app.inject({
       method: "POST",
-      url: "/api/admin/ktags",
+      url: "/api/admin/ktag/register",
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E5F8",
@@ -97,16 +95,15 @@ describe("POST /api/admin/ktags", () => {
   });
 });
 
-describe("PATCH /api/admin/ktags/:tag_id", () => {
+describe("PATCH /api/admin/ktag/:tag_id", () => {
   it("rejects updates to server-managed issuance fields", async () => {
     const token = await createAdminToken();
     const created = await app.inject({
       method: "POST",
-      url: "/api/admin/ktags",
+      url: "/api/admin/ktag/register",
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E5F9",
-        label: "__test__ patch target",
         tag_type: "test-suite",
       },
     });
@@ -115,7 +112,7 @@ describe("PATCH /api/admin/ktags/:tag_id", () => {
 
     const res = await app.inject({
       method: "PATCH",
-      url: `/api/admin/ktags/${created.json().tag_id}`,
+      url: `/api/admin/ktag/${created.json().tag_id}`,
       headers: authHeader(token),
       payload: {
         payload: "https://klariti.so/tag/forged",
@@ -123,5 +120,110 @@ describe("PATCH /api/admin/ktags/:tag_id", () => {
     });
 
     expect(res.statusCode).toBe(400);
+  });
+});
+
+describe("GET /api/tag/:message", () => {
+  it("returns the public tag name and owner name for a valid signed message", async () => {
+    const token = await createAdminToken();
+    const { userId: ownerId } = await signUp(app, testEmail("tag-owner"), "Taylor Owner");
+
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/admin/ktag/register",
+      headers: authHeader(token),
+      payload: {
+        uid: "04A1B2C3D4E600",
+        tag_type: "test-suite",
+      },
+    });
+
+    expect(created.statusCode).toBe(201);
+
+    const createdBody = created.json();
+    const assigned = await app.inject({
+      method: "PATCH",
+      url: `/api/admin/ktag/${createdBody.tag_id}`,
+      headers: authHeader(token),
+      payload: {
+        owner_id: ownerId,
+        label: "Morning Beacon",
+      },
+    });
+
+    expect(assigned.statusCode).toBe(200);
+
+    const message = createdBody.payload.replace("https://klariti.so/tag/", "");
+    const res = await app.inject({
+      method: "GET",
+      url: `/api/tag/${message}`,
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({
+      tag_id: createdBody.tag_id,
+      tag_name: "Morning Beacon",
+      owner_name: "Taylor Owner",
+      status: "active",
+    });
+  });
+
+  it("returns revoked status for a revoked tag", async () => {
+    const token = await createAdminToken();
+
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/admin/ktag/register",
+      headers: authHeader(token),
+      payload: {
+        uid: "04A1B2C3D4E601",
+        tag_type: "test-suite",
+      },
+    });
+
+    expect(created.statusCode).toBe(201);
+
+    const createdBody = created.json();
+    const revoked = await app.inject({
+      method: "PATCH",
+      url: `/api/admin/ktag/${createdBody.tag_id}`,
+      headers: authHeader(token),
+      payload: {
+        status: "revoked",
+        label: "Retired Beacon",
+      },
+    });
+
+    expect(revoked.statusCode).toBe(200);
+
+    const message = createdBody.payload.replace("https://klariti.so/tag/", "");
+    const res = await app.inject({
+      method: "GET",
+      url: `/api/tag/${message}`,
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({
+      tag_id: createdBody.tag_id,
+      tag_name: "Retired Beacon",
+      owner_name: null,
+      status: "revoked",
+    });
+  });
+
+  it("returns 404 for an unknown or malformed public message", async () => {
+    const malformed = await app.inject({
+      method: "GET",
+      url: "/api/tag/not-a-real-message",
+    });
+
+    expect(malformed.statusCode).toBe(404);
+
+    const unknown = await app.inject({
+      method: "GET",
+      url: "/api/tag/v1.kt_missing.fake_signature",
+    });
+
+    expect(unknown.statusCode).toBe(404);
   });
 });
