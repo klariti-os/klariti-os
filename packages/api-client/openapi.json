@@ -85,6 +85,10 @@
                         },
                         "updatedAt": {
                           "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "nullable": true
                         }
                       }
                     }
@@ -174,6 +178,10 @@
                         },
                         "updatedAt": {
                           "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "nullable": true
                         }
                       }
                     }
@@ -239,6 +247,10 @@
                     },
                     "updatedAt": {
                       "type": "string"
+                    },
+                    "role": {
+                      "type": "string",
+                      "nullable": true
                     }
                   }
                 }
@@ -320,6 +332,10 @@
                     },
                     "updatedAt": {
                       "type": "string"
+                    },
+                    "role": {
+                      "type": "string",
+                      "nullable": true
                     }
                   }
                 }

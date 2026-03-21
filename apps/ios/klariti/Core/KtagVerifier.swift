@@ -46,6 +46,7 @@ enum KtagVerificationError: LocalizedError {
 
 struct KtagVerifier {
     private static let expectedHost = "klariti.so"
+    private static let bundledSigningPublicKey = "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUNvd0JRWURLMlZ3QXlFQWlvQzRqYkhQK2tXUGZKbDNMamZUa2JlaERPV05nNkw4TWNkMGRWQ0Iwb0U9Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQo="
     private static let ed25519SPKIPrefix = Data([
         0x30, 0x2A, 0x30, 0x05, 0x06, 0x03, 0x2B, 0x65,
         0x70, 0x03, 0x21, 0x00
@@ -138,22 +139,54 @@ struct KtagVerifier {
     }
 
     private func signingPublicKey() throws -> Curve25519.Signing.PublicKey? {
-        guard let encodedPEM = Bundle.main.object(forInfoDictionaryKey: "KTagSigningPublicKey") as? String,
-              !encodedPEM.isEmpty else {
-            return nil
+        let configuredValue = (Bundle.main.object(forInfoDictionaryKey: "KTagSigningPublicKey") as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let configuredValue, !configuredValue.isEmpty {
+            return try decodePublicKey(from: configuredValue)
         }
 
-        guard let pemData = Data(base64Encoded: encodedPEM),
-              let pemString = String(data: pemData, encoding: .utf8) else {
+        return try decodePublicKey(from: Self.bundledSigningPublicKey)
+    }
+
+    private func decodePublicKey(from rawValue: String) throws -> Curve25519.Signing.PublicKey {
+        let normalizedValue = rawValue
+            .replacingOccurrences(of: "\\n", with: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if normalizedValue.contains("BEGIN PUBLIC KEY") {
+            return try decodePEMPublicKey(normalizedValue)
+        }
+
+        guard let decodedData = Data(base64Encoded: normalizedValue, options: .ignoreUnknownCharacters) else {
             throw KtagVerificationError.invalidPublicKey
         }
 
+        if let pemString = String(data: decodedData, encoding: .utf8),
+           pemString.contains("BEGIN PUBLIC KEY") {
+            return try decodePEMPublicKey(pemString)
+        }
+
+        if decodedData.starts(with: Self.ed25519SPKIPrefix),
+           decodedData.count == Self.ed25519SPKIPrefix.count + 32 {
+            return try Curve25519.Signing.PublicKey(rawRepresentation: decodedData.suffix(32))
+        }
+
+        if decodedData.count == 32 {
+            return try Curve25519.Signing.PublicKey(rawRepresentation: decodedData)
+        }
+
+        throw KtagVerificationError.invalidPublicKey
+    }
+
+    private func decodePEMPublicKey(_ pemString: String) throws -> Curve25519.Signing.PublicKey {
         let derBody = pemString
             .split(separator: "\n")
-            .filter { !$0.hasPrefix("-----") }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.hasPrefix("-----") && !$0.isEmpty }
             .joined()
 
-        guard let derData = Data(base64Encoded: derBody),
+        guard let derData = Data(base64Encoded: derBody, options: .ignoreUnknownCharacters),
               derData.starts(with: Self.ed25519SPKIPrefix),
               derData.count == Self.ed25519SPKIPrefix.count + 32 else {
             throw KtagVerificationError.invalidPublicKey

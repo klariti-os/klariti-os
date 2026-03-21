@@ -8,6 +8,7 @@ export const userObject = {
     image: { type: "string", nullable: true },
     createdAt: { type: "string" },
     updatedAt: { type: "string" },
+    role: { type: "string", nullable: true },
   },
 } as const;
 

@@ -18,6 +18,8 @@
 		<string>$(MARKETING_VERSION)</string>
 		<key>CFBundleVersion</key>
 		<string>$(CURRENT_PROJECT_VERSION)</string>
+		<key>KlaritiAPIBaseURL</key>
+		<string>https://klariti-api.vercel.app</string>
 		<key>KTagSigningPublicKey</key>
 		<string>
 			LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUNvd0JRWURLMlZ3QXlFQWlvQzRqYkhQK2tXUGZKbDNMamZUa2JlaERPV05nNkw4TWNkMGRWQ0Iwb0U9Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQo=</string>

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { db, authUser, eq } from "@klariti/database";
 import { buildApp } from "./helpers/build-app.js";
 import { cleanupTestUsers } from "./helpers/cleanup.js";
 import { testEmail } from "./helpers/auth.js";
@@ -63,6 +64,28 @@ describe("POST /api/sign-in", () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().token).toBeTypeOf("string");
+  });
+
+  it("returns the refreshed admin role for admin users", async () => {
+    const email = testEmail("admin-signin");
+    const signUpRes = await app.inject({
+      method: "POST",
+      url: "/api/sign-up",
+      payload: { name: "Admin SignIn", email, password: "password123" },
+    });
+
+    expect(signUpRes.statusCode).toBe(200);
+    const userId = signUpRes.json().user.id as string;
+    await db.update(authUser).set({ role: "admin" }).where(eq(authUser.id, userId));
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/sign-in",
+      payload: { email, password: "password123" },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().user.role).toBe("admin");
   });
 
   it("returns 401 for wrong password", async () => {
