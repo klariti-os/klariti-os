@@ -9,8 +9,8 @@ import {
   and,
   ne,
 } from "@klariti/database";
-import { errorObject, successObject } from "../schemas/shared.schema";
-import { challengeObject, participantObject, challengeWithStatusObject, challengeRequestObject } from "../schemas/challenges.schema";
+import { errorObject, successObject } from "../schemas/shared.schema.js";
+import { challengeObject, participantObject, challengeWithStatusObject, challengeRequestObject } from "../schemas/challenges.schema.js";
 
 type Goal = "FOCUS" | "WORK" | "STUDY" | "CASUAL";
 

@@ -1,8 +1,8 @@
 import { FastifyInstance } from "fastify";
 import { db, ktagsTable, eq } from "@klariti/database";
-import { errorObject, successObject } from "../schemas/shared.schema";
-import { ktagObject } from "../schemas/ktags.schema";
-import { generateKtagLabel, issueKtag, hashKtagUid } from "../lib/ktag-issuance";
+import { errorObject, successObject } from "../schemas/shared.schema.js";
+import { ktagObject } from "../schemas/ktags.schema.js";
+import { generateKtagLabel, issueKtag, hashKtagUid } from "../lib/ktag-issuance.js";
 
 function isUniqueViolation(error: unknown, constraintName: string): boolean {
   if (!error || typeof error !== "object") return false;

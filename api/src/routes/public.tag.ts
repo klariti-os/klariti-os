@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { db, ktagsTable, authUser, eq } from "@klariti/database";
-import { errorObject } from "../schemas/shared.schema";
-import { parseKtagMessage } from "../lib/ktag-issuance";
+import { errorObject } from "../schemas/shared.schema.js";
+import { parseKtagMessage } from "../lib/ktag-issuance.js";
 
 const publicTagObject = {
   type: "object",

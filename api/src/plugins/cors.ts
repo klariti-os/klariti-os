@@ -1,7 +1,7 @@
 import fp from "fastify-plugin";
 import { FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
-import { config } from "../config";
+import { config } from "../config.js";
 
 const allowedOrigins = new Set(config.corsOrigins);
 

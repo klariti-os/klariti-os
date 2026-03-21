@@ -1,8 +1,8 @@
 import { FastifyInstance } from "fastify";
-import { resolveStatus, resolveMessage } from "../utils/errors";
-import { errorObject } from "../schemas/shared.schema";
-import { signUpBody, signInBody } from "../schemas/auth.schema";
-import { userObject } from "../schemas/user.schema";
+import { resolveStatus, resolveMessage } from "../utils/errors.js";
+import { errorObject } from "../schemas/shared.schema.js";
+import { signUpBody, signInBody } from "../schemas/auth.schema.js";
+import { userObject } from "../schemas/user.schema.js";
 
 type SignUpBody = { name: string; email: string; password: string };
 type SignInBody = { email: string; password: string };

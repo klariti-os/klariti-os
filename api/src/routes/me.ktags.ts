@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { db, ktagsTable, eq, and } from "@klariti/database";
-import { errorObject } from "../schemas/shared.schema";
-import { ktagObject } from "../schemas/ktags.schema";
+import { errorObject } from "../schemas/shared.schema.js";
+import { ktagObject } from "../schemas/ktags.schema.js";
 
 export default async function meKtagsRoutes(fastify: FastifyInstance) {
   // List own ktags

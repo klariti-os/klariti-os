@@ -1,1 +1,1 @@
-export { classifyUrl } from "./classify";
+export { classifyUrl } from "./classify.js";
