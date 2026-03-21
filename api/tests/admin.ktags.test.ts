@@ -30,7 +30,7 @@ describe("POST /api/admin/ktag/register", () => {
       headers: authHeader(token),
       payload: {
         uid,
-        tag_type: "test-suite",
+        tag_type: "DESK",
       },
     });
 
@@ -46,6 +46,7 @@ describe("POST /api/admin/ktag/register", () => {
     expect(body.status).toBe("active");
     expect(body.owner_id).toBeNull();
     expect(body.label).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+$/);
+    expect(body.tag_type).toBe("DESK");
   });
 
   it("rejects duplicate uids even when they are formatted differently", async () => {
@@ -57,7 +58,7 @@ describe("POST /api/admin/ktag/register", () => {
       headers: authHeader(token),
       payload: {
         uid: "0x04A1B2C3D4E5F7",
-        tag_type: "test-suite",
+        tag_type: "MOBILE",
       },
     });
 
@@ -69,7 +70,7 @@ describe("POST /api/admin/ktag/register", () => {
       headers: authHeader(token),
       payload: {
         uid: "04:A1:B2:C3:D4:E5:F7",
-        tag_type: "test-suite",
+        tag_type: "MOBILE",
       },
     });
 
@@ -87,7 +88,23 @@ describe("POST /api/admin/ktag/register", () => {
       payload: {
         uid: "04A1B2C3D4E5F8",
         uid_hash: "should-not-be-accepted",
-        tag_type: "test-suite",
+        tag_type: "WALL",
+      },
+    });
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("rejects tag types outside the allowed enum", async () => {
+    const token = await createAdminToken();
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/admin/ktag/register",
+      headers: authHeader(token),
+      payload: {
+        uid: "04A1B2C3D4E5FC",
+        tag_type: "TABLE",
       },
     });
 
@@ -104,7 +121,7 @@ describe("PATCH /api/admin/ktag/:tag_id", () => {
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E5F9",
-        tag_type: "test-suite",
+        tag_type: "DESK",
       },
     });
 
@@ -130,7 +147,7 @@ describe("PATCH /api/admin/ktag/:tag_id", () => {
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E5FD",
-        tag_type: "test-suite",
+        tag_type: "WALL",
       },
     });
 
@@ -201,7 +218,7 @@ describe("GET admin ktag lookups", () => {
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E5FA",
-        tag_type: "test-suite",
+        tag_type: "MOBILE",
       },
     });
 
@@ -220,7 +237,7 @@ describe("GET admin ktag lookups", () => {
       uid_hash: created.uid_hash,
       payload: created.payload,
       status: "active",
-      tag_type: "test-suite",
+      tag_type: "MOBILE",
     });
   });
 
@@ -232,7 +249,7 @@ describe("GET admin ktag lookups", () => {
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E5FB",
-        tag_type: "test-suite",
+        tag_type: "DESK",
       },
     });
 
@@ -251,7 +268,7 @@ describe("GET admin ktag lookups", () => {
       uid_hash: created.uid_hash,
       payload: created.payload,
       status: "active",
-      tag_type: "test-suite",
+      tag_type: "DESK",
     });
   });
 });
@@ -267,7 +284,7 @@ describe("GET /api/tag/:message", () => {
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E600",
-        tag_type: "test-suite",
+        tag_type: "WALL",
       },
     });
 
@@ -310,7 +327,7 @@ describe("GET /api/tag/:message", () => {
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E601",
-        tag_type: "test-suite",
+        tag_type: "DESK",
       },
     });
 

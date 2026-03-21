@@ -2267,7 +2267,8 @@
                 "type": "object",
                 "additionalProperties": false,
                 "required": [
-                  "uid"
+                  "uid",
+                  "tag_type"
                 ],
                 "properties": {
                   "uid": {
@@ -2276,7 +2277,11 @@
                   },
                   "tag_type": {
                     "type": "string",
-                    "nullable": true
+                    "enum": [
+                      "WALL",
+                      "MOBILE",
+                      "DESK"
+                    ]
                   }
                 }
               }
@@ -2327,6 +2332,11 @@
                     },
                     "tag_type": {
                       "type": "string",
+                      "enum": [
+                        "WALL",
+                        "MOBILE",
+                        "DESK"
+                      ],
                       "nullable": true
                     },
                     "created_at": {
@@ -2483,6 +2493,11 @@
                       },
                       "tag_type": {
                         "type": "string",
+                        "enum": [
+                          "WALL",
+                          "MOBILE",
+                          "DESK"
+                        ],
                         "nullable": true
                       },
                       "created_at": {
@@ -2593,6 +2608,11 @@
                     },
                     "tag_type": {
                       "type": "string",
+                      "enum": [
+                        "WALL",
+                        "MOBILE",
+                        "DESK"
+                      ],
                       "nullable": true
                     },
                     "created_at": {
@@ -2732,6 +2752,11 @@
                     },
                     "tag_type": {
                       "type": "string",
+                      "enum": [
+                        "WALL",
+                        "MOBILE",
+                        "DESK"
+                      ],
                       "nullable": true
                     },
                     "created_at": {
@@ -2825,7 +2850,11 @@
                   },
                   "tag_type": {
                     "type": "string",
-                    "nullable": true
+                    "enum": [
+                      "WALL",
+                      "MOBILE",
+                      "DESK"
+                    ]
                   }
                 }
               }
@@ -2886,6 +2915,11 @@
                     },
                     "tag_type": {
                       "type": "string",
+                      "enum": [
+                        "WALL",
+                        "MOBILE",
+                        "DESK"
+                      ],
                       "nullable": true
                     },
                     "created_at": {
@@ -3084,6 +3118,11 @@
                       },
                       "tag_type": {
                         "type": "string",
+                        "enum": [
+                          "WALL",
+                          "MOBILE",
+                          "DESK"
+                        ],
                         "nullable": true
                       },
                       "created_at": {
@@ -3198,6 +3237,11 @@
                     },
                     "tag_type": {
                       "type": "string",
+                      "enum": [
+                        "WALL",
+                        "MOBILE",
+                        "DESK"
+                      ],
                       "nullable": true
                     },
                     "created_at": {

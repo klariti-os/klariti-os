@@ -678,6 +678,8 @@ export declare const friendRequestStatusEnum: import("drizzle-orm/pg-core").PgEn
 export declare const participantStatusEnum: import("drizzle-orm/pg-core").PgEnum<["active", "paused", "completed"]>;
 export declare const challengeRequestStatusEnum: import("drizzle-orm/pg-core").PgEnum<["pending", "accepted", "declined", "withdrawn", "ignored"]>;
 export declare const ktagStatusEnum: import("drizzle-orm/pg-core").PgEnum<["active", "revoked"]>;
+export declare const ktagTypeValues: readonly ["WALL", "MOBILE", "DESK"];
+export declare const ktagTypeEnum: import("drizzle-orm/pg-core").PgEnum<["WALL", "MOBILE", "DESK"]>;
 export declare const challengesTable: import("drizzle-orm/pg-core").PgTableWithColumns<{
     name: "challenges";
     schema: undefined;
@@ -1413,21 +1415,19 @@ export declare const ktagsTable: import("drizzle-orm/pg-core").PgTableWithColumn
             name: "tag_type";
             tableName: "ktags";
             dataType: "string";
-            columnType: "PgVarchar";
-            data: string;
+            columnType: "PgEnumColumn";
+            data: "WALL" | "MOBILE" | "DESK";
             driverParam: string;
             notNull: false;
             hasDefault: false;
             isPrimaryKey: false;
             isAutoincrement: false;
             hasRuntimeDefault: false;
-            enumValues: [string, ...string[]];
+            enumValues: ["WALL", "MOBILE", "DESK"];
             baseColumn: never;
             identity: undefined;
             generated: undefined;
-        }, {}, {
-            length: 64;
-        }>;
+        }, {}, {}>;
         created_at: import("drizzle-orm/pg-core").PgColumn<{
             name: "created_at";
             tableName: "ktags";

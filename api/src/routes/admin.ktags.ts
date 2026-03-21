@@ -1,8 +1,10 @@
 import { FastifyInstance } from "fastify";
-import { db, ktagsTable, eq } from "@klariti/database";
+import { db, eq, ktagsTable, ktagTypeValues } from "@klariti/database";
 import { errorObject, successObject } from "../schemas/shared.schema.js";
 import { ktagObject } from "../schemas/ktags.schema.js";
 import { generateKtagLabel, issueKtag, hashKtagUid } from "../lib/ktag-issuance.js";
+
+type KtagType = (typeof ktagTypeValues)[number];
 
 function isUniqueViolation(error: unknown, constraintName: string): boolean {
   if (!error || typeof error !== "object") return false;
@@ -22,7 +24,7 @@ export default async function adminKtagsRoutes(fastify: FastifyInstance) {
   fastify.post<{
     Body: {
       uid: string;
-      tag_type?: string | null;
+      tag_type: KtagType;
     };
   }>("/register", {
     schema: {
@@ -31,10 +33,10 @@ export default async function adminKtagsRoutes(fastify: FastifyInstance) {
       body: {
         type: "object",
         additionalProperties: false,
-        required: ["uid"],
+        required: ["uid", "tag_type"],
         properties: {
           uid: { type: "string", minLength: 1 },
-          tag_type: { type: "string", nullable: true },
+          tag_type: { type: "string", enum: [...ktagTypeValues] },
         },
       },
       response: { 201: ktagObject, 400: errorObject, 401: errorObject, 403: errorObject, 409: errorObject, 500: errorObject },
@@ -72,7 +74,7 @@ export default async function adminKtagsRoutes(fastify: FastifyInstance) {
               status: "active",
               owner_id: null,
               label: generateKtagLabel(),
-              tag_type: tag_type ?? null,
+              tag_type,
             })
             .onConflictDoNothing({ target: ktagsTable.tag_id })
             .returning();
@@ -171,7 +173,7 @@ export default async function adminKtagsRoutes(fastify: FastifyInstance) {
       status?: "active" | "revoked";
       owner_id?: string | null;
       label?: string | null;
-      tag_type?: string | null;
+      tag_type?: KtagType;
     };
   }>("/:tag_id", {
     schema: {
@@ -184,7 +186,7 @@ export default async function adminKtagsRoutes(fastify: FastifyInstance) {
           status: { type: "string", enum: ["active", "revoked"] },
           owner_id: { type: "string", nullable: true },
           label: { type: "string", nullable: true },
-          tag_type: { type: "string", nullable: true },
+          tag_type: { type: "string", enum: [...ktagTypeValues] },
         },
       },
       response: { 200: ktagObject, 400: errorObject, 401: errorObject, 403: errorObject, 404: errorObject },
