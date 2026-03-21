@@ -2,7 +2,6 @@ import fp from "fastify-plugin";
 import { FastifyInstance } from "fastify";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
-import { config } from "../config.js";
 
 export default fp(
   async function swaggerPlugin(fastify: FastifyInstance) {
@@ -14,9 +13,9 @@ export default fp(
           description: "Klariti OS REST API",
           version: "1.0.0",
         },
-        servers: [
-          { url: config.appUrl, description: "Development" },
-        ],
+        // Use a relative server URL so Swagger targets the current deployment
+        // origin instead of falling back to localhost when APP_URL is unset.
+        servers: [{ url: "/", description: "Current server" }],
         components: {
           securitySchemes: {
             bearerAuth: {
