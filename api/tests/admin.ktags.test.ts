@@ -113,6 +113,65 @@ describe("POST /api/admin/ktag/register", () => {
 });
 
 describe("PATCH /api/admin/ktag/:tag_id", () => {
+  it("updates only the mutable ktag fields", async () => {
+    const token = await createAdminToken();
+    const { userId: ownerId } = await signUp(app, testEmail("ktag-owner"), "Owner Person");
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/admin/ktag/register",
+      headers: authHeader(token),
+      payload: {
+        uid: "04A1B2C3D4E5EE",
+        tag_type: "WALL",
+      },
+    });
+
+    expect(created.statusCode).toBe(201);
+
+    const assigned = await app.inject({
+      method: "PATCH",
+      url: `/api/admin/ktag/${created.json().tag_id}`,
+      headers: authHeader(token),
+      payload: {
+        status: "revoked",
+        label: "Lobby Marker",
+        tag_type: "DESK",
+        owner_id: ownerId,
+      },
+    });
+
+    expect(assigned.statusCode).toBe(200);
+    expect(assigned.json()).toMatchObject({
+      tag_id: created.json().tag_id,
+      status: "revoked",
+      label: "Lobby Marker",
+      tag_type: "DESK",
+      owner_id: ownerId,
+    });
+
+    const unassigned = await app.inject({
+      method: "PATCH",
+      url: `/api/admin/ktag/${created.json().tag_id}`,
+      headers: authHeader(token),
+      payload: {
+        status: "active",
+        owner_id: null,
+        label: null,
+        tag_type: "MOBILE",
+      },
+    });
+
+    expect(unassigned.statusCode).toBe(200);
+    expect(unassigned.json()).toMatchObject({
+      tag_id: created.json().tag_id,
+      status: "active",
+      label: null,
+      tag_type: "MOBILE",
+      owner_id: null,
+      revoked_at: null,
+    });
+  });
+
   it("rejects updates to server-managed issuance fields", async () => {
     const token = await createAdminToken();
     const created = await app.inject({
