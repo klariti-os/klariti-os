@@ -10,6 +10,58 @@ import Foundation
 import Observation
 import FamilyControls
 
+enum KlaritiKtagProvisionSource: Equatable {
+    case created
+    case existing
+
+    var title: String {
+        switch self {
+        case .created:
+            return "New Record"
+        case .existing:
+            return "Existing Record"
+        }
+    }
+}
+
+enum KlaritiKtagPayloadState: Equatable {
+    case matchesExpectedPayload
+    case missingFromTag
+    case mismatchedOnTag
+
+    var title: String {
+        switch self {
+        case .matchesExpectedPayload:
+            return "Matches Klariti Payload"
+        case .missingFromTag:
+            return "Missing on Tag"
+        case .mismatchedOnTag:
+            return "Different Payload on Tag"
+        }
+    }
+}
+
+struct KlaritiKtagProvisionResult: Equatable {
+    let tag: KlaritiKtag
+    let source: KlaritiKtagProvisionSource
+    var payloadState: KlaritiKtagPayloadState
+    let scannedPayload: String?
+
+    var needsBurn: Bool {
+        !isRevoked && payloadState != .matchesExpectedPayload
+    }
+
+    var isRevoked: Bool {
+        tag.status.caseInsensitiveCompare("revoked") == .orderedSame
+    }
+
+    func markingPayloadWritten() -> Self {
+        var copy = self
+        copy.payloadState = .matchesExpectedPayload
+        return copy
+    }
+}
+
 @Observable final class AppStore {
     private let ktagVerifier = KtagVerifier()
     @ObservationIgnored private let apiClient = KlaritiAPIClient()
@@ -223,24 +275,65 @@ import FamilyControls
     }
 
     @MainActor
-    func registerScannedTag(scan: NFCTagScanResult, tagType: String?) async throws -> KlaritiKtag {
+    func provisionScannedTag(scan: NFCTagScanResult, tagType: KlaritiKtagType) async throws -> KlaritiKtagProvisionResult {
         guard isAdmin else { throw KlaritiAPIError.unauthorized }
         guard let authToken, !authToken.isEmpty else { throw KlaritiAPIError.missingAuthToken }
         guard let uid = scan.uid?.trimmingCharacters(in: .whitespacesAndNewlines), !uid.isEmpty else {
             throw KlaritiAPIError.missingTagUID
         }
 
-        let cleanedTagType = tagType?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return try await apiClient.registerKtag(
-            token: authToken,
-            uid: uid,
-            tagType: cleanedTagType?.isEmpty == true ? nil : cleanedTagType
-        )
+        let scannedPayload = normalizedPayload(scan.primaryPayload)
+
+        do {
+            let createdTag = try await apiClient.registerKtag(
+                token: authToken,
+                uid: uid,
+                tagType: tagType
+            )
+            return makeProvisionResult(
+                tag: createdTag,
+                source: .created,
+                scannedPayload: scannedPayload
+            )
+        } catch KlaritiAPIError.server(let message) where message.localizedCaseInsensitiveContains("already exists") {
+            let existingTag = try await apiClient.ktagByUID(token: authToken, uid: uid)
+            return makeProvisionResult(
+                tag: existingTag,
+                source: .existing,
+                scannedPayload: scannedPayload
+            )
+        }
     }
 
     private func persistAuthToken(_ token: String) throws {
         try keychainStore.write(token, for: authTokenKey)
         authToken = token
+    }
+
+    private func makeProvisionResult(
+        tag: KlaritiKtag,
+        source: KlaritiKtagProvisionSource,
+        scannedPayload: String?
+    ) -> KlaritiKtagProvisionResult {
+        let payloadState: KlaritiKtagPayloadState
+        if let scannedPayload, !scannedPayload.isEmpty {
+            payloadState = scannedPayload == tag.payload ? .matchesExpectedPayload : .mismatchedOnTag
+        } else {
+            payloadState = .missingFromTag
+        }
+
+        return KlaritiKtagProvisionResult(
+            tag: tag,
+            source: source,
+            payloadState: payloadState,
+            scannedPayload: scannedPayload
+        )
+    }
+
+    private func normalizedPayload(_ payload: String?) -> String? {
+        guard let payload else { return nil }
+        let trimmed = payload.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 
     private func localizedMessage(for error: Error) -> String {

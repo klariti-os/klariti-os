@@ -25,6 +25,18 @@ struct KlaritiAuthResponse: Codable, Equatable {
     let user: KlaritiUser
 }
 
+enum KlaritiKtagType: String, Codable, CaseIterable, Equatable, Identifiable {
+    case wall = "WALL"
+    case mobile = "MOBILE"
+    case desk = "DESK"
+
+    var id: String { rawValue }
+
+    var title: String {
+        rawValue.capitalized
+    }
+}
+
 struct KlaritiKtag: Codable, Equatable {
     let tagId: String
     let uidHash: String?
@@ -34,7 +46,7 @@ struct KlaritiKtag: Codable, Equatable {
     let status: String
     let ownerId: String?
     let label: String?
-    let tagType: String?
+    let tagType: KlaritiKtagType?
     let createdAt: String?
     let revokedAt: String?
 }
@@ -105,10 +117,10 @@ final class KlaritiAPIClient {
         try await send(path: "/api/me", method: "GET", token: token)
     }
 
-    func registerKtag(token: String, uid: String, tagType: String?) async throws -> KlaritiKtag {
+    func registerKtag(token: String, uid: String, tagType: KlaritiKtagType) async throws -> KlaritiKtag {
         struct Body: Encodable {
             let uid: String
-            let tagType: String?
+            let tagType: KlaritiKtagType
         }
 
         return try await send(
@@ -116,6 +128,15 @@ final class KlaritiAPIClient {
             method: "POST",
             token: token,
             body: Body(uid: uid, tagType: tagType)
+        )
+    }
+
+    func ktagByUID(token: String, uid: String) async throws -> KlaritiKtag {
+        let encodedUID = uid.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? uid
+        return try await send(
+            path: "/api/admin/ktag/uid/\(encodedUID)",
+            method: "GET",
+            token: token
         )
     }
 
