@@ -16,6 +16,7 @@ import FamilyControls
 
     var setupComplete: Bool    { didSet { UserDefaults.standard.set(setupComplete,    forKey: "setupComplete") } }
     var nfcTagPayload: String  { didSet { UserDefaults.standard.set(nfcTagPayload,    forKey: "nfcTagPayload") } }
+    var nfcTagUID: String      { didSet { UserDefaults.standard.set(nfcTagUID,        forKey: "nfcTagUID") } }
     var isLocked: Bool         { didSet { UserDefaults.standard.set(isLocked,         forKey: "isLocked") } }
     var selectedAppsCount: Int { didSet { UserDefaults.standard.set(selectedAppsCount, forKey: "selectedAppsCount") } }
 
@@ -36,6 +37,7 @@ import FamilyControls
         let ud = UserDefaults.standard
         setupComplete     = ud.bool(forKey: "setupComplete")
         nfcTagPayload     = ud.string(forKey: "nfcTagPayload") ?? ""
+        nfcTagUID         = ud.string(forKey: "nfcTagUID") ?? ""
         isLocked          = ud.bool(forKey: "isLocked")
         selectedAppsCount = ud.integer(forKey: "selectedAppsCount")
     }
@@ -63,13 +65,22 @@ import FamilyControls
     // MARK: - NFC actions
 
     func scanToUnlock() {
-        nfcScanner.onVerifyPayload = { [weak self] payload in
+        nfcScanner.onVerifyScan = { [weak self] scan in
             guard let self else { return nil }
+            guard let payload = scan.primaryPayload else { return "This tag does not contain a readable Klariti payload." }
             guard verifyTag(payload) else { return "This doesn't look like a valid Klariti tag." }
             guard payload == nfcTagPayload else { return "Use the same tag you used to start this session." }
+            if !nfcTagUID.isEmpty {
+                guard let scannedUID = scan.uid else {
+                    return "This tag's UID could not be read on iPhone."
+                }
+                guard scannedUID == nfcTagUID else {
+                    return "Use the same physical tag you used to start this session."
+                }
+            }
             return nil
         }
-        nfcScanner.onTextPayload = { [weak self] _ in
+        nfcScanner.onTagScanned = { [weak self] _ in
             guard let self else { return }
             isLocked = false
             screenTime.clearShields()
@@ -80,22 +91,25 @@ import FamilyControls
     // MARK: - Focus actions
 
     func startFocus() {
-        nfcScanner.onVerifyPayload = { [weak self] payload in
+        nfcScanner.onVerifyScan = { [weak self] scan in
             guard let self else { return nil }
+            guard let payload = scan.primaryPayload else { return "This tag does not contain a readable Klariti payload." }
             return verifyTag(payload) ? nil : "This doesn't look like a valid Klariti tag."
         }
-        nfcScanner.onTextPayload = { [weak self] payload in
+        nfcScanner.onTagScanned = { [weak self] scan in
             guard let self else { return }
+            guard let payload = scan.primaryPayload else { return }
             nfcTagPayload = payload
+            nfcTagUID = scan.uid ?? ""
             isLocked = true
             screenTime.applyShields(from: activitySelection)
         }
         nfcScanner.beginScan(alert: "Hold iPhone near your Klariti tag to start a focus session.")
     }
 
-    // Checks that payload matches the klariti.so/tag/<id> URL format.
+    // Checks that payload matches the klariti.so/tag/<message> URL format.
     func verifyTag(_ payload: String) -> Bool {
-        let pattern = "^(https?://)?klariti\\.so/tag/[a-zA-Z0-9]+$"
+        let pattern = "^(https?://)?klariti\\.so/tag/[A-Za-z0-9._-]+$"
         return payload.range(of: pattern, options: .regularExpression) != nil
     }
 
