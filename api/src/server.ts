@@ -14,6 +14,8 @@ import classifyRoutes from "./routes/classify.js";
 import adminKtagsRoutes from "./routes/admin.ktags.js";
 import publicTagRoutes from "./routes/public.tag.js";
 
+const usePrettyLogger = process.env.NODE_ENV !== "production" && Boolean(process.stdout.isTTY);
+
 const fastify = Fastify({
   routerOptions: {
     maxParamLength: 1024,
@@ -23,11 +25,13 @@ const fastify = Fastify({
       removeAdditional: false,
     },
   },
-  logger: {
-    transport: {
-      target: "pino-pretty",
-    },
-  },
+  logger: usePrettyLogger
+    ? {
+        transport: {
+          target: "pino-pretty",
+        },
+      }
+    : true,
 });
 
 // Plugins (order matters: swagger before routes, cors before auth)
