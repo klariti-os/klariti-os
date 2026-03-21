@@ -7,9 +7,20 @@ import meKtagsRoutes from "../../src/routes/me.ktags";
 import meChallengesRoutes from "../../src/routes/me.challenges";
 import meFriendsRoutes from "../../src/routes/me.friends";
 import adminKtagsRoutes from "../../src/routes/admin.ktags";
+import publicTagRoutes from "../../src/routes/public.tag";
 
 export function buildApp() {
-  const app = Fastify({ logger: false });
+  const app = Fastify({
+    routerOptions: {
+      maxParamLength: 1024,
+    },
+    ajv: {
+      customOptions: {
+        removeAdditional: false,
+      },
+    },
+    logger: false,
+  });
   app.register(formbody);
   app.register(authPlugin);
   app.register(authRoutes);
@@ -17,6 +28,7 @@ export function buildApp() {
   app.register(meChallengesRoutes, { prefix: "/api/me/challenges" });
   app.register(meFriendsRoutes, { prefix: "/api/me/friends" });
   app.register(meKtagsRoutes, { prefix: "/api/me/ktags" });
-  app.register(adminKtagsRoutes, { prefix: "/api/admin/ktags" });
+  app.register(adminKtagsRoutes, { prefix: "/api/admin/ktag" });
+  app.register(publicTagRoutes, { prefix: "/api/tag" });
   return app;
 }

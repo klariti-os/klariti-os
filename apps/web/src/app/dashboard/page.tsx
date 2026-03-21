@@ -136,6 +136,11 @@ const DashboardPage: NextPage = () => {
         setIsSubmitting(false);
         return;
       }
+      if (!data.id) {
+        setError("Updated the intent, but the server response was incomplete.");
+        setIsSubmitting(false);
+        return;
+      }
       challengeId = data.id;
     } else if (!editingIntent) {
       const { data, error: apiError } = await postApiMeChallenges({
@@ -143,6 +148,11 @@ const DashboardPage: NextPage = () => {
       });
       if (apiError || !data) {
         setError("Failed to create intent. Please try again.");
+        setIsSubmitting(false);
+        return;
+      }
+      if (!data.id) {
+        setError("Created the intent, but the server response was incomplete.");
         setIsSubmitting(false);
         return;
       }

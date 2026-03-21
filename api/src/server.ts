@@ -12,8 +12,17 @@ import meChallengesRoutes from "./routes/me.challenges";
 import meFriendsRoutes from "./routes/me.friends";
 import classifyRoutes from "./routes/classify";
 import adminKtagsRoutes from "./routes/admin.ktags";
+import publicTagRoutes from "./routes/public.tag";
 
 const fastify = Fastify({
+  routerOptions: {
+    maxParamLength: 1024,
+  },
+  ajv: {
+    customOptions: {
+      removeAdditional: false,
+    },
+  },
   logger: {
     transport: {
       target: "pino-pretty",
@@ -33,8 +42,9 @@ fastify.register(meRoutes, { prefix: "/api/me" });
 fastify.register(meChallengesRoutes, { prefix: "/api/me/challenges" });
 fastify.register(meFriendsRoutes, { prefix: "/api/me/friends" });
 fastify.register(classifyRoutes, { prefix: "/api/classify" });
-fastify.register(adminKtagsRoutes, { prefix: "/api/admin/ktags" });
+fastify.register(adminKtagsRoutes, { prefix: "/api/admin/ktag" });
 fastify.register(meKtagsRoutes, { prefix: "/api/me/ktags" });
+fastify.register(publicTagRoutes, { prefix: "/api/tag" });
 
 fastify.get(
   "/",    

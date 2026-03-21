@@ -49,6 +49,17 @@ struct HomeView: View {
                         .font(KlFont.headline)
                         .foregroundStyle(Color.klForeground)
                 }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        NFCUtilityView()
+                    } label: {
+                        Image(systemName: "wave.3.right.circle")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundStyle(Color.klForeground)
+                    }
+                    .accessibilityLabel("Open NFC utilities")
+                }
             }
             .toolbarBackground(Color.klBackground, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)

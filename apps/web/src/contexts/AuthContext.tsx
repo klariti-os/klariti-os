@@ -2,11 +2,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { authClient } from "@/lib/auth-client";
+import API_BASE from "@/lib/configs/api";
 import { client } from "@klariti/api-client";
 
 // Configure the api-client to forward the stored Bearer token on all
 // protected requests (e.g. getApiMe, patchApiMe, etc.).
 client.setConfig({
+  baseUrl: API_BASE,
   auth: () =>
     typeof window !== "undefined"
       ? (localStorage.getItem("access_token") ?? undefined)

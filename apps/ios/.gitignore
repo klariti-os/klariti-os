@@ -44,3 +44,4 @@ playground.xcworkspace
 # Sensitive
 *.p12
 *.mobileprovision
+AuthKey*
