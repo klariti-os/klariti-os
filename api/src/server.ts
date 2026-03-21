@@ -1,18 +1,20 @@
 import Fastify from "fastify";
 import formbody from "@fastify/formbody";
-import { config } from "./config";
+import { config } from "./config.js";
 
-import swaggerPlugin from "./plugins/swagger";
-import corsPlugin from "./plugins/cors";
-import authPlugin from "./plugins/auth";
-import authRoutes from "./routes/auth";
-import meRoutes from "./routes/me";
-import meKtagsRoutes from "./routes/me.ktags";
-import meChallengesRoutes from "./routes/me.challenges";
-import meFriendsRoutes from "./routes/me.friends";
-import classifyRoutes from "./routes/classify";
-import adminKtagsRoutes from "./routes/admin.ktags";
-import publicTagRoutes from "./routes/public.tag";
+import swaggerPlugin from "./plugins/swagger.js";
+import corsPlugin from "./plugins/cors.js";
+import authPlugin from "./plugins/auth.js";
+import authRoutes from "./routes/auth.js";
+import meRoutes from "./routes/me.js";
+import meKtagsRoutes from "./routes/me.ktags.js";
+import meChallengesRoutes from "./routes/me.challenges.js";
+import meFriendsRoutes from "./routes/me.friends.js";
+import classifyRoutes from "./routes/classify.js";
+import adminKtagsRoutes from "./routes/admin.ktags.js";
+import publicTagRoutes from "./routes/public.tag.js";
+
+const usePrettyLogger = process.env.NODE_ENV !== "production" && Boolean(process.stdout.isTTY);
 
 const fastify = Fastify({
   routerOptions: {
@@ -23,11 +25,13 @@ const fastify = Fastify({
       removeAdditional: false,
     },
   },
-  logger: {
-    transport: {
-      target: "pino-pretty",
-    },
-  },
+  logger: usePrettyLogger
+    ? {
+        transport: {
+          target: "pino-pretty",
+        },
+      }
+    : true,
 });
 
 // Plugins (order matters: swagger before routes, cors before auth)

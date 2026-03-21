@@ -10,8 +10,8 @@ import {
   or,
   inArray,
 } from "@klariti/database";
-import { errorObject, successObject } from "../schemas/shared.schema";
-import { friendUserObject, friendRequestObject, friendRequestUserObject, sentRequestUserObject } from "../schemas/friends.schema";
+import { errorObject, successObject } from "../schemas/shared.schema.js";
+import { friendUserObject, friendRequestObject, friendRequestUserObject, sentRequestUserObject } from "../schemas/friends.schema.js";
 
 declare module "fastify" {
   interface FastifyRequest {

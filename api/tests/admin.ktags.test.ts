@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { db, authUser, eq } from "@klariti/database";
-import { buildApp } from "./helpers/build-app";
-import { authHeader, signUp, testEmail } from "./helpers/auth";
-import { cleanupTestUsers } from "./helpers/cleanup";
+import { buildApp } from "./helpers/build-app.js";
+import { authHeader, signUp, testEmail } from "./helpers/auth.js";
+import { cleanupTestUsers } from "./helpers/cleanup.js";
 
 const app = buildApp();
 

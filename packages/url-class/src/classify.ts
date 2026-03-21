@@ -1,5 +1,7 @@
 import { google } from "googleapis";
 
+const environment = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+
 export const youtubeCategories: Record<string, string> = {
   "1": "Film & Animation",
   "2": "Autos & Vehicles",
@@ -38,7 +40,7 @@ export const youtubeCategories: Record<string, string> = {
 const youtube = google.youtube({
   version: "v3",
   auth:
-    process.env.YOUTUBE_API_KEY ??
+    environment?.YOUTUBE_API_KEY ??
     (() => {
       throw new Error("YOUTUBE_API_KEY is not set");
     })(),

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { buildApp } from "./helpers/build-app";
-import { cleanupTestUsers } from "./helpers/cleanup";
-import { signUp, authHeader, testEmail } from "./helpers/auth";
+import { buildApp } from "./helpers/build-app.js";
+import { cleanupTestUsers } from "./helpers/cleanup.js";
+import { signUp, authHeader, testEmail } from "./helpers/auth.js";
 
 const app = buildApp();
 let tokenA: string;

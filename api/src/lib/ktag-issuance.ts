@@ -1,5 +1,5 @@
 import { createHash, createPrivateKey, randomBytes, randomInt, sign } from "node:crypto";
-import { config } from "../config";
+import { config } from "../config.js";
 
 const TAG_ID_PREFIX = "kt_";
 const uidFormattingPattern = /[\s:-]/g;

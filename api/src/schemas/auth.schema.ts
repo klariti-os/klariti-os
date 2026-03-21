@@ -1,4 +1,4 @@
-import { userObject } from "./user.schema";
+import { userObject } from "./user.schema.js";
 
 export const signUpBody = {
   type: "object",

@@ -10,7 +10,7 @@ import {
   authAccount,
   authVerification,
 } from "@klariti/database";
-import { toWebHeaders } from "../utils/headers";
+import { toWebHeaders } from "../utils/headers.js";
 
 // ── better-auth instance ────────────────────────────────────────────────────
 const trustedOrigins = (process.env.CORS_ORIGINS ?? "")
