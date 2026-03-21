@@ -1,5 +1,6 @@
 import {
   boolean,
+  integer,
   index,
   pgEnum,
   pgTable,
@@ -76,6 +77,7 @@ export const friendshipStateEnum = pgEnum("friendship_state", ["active", "remove
 export const friendRequestStatusEnum = pgEnum("friend_request_status", ["pending", "accepted", "declined", "cancelled", "withdrawn"]);
 export const participantStatusEnum = pgEnum("participant_status", ["active", "paused", "completed"]);
 export const challengeRequestStatusEnum = pgEnum("challenge_request_status", ["pending", "accepted", "declined", "withdrawn", "ignored"]);
+export const ktagStatusEnum = pgEnum("ktag_status", ["active", "revoked"]);
 
 // A challenge is the canonical entity. A solo "intent" is just a challenge with one participant.
 export const challengesTable = pgTable(
@@ -188,17 +190,29 @@ export const friendRequestsTable = pgTable(
 export const ktagsTable = pgTable(
   "ktags",
   {
-    // The unique ID embedded in the tag URL: klariti.so/tag/<embedded_id>
-    embedded_id: varchar("embedded_id", { length: 255 }).primaryKey(),
-    // Full payload URL as written to the NFC tag
-    payload: varchar("payload", { length: 512 }).notNull(),
-    user_id: text("user_id")
-      .notNull()
-      .references(() => authUser.id, { onDelete: "cascade" }),
+    // The unique Klariti tag ID used in the tag URL/message.
+    tag_id: varchar("tag_id", { length: 255 }).primaryKey(),
+    // Hash of the NFC tag's hardware UID as read during provisioning.
+    uid_hash: varchar("uid_hash", { length: 128 }),
+    // Full URL payload as written to the NFC tag. This is the message on the tag.
+    payload: varchar("payload", { length: 1024 }).notNull(),
+    // Server-produced signature binding the payload / tag ID to the tag identity.
+    signature: varchar("signature", { length: 512 }),
+    // Signature format / key version used when generating the signature.
+    sig_version: integer("sig_version"),
+    status: ktagStatusEnum("status").notNull().default("active"),
+    owner_id: text("owner_id")
+      .references(() => authUser.id, { onDelete: "set null" }),
     label: varchar("label", { length: 255 }),
+    tag_type: varchar("tag_type", { length: 64 }),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    revoked_at: timestamp("revoked_at", { withTimezone: true }),
   },
-  (table) => [index("ktags_user_id_idx").on(table.user_id)]
+  (table) => [
+    index("ktags_owner_id_idx").on(table.owner_id),
+    index("ktags_status_idx").on(table.status),
+    unique("ktags_uid_hash_unique").on(table.uid_hash),
+  ]
 );
 
 export const connectedDevicesTable = pgTable("connected_devices", {

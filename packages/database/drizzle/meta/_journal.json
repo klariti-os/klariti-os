@@ -99,6 +99,27 @@
       "when": 1773072003000,
       "tag": "0013_challenge_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1774051200000,
+      "tag": "0014_signed_ktags",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1774137600000,
+      "tag": "0015_ktag_owner_inventory",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1774224000000,
+      "tag": "0016_ktag_tag_id",
+      "breakpoints": true
     }
   ]
 }

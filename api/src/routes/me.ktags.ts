@@ -17,13 +17,13 @@ export default async function meKtagsRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
       const userId = request.session!.user.id;
-      const rows = await db.select().from(ktagsTable).where(eq(ktagsTable.user_id, userId));
+      const rows = await db.select().from(ktagsTable).where(eq(ktagsTable.owner_id, userId));
       return reply.send(rows);
     },
   });
 
   // Update own ktag label
-  fastify.patch<{ Body: { label: string | null } }>("/:embedded_id", {
+  fastify.patch<{ Body: { label: string | null } }>("/:tag_id", {
     schema: {
       tags: ["Me"],
       security: [{ bearerAuth: [] }],
@@ -37,12 +37,12 @@ export default async function meKtagsRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
       const userId = request.session!.user.id;
-      const { embedded_id } = request.params as { embedded_id: string };
+      const { tag_id } = request.params as { tag_id: string };
       const { label } = request.body;
       const [updated] = await db
         .update(ktagsTable)
         .set({ label })
-        .where(and(eq(ktagsTable.embedded_id, embedded_id), eq(ktagsTable.user_id, userId)))
+        .where(and(eq(ktagsTable.tag_id, tag_id), eq(ktagsTable.owner_id, userId)))
         .returning();
       if (!updated) return reply.status(404).send({ error: "KTag not found." });
       return reply.send(updated);

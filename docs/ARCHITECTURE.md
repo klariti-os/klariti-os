@@ -101,17 +101,40 @@ interface FriendRequest {
 
 ### Ktags
 
-Physical NFC tags registered to a user. The tag URL encodes a unique `embedded_id`. On iOS, the app verifies the payload domain (`klariti.so/tag/<id>`) before accepting a scan.
+Physical NFC tags issued by Klariti. Tags can exist as inventory before assignment, so ownership is nullable until a tag is issued to a user.
+
+The NFC tag stores a full URL payload in the form `https://klariti.so/tag/<message>`. In this model:
+- `tag_id` is a server-generated Klariti tag ID and is prefixed with `kt_`
+- `payload` is the exact full URL written to the NFC tag, so it contains the `<message>`
+- `uid_hash` binds the record to the physical NFC chip's hardware identifier without exposing the raw UID in normal API responses
+- `signature` + `sig_version` support offline verification of issued tags in native clients
+- the admin create endpoint accepts the raw NFC `uid`, and the server computes `tag_id`, `uid_hash`, `signature`, `sig_version`, and `payload`
+
+This keeps the tag tappable in browsers while still letting the iOS app read the actual NFC identifier and verify that the physical tag matches the issued record.
 
 ```ts
 interface Ktag {
-  embedded_id: string  // unique ID from the tag URL
-  payload: string      // full URL written to the NFC tag
-  user_id: string
+  tag_id: string              // server-generated Klariti tag ID, prefixed with kt_
+  uid_hash?: string           // hash of the physical tag UID / IDm
+  payload: string             // full URL written to the NFC tag: https://klariti.so/tag/<message>
+  signature?: string          // server-generated signature over issued tag data
+  sig_version?: number        // signature / key version
+  status: "active" | "revoked"
+  owner_id?: string | null    // nullable: tag may exist in inventory before assignment
   label?: string
+  tag_type?: string
   created_at: Date
+  revoked_at?: Date
 }
 ```
+
+**Ownership model**: `owner_id` uses `ON DELETE SET NULL` so tags return to unassigned inventory if the owning user is removed.
+
+**Issuance model**: all Klariti tag IDs use the `kt_` prefix and are generated server-side. On issuance, the admin client submits the raw NFC `uid` plus safe metadata (`owner_id`, `label`, `tag_type`). The server normalizes and hashes the UID, signs `v<sig_version>|<tag_id>|<uid_hash>` with its private key, and writes the resulting message into the payload URL as `https://klariti.so/tag/v<sig_version>.<tag_id>.<signature>`.
+
+**Verification model**:
+- Web: the payload URL identifies the issued tag and can route to a Klariti page.
+- iOS: the app reads the actual NFC hardware identifier exposed by Core NFC, compares it to the issued tag material, and can verify signed payloads locally with a bundled public key.
 
 ## iOS app
 
@@ -119,7 +142,7 @@ The iOS companion enforces focus sessions using NFC tags + native Screen Time (F
 
 **Session flow:**
 1. User selects apps to block on first launch
-2. Tap **Start Focus** → scan ktag → apps blocked, session locked to that specific tag
+2. Tap **Start Focus** → scan ktag → apps blocked, session locked to that specific physical tag
 3. To end the session, scan the **same** tag — any other tag is rejected
 
 **Key files:**
