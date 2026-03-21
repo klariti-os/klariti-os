@@ -11,11 +11,10 @@ function isUniqueViolation(error: unknown, constraintName: string): boolean {
   return dbError.code === "23505" && dbError.constraint === constraintName;
 }
 
-function resolveRevokedAt(status?: "active" | "revoked", revokedAt?: string | null) {
-  if (revokedAt !== undefined) return revokedAt ? new Date(revokedAt) : null;
+function resolveRevokedAt(status: "active" | "revoked" | undefined, currentRevokedAt: Date | null) {
   if (status === "revoked") return new Date();
   if (status === "active") return null;
-  return undefined;
+  return currentRevokedAt;
 }
 
 export default async function adminKtagsRoutes(fastify: FastifyInstance) {
@@ -116,6 +115,56 @@ export default async function adminKtagsRoutes(fastify: FastifyInstance) {
     },
   });
 
+  // Look up a ktag by its raw NFC UID
+  fastify.get<{ Params: { uid: string } }>("/uid/:uid", {
+    schema: {
+      tags: ["Admin - KTags"],
+      security: [{ bearerAuth: [] }],
+      response: { 200: ktagObject, 400: errorObject, 401: errorObject, 403: errorObject, 404: errorObject },
+    },
+    preHandler: [fastify.verifyAdmin],
+    handler: async (request, reply) => {
+      const { uid } = request.params;
+
+      let uidHash: string;
+      try {
+        uidHash = hashKtagUid(uid);
+      } catch (error) {
+        return reply.status(400).send({
+          error: error instanceof Error ? error.message : "Invalid NFC UID.",
+        });
+      }
+
+      const [ktag] = await db.select().from(ktagsTable).where(eq(ktagsTable.uid_hash, uidHash)).limit(1);
+
+      if (!ktag) {
+        return reply.status(404).send({ error: "KTag not found." });
+      }
+
+      return reply.send(ktag);
+    },
+  });
+
+  // Look up a ktag by its Klariti tag id
+  fastify.get<{ Params: { tag_id: string } }>("/:tag_id", {
+    schema: {
+      tags: ["Admin - KTags"],
+      security: [{ bearerAuth: [] }],
+      response: { 200: ktagObject, 401: errorObject, 403: errorObject, 404: errorObject },
+    },
+    preHandler: [fastify.verifyAdmin],
+    handler: async (request, reply) => {
+      const { tag_id } = request.params;
+      const [ktag] = await db.select().from(ktagsTable).where(eq(ktagsTable.tag_id, tag_id)).limit(1);
+
+      if (!ktag) {
+        return reply.status(404).send({ error: "KTag not found." });
+      }
+
+      return reply.send(ktag);
+    },
+  });
+
   // Update mutable inventory / assignment fields of a ktag
   fastify.patch<{
     Body: {
@@ -123,7 +172,6 @@ export default async function adminKtagsRoutes(fastify: FastifyInstance) {
       owner_id?: string | null;
       label?: string | null;
       tag_type?: string | null;
-      revoked_at?: string | null;
     };
   }>("/:tag_id", {
     schema: {
@@ -137,15 +185,23 @@ export default async function adminKtagsRoutes(fastify: FastifyInstance) {
           owner_id: { type: "string", nullable: true },
           label: { type: "string", nullable: true },
           tag_type: { type: "string", nullable: true },
-          revoked_at: { type: "string", format: "date-time", nullable: true },
         },
       },
-      response: { 200: ktagObject, 401: errorObject, 403: errorObject, 404: errorObject },
+      response: { 200: ktagObject, 400: errorObject, 401: errorObject, 403: errorObject, 404: errorObject },
     },
     preHandler: [fastify.verifyAdmin],
     handler: async (request, reply) => {
       const { tag_id } = request.params as { tag_id: string };
-      const { status, owner_id, label, tag_type, revoked_at } = request.body;
+      const { status, owner_id, label, tag_type } = request.body;
+      const [existing] = await db.select().from(ktagsTable).where(eq(ktagsTable.tag_id, tag_id)).limit(1);
+
+      if (!existing) return reply.status(404).send({ error: "KTag not found." });
+
+      const nextRevokedAt =
+        status === "revoked"
+          ? existing.revoked_at ?? new Date()
+          : resolveRevokedAt(status, existing.revoked_at ?? null);
+
       const [updated] = await db
         .update(ktagsTable)
         .set({
@@ -153,11 +209,10 @@ export default async function adminKtagsRoutes(fastify: FastifyInstance) {
           owner_id: owner_id !== undefined ? owner_id : undefined,
           label: label !== undefined ? label : undefined,
           tag_type: tag_type !== undefined ? tag_type : undefined,
-          revoked_at: resolveRevokedAt(status, revoked_at),
+          revoked_at: nextRevokedAt,
         })
         .where(eq(ktagsTable.tag_id, tag_id))
         .returning();
-      if (!updated) return reply.status(404).send({ error: "KTag not found." });
       return reply.send(updated);
     },
   });
