@@ -1,3 +1,5 @@
+import { ktagTypeEnum } from "@klariti/database";
+
 export const ktagObject = {
   type: "object",
   properties: {
@@ -9,7 +11,7 @@ export const ktagObject = {
     status: { type: "string" },
     owner_id: { type: "string", nullable: true },
     label: { type: "string", nullable: true },
-    tag_type: { type: "string", nullable: true },
+    tag_type: { type: "string", enum: [...ktagTypeEnum.enumValues], nullable: true },
     created_at: { type: "string", format: "date-time", nullable: true },
     revoked_at: { type: "string", format: "date-time", nullable: true },
   },

@@ -1,45 +1,13 @@
-import { createHash, createPrivateKey, randomBytes, randomInt, sign } from "node:crypto";
+import { createHash, createPrivateKey, randomBytes, sign } from "node:crypto";
+import { adjectives, animals, uniqueNamesGenerator } from "unique-names-generator";
 import { config } from "../config.js";
 
 const TAG_ID_PREFIX = "kt_";
 const uidFormattingPattern = /[\s:-]/g;
 const hexUidPattern = /^[0-9a-fA-F]+$/;
-const friendlyAdjectives = [
-  "Amber",
-  "Brisk",
-  "Calm",
-  "Clever",
-  "Daring",
-  "Gentle",
-  "Golden",
-  "Jolly",
-  "Lucky",
-  "Merry",
-  "Nimble",
-  "Quiet",
-  "Radiant",
-  "Silver",
-  "Swift",
-  "Velvet",
-] as const;
-const friendlyNouns = [
-  "Beacon",
-  "Bloom",
-  "Comet",
-  "Falcon",
-  "Harbor",
-  "Lantern",
-  "Maple",
-  "Meadow",
-  "Otter",
-  "Pine",
-  "River",
-  "Sparrow",
-  "Summit",
-  "Willow",
-  "Wren",
-  "Zephyr",
-] as const;
+const singleWordPattern = /^[a-z]+$/i;
+const labelAdjectives = adjectives.filter((word) => singleWordPattern.test(word));
+const labelAnimals = animals.filter((word) => singleWordPattern.test(word));
 
 export type IssuedKtag = {
   tag_id: string;
@@ -80,9 +48,12 @@ export function generateTagId(): string {
 }
 
 export function generateKtagLabel(): string {
-  const adjective = friendlyAdjectives[randomInt(friendlyAdjectives.length)];
-  const noun = friendlyNouns[randomInt(friendlyNouns.length)];
-  return `${adjective} ${noun}`;
+  return uniqueNamesGenerator({
+    dictionaries: [labelAdjectives, labelAnimals],
+    separator: " ",
+    style: "capital",
+    length: 2,
+  });
 }
 
 export function normalizeKtagUid(uid: string): string {

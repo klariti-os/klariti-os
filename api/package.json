@@ -6,6 +6,7 @@
     "build:runtime-deps": "pnpm --filter @klariti/database build && pnpm --filter @klariti/url-class build",
     "build": "pnpm run build:runtime-deps && tsc --noEmit",
     "dev": "pnpm run build:runtime-deps && tsx watch --env-file=../.env src/server.ts",
+    "generate:openapi": "pnpm run build:runtime-deps && node --env-file=../.env --import tsx ./scripts/generate-openapi.ts",
     "check-types": "tsc --noEmit",
     "test": "pnpm run build:runtime-deps && vitest run"
   },
@@ -18,7 +19,8 @@
     "@klariti/url-class": "workspace:*",
     "better-auth": "^1.2.0",
     "fastify": "^5.7.2",
-    "fastify-plugin": "^5.0.1"
+    "fastify-plugin": "^5.0.1",
+    "unique-names-generator": "4.7.1"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

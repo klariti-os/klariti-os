@@ -66,6 +66,7 @@ final class NFCScanner: NSObject, NFCTagReaderSessionDelegate {
     private var sessionActive = false
     private var pendingErrorMessage: String?
     private var shouldIgnoreInvalidation = false
+    private var pendingSuccessfulScan: NFCTagScanResult?
 
     // MARK: - Public API
 
@@ -85,6 +86,7 @@ final class NFCScanner: NSObject, NFCTagReaderSessionDelegate {
         sessionActive = true
         pendingErrorMessage = nil
         shouldIgnoreInvalidation = false
+        pendingSuccessfulScan = nil
         DispatchQueue.main.async {
             self.session = NFCTagReaderSession(
                 pollingOption: [.iso14443, .iso15693, .iso18092],
@@ -161,18 +163,16 @@ final class NFCScanner: NSObject, NFCTagReaderSessionDelegate {
             return
         }
 
+        pendingSuccessfulScan = result
         shouldIgnoreInvalidation = true
         session.alertMessage = result.readError == nil
             ? "NFC tag captured."
             : "Tag detected. Some NDEF data could not be read."
         session.invalidate()
-
-        DispatchQueue.main.async {
-            self.onTagScanned?(result)
-        }
     }
 
     private func fail(message: String, session: NFCTagReaderSession) {
+        pendingSuccessfulScan = nil
         pendingErrorMessage = message
         session.invalidate(errorMessage: message)
     }
@@ -368,19 +368,28 @@ final class NFCScanner: NSObject, NFCTagReaderSessionDelegate {
         self.session = nil
 
         if shouldIgnoreInvalidation {
+            let capturedScan = pendingSuccessfulScan
+            pendingSuccessfulScan = nil
             shouldIgnoreInvalidation = false
             pendingErrorMessage = nil
+            if let capturedScan {
+                DispatchQueue.main.async {
+                    self.onTagScanned?(capturedScan)
+                }
+            }
             return
         }
 
         if let pendingErrorMessage {
             self.pendingErrorMessage = nil
+            pendingSuccessfulScan = nil
             DispatchQueue.main.async {
                 self.onError?(pendingErrorMessage)
             }
             return
         }
 
+        pendingSuccessfulScan = nil
         let nsError = error as NSError
         // Treat both 200 and 201 as user-initiated cancellation across iOS versions.
         if nsError.code == 200 || nsError.code == 201 {
