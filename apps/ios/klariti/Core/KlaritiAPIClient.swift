@@ -37,13 +37,24 @@ enum KlaritiKtagType: String, Codable, CaseIterable, Equatable, Identifiable {
     }
 }
 
+enum KlaritiKtagStatus: String, Codable, CaseIterable, Equatable, Identifiable {
+    case active = "active"
+    case revoked = "revoked"
+
+    var id: String { rawValue }
+
+    var title: String {
+        rawValue.capitalized
+    }
+}
+
 struct KlaritiKtag: Codable, Equatable {
     let tagId: String
     let uidHash: String?
     let payload: String
     let signature: String?
     let sigVersion: Int?
-    let status: String
+    let status: KlaritiKtagStatus
     let ownerId: String?
     let label: String?
     let tagType: KlaritiKtagType?
@@ -137,6 +148,29 @@ final class KlaritiAPIClient {
             path: "/api/admin/ktag/uid/\(encodedUID)",
             method: "GET",
             token: token
+        )
+    }
+
+    func patchKtag(
+        token: String,
+        tagId: String,
+        status: KlaritiKtagStatus,
+        label: String?,
+        tagType: KlaritiKtagType
+    ) async throws -> KlaritiKtag {
+        struct Body: Encodable {
+            let status: KlaritiKtagStatus
+            let label: String?
+            let tagType: KlaritiKtagType
+        }
+
+        let encodedTagId = tagId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? tagId
+
+        return try await send(
+            path: "/api/admin/ktag/\(encodedTagId)",
+            method: "PATCH",
+            token: token,
+            body: Body(status: status, label: label, tagType: tagType)
         )
     }
 

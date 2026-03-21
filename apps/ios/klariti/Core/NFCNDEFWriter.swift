@@ -127,17 +127,17 @@ final class NFCNDEFWriter: NSObject, NFCTagReaderSessionDelegate {
                 return
             }
 
-            guard status == .readWrite else {
-                let message: String
-                switch status {
-                case .readOnly:
-                    message = "This tag is read-only and cannot be written."
-                case .notSupported:
-                    message = "This tag does not support NDEF writing."
-                @unknown default:
-                    message = "This tag cannot be written on iPhone."
-                }
-                self.fail(message: message, session: session)
+            switch status {
+            case .readWrite:
+                break
+            case .readOnly:
+                self.fail(message: "This tag is read-only and cannot be written.", session: session)
+                return
+            case .notSupported:
+                self.fail(message: "This tag does not support NDEF writing.", session: session)
+                return
+            @unknown default:
+                self.fail(message: "This tag cannot be written on iPhone.", session: session)
                 return
             }
 
