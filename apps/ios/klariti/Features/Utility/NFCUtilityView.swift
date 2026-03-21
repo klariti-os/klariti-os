@@ -12,6 +12,7 @@ struct NFCUtilityView: View {
 
     private enum UtilityTab: String, CaseIterable, Identifiable {
         case register = "Provision"
+        case patch = "Patch"
         case inspect = "Inspect"
 
         var id: Self { self }
@@ -20,6 +21,7 @@ struct NFCUtilityView: View {
     private enum UtilityScanMode {
         case inspect
         case register
+        case patch
     }
 
     private enum RegistrationFeedbackTone {
@@ -50,12 +52,20 @@ struct NFCUtilityView: View {
     @State private var writer = NFCNDEFWriter()
     @State private var lastInspection: NFCTagScanResult?
     @State private var lastRegistrationScan: NFCTagScanResult?
+    @State private var lastPatchScan: NFCTagScanResult?
     @State private var latestProvisioning: KlaritiKtagProvisionResult?
+    @State private var patchingTag: KlaritiKtag?
     @State private var selectedTagType: KlaritiKtagType = .wall
+    @State private var patchStatus: KlaritiKtagStatus = .active
+    @State private var patchLabel = ""
+    @State private var patchTagType: KlaritiKtagType = .wall
     @State private var inspectorErrorMessage: String?
     @State private var copiedPayloadNote: String?
     @State private var registrationFeedback: RegistrationFeedback?
+    @State private var patchFeedback: RegistrationFeedback?
     @State private var isProvisioning = false
+    @State private var isLoadingPatchTag = false
+    @State private var isSavingPatch = false
     @State private var isWritingPayload = false
 
     var body: some View {
@@ -72,10 +82,12 @@ struct NFCUtilityView: View {
                     .pickerStyle(.segmented)
 
                     switch selectedTab {
-                    case .inspect:
-                        inspectTab
                     case .register:
                         registerTab
+                    case .patch:
+                        patchTab
+                    case .inspect:
+                        inspectTab
                     }
                 } else {
                     detailCard(title: "Admin Access Required") {
@@ -110,7 +122,7 @@ struct NFCUtilityView: View {
                 .font(KlFont.title)
                 .foregroundStyle(Color.klForeground)
 
-            Text("Inspect real iPhone-visible tag data, or register a tag and burn the Klariti URL payload onto it.")
+            Text("Provision Klariti tags, patch registered tag details, or inspect the real iPhone-visible NFC data.")
                 .font(KlFont.subhead)
                 .foregroundStyle(Color.klSubtle)
 
@@ -198,6 +210,33 @@ struct NFCUtilityView: View {
     }
 
     @ViewBuilder
+    private var patchTab: some View {
+        patchLookupCard
+
+        if let patchFeedback {
+            feedbackCard(patchFeedback)
+        }
+
+        if let lastPatchScan {
+            scanSummary(lastPatchScan, title: "Patch Scan")
+        }
+
+        if let patchingTag {
+            detailCard(title: "Loaded Tag") {
+                fieldRows(patchFields(for: patchingTag))
+            }
+
+            patchEditorCard(for: patchingTag)
+        } else {
+            detailCard(title: "No Tag Loaded") {
+                Text("Scan a registered Klariti tag to load its record, then update the status, label, or tag type.")
+                    .font(KlFont.subhead)
+                    .foregroundStyle(Color.klSubtle)
+            }
+        }
+    }
+
+    @ViewBuilder
     private var registrationCard: some View {
         detailCard(title: "Provision Tag") {
             VStack(alignment: .leading, spacing: 14) {
@@ -231,6 +270,90 @@ struct NFCUtilityView: View {
 
                 if isWritingPayload {
                     ProgressView("Writing Klariti payload…")
+                        .font(KlFont.footnote)
+                        .tint(Color.klForeground)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var patchLookupCard: some View {
+        detailCard(title: "Load Tag For Editing") {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Scan an already registered tag to load its current Klariti record before patching it.")
+                    .font(KlFont.subhead)
+                    .foregroundStyle(Color.klSubtle)
+
+                Button(isLoadingPatchTag ? "Loading..." : "Scan Tag to Edit", action: beginPatchLookup)
+                    .buttonStyle(KlButtonStyle(enabled: NFCTagReaderSession.readingAvailable && !isLoadingPatchTag && !isSavingPatch))
+                    .disabled(!NFCTagReaderSession.readingAvailable || isLoadingPatchTag || isSavingPatch)
+
+                if isLoadingPatchTag {
+                    ProgressView("Scanning and loading the Klariti record…")
+                        .font(KlFont.footnote)
+                        .tint(Color.klForeground)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func patchEditorCard(for tag: KlaritiKtag) -> some View {
+        detailCard(title: "Patch Tag") {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Label")
+                        .font(KlFont.caption)
+                        .foregroundStyle(Color.klSubtle)
+                        .textCase(.uppercase)
+
+                    TextField("Friendly tag name", text: $patchLabel)
+                        .textInputAutocapitalization(.words)
+                        .autocorrectionDisabled()
+                        .font(KlFont.body)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 14)
+                        .background(Color.klBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Status")
+                        .font(KlFont.caption)
+                        .foregroundStyle(Color.klSubtle)
+                        .textCase(.uppercase)
+
+                    Picker("Status", selection: $patchStatus) {
+                        ForEach(KlaritiKtagStatus.allCases) { status in
+                            Text(status.title).tag(status)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Tag Type")
+                        .font(KlFont.caption)
+                        .foregroundStyle(Color.klSubtle)
+                        .textCase(.uppercase)
+
+                    Picker("Tag Type", selection: $patchTagType) {
+                        ForEach(KlaritiKtagType.allCases) { type in
+                            Text(type.title).tag(type)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Button(isSavingPatch ? "Saving..." : "Save Changes") {
+                    beginPatchSave(for: tag)
+                }
+                .buttonStyle(KlButtonStyle(enabled: !isSavingPatch && !isLoadingPatchTag))
+                .disabled(isSavingPatch || isLoadingPatchTag)
+
+                if isSavingPatch {
+                    ProgressView("Saving tag changes…")
                         .font(KlFont.footnote)
                         .tint(Color.klForeground)
                 }
@@ -326,15 +449,30 @@ struct NFCUtilityView: View {
 
     private func configureScanner(for mode: UtilityScanMode) {
         scanner.onCancelled = {
-            isProvisioning = false
+            switch mode {
+            case .inspect:
+                break
+            case .register:
+                isProvisioning = false
+            case .patch:
+                isLoadingPatchTag = false
+            }
         }
         scanner.onError = { message in
-            isProvisioning = false
-            if mode == .inspect {
+            switch mode {
+            case .inspect:
                 inspectorErrorMessage = message
-            } else {
+            case .register:
+                isProvisioning = false
                 registrationFeedback = RegistrationFeedback(
                     title: "Provisioning failed",
+                    message: message,
+                    tone: .error
+                )
+            case .patch:
+                isLoadingPatchTag = false
+                patchFeedback = RegistrationFeedback(
+                    title: "Couldn't load tag",
                     message: message,
                     tone: .error
                 )
@@ -348,6 +486,11 @@ struct NFCUtilityView: View {
                 lastRegistrationScan = result
                 Task {
                     await provision(scan: result)
+                }
+            case .patch:
+                lastPatchScan = result
+                Task {
+                    await loadPatchTag(scan: result)
                 }
             }
         }
@@ -364,6 +507,25 @@ struct NFCUtilityView: View {
         registrationFeedback = nil
         configureScanner(for: .register)
         scanner.beginScan(alert: "Hold iPhone near the NFC tag you want to provision.")
+    }
+
+    private func beginPatchLookup() {
+        patchFeedback = nil
+        patchingTag = nil
+        lastPatchScan = nil
+        patchStatus = .active
+        patchLabel = ""
+        patchTagType = .wall
+        isLoadingPatchTag = true
+        configureScanner(for: .patch)
+        scanner.beginScan(alert: "Hold iPhone near the registered Klariti tag you want to edit.")
+    }
+
+    private func beginPatchSave(for tag: KlaritiKtag) {
+        patchFeedback = nil
+        Task {
+            await savePatch(for: tag)
+        }
     }
 
     private func beginPayloadBurn(_ payload: String) {
@@ -438,6 +600,62 @@ struct NFCUtilityView: View {
         }
     }
 
+    @MainActor
+    private func loadPatchTag(scan: NFCTagScanResult) async {
+        defer { isLoadingPatchTag = false }
+
+        do {
+            let tag = try await store.ktagForScannedTag(scan)
+            patchingTag = tag
+            patchStatus = tag.status
+            patchLabel = tag.label ?? ""
+            patchTagType = tag.tagType ?? .wall
+            patchFeedback = RegistrationFeedback(
+                title: "Tag loaded",
+                message: "Update the status, label, or tag type below, then save the changes.",
+                tone: .success
+            )
+        } catch {
+            patchingTag = nil
+            patchFeedback = RegistrationFeedback(
+                title: "Couldn't load tag",
+                message: localizedMessage(for: error),
+                tone: .error
+            )
+        }
+    }
+
+    @MainActor
+    private func savePatch(for tag: KlaritiKtag) async {
+        isSavingPatch = true
+        defer { isSavingPatch = false }
+
+        do {
+            let updatedTag = try await store.patchKtag(
+                tagId: tag.tagId,
+                status: patchStatus,
+                label: patchLabel,
+                tagType: patchTagType
+            )
+
+            patchingTag = updatedTag
+            patchStatus = updatedTag.status
+            patchLabel = updatedTag.label ?? ""
+            patchTagType = updatedTag.tagType ?? patchTagType
+            patchFeedback = RegistrationFeedback(
+                title: "Tag updated",
+                message: patchMessage(for: updatedTag),
+                tone: .success
+            )
+        } catch {
+            patchFeedback = RegistrationFeedback(
+                title: "Couldn't update tag",
+                message: localizedMessage(for: error),
+                tone: .error
+            )
+        }
+    }
+
     private func provisioningMessage(for result: KlaritiKtagProvisionResult) -> String {
         switch (result.source, result.payloadState) {
         case (.created, _):
@@ -458,6 +676,12 @@ struct NFCUtilityView: View {
         case .existing:
             return "This tag is already registered and already contains the expected Klariti payload, so no write was needed."
         }
+    }
+
+    private func patchMessage(for tag: KlaritiKtag) -> String {
+        let label = normalizedDisplayValue(tag.label, fallback: "No label")
+        let type = tag.tagType?.title ?? "Unspecified"
+        return "Saved \(tag.status.title.lowercased()) status, label \"\(label)\", and \(type.lowercased()) tag type for \(tag.tagId)."
     }
 
     @ViewBuilder
@@ -498,7 +722,7 @@ struct NFCUtilityView: View {
             NFCTagMetadataField(label: "Tag ID", value: tag.tagId),
             NFCTagMetadataField(label: "Record State", value: result.source.title),
             NFCTagMetadataField(label: "Payload State", value: result.payloadState.title),
-            NFCTagMetadataField(label: "Status", value: tag.status.capitalized),
+            NFCTagMetadataField(label: "Status", value: tag.status.title),
             NFCTagMetadataField(label: "Payload", value: tag.payload)
         ]
 
@@ -516,6 +740,40 @@ struct NFCUtilityView: View {
         }
 
         return fields
+    }
+
+    private func patchFields(for tag: KlaritiKtag) -> [NFCTagMetadataField] {
+        var fields = [
+            NFCTagMetadataField(label: "Tag ID", value: tag.tagId),
+            NFCTagMetadataField(label: "Status", value: tag.status.title),
+            NFCTagMetadataField(label: "Owner", value: tag.ownerId ?? "Unassigned"),
+            NFCTagMetadataField(label: "Payload", value: tag.payload)
+        ]
+
+        if let label = tag.label {
+            fields.append(NFCTagMetadataField(label: "Label", value: label))
+        }
+        if let tagType = tag.tagType {
+            fields.append(NFCTagMetadataField(label: "Tag Type", value: tagType.title))
+        }
+        if let revokedAt = tag.revokedAt {
+            fields.append(NFCTagMetadataField(label: "Revoked At", value: revokedAt))
+        }
+
+        return fields
+    }
+
+    private func localizedMessage(for error: Error) -> String {
+        if let localizedError = error as? LocalizedError, let message = localizedError.errorDescription {
+            return message
+        }
+        return error.localizedDescription
+    }
+
+    private func normalizedDisplayValue(_ value: String?, fallback: String) -> String {
+        guard let value else { return fallback }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? fallback : trimmed
     }
 
     @ViewBuilder

@@ -52,7 +52,7 @@ struct KlaritiKtagProvisionResult: Equatable {
     }
 
     var isRevoked: Bool {
-        tag.status.caseInsensitiveCompare("revoked") == .orderedSame
+        tag.status == .revoked
     }
 
     func markingPayloadWritten() -> Self {
@@ -277,10 +277,8 @@ struct KlaritiKtagProvisionResult: Equatable {
     @MainActor
     func provisionScannedTag(scan: NFCTagScanResult, tagType: KlaritiKtagType) async throws -> KlaritiKtagProvisionResult {
         guard isAdmin else { throw KlaritiAPIError.unauthorized }
-        guard let authToken, !authToken.isEmpty else { throw KlaritiAPIError.missingAuthToken }
-        guard let uid = scan.uid?.trimmingCharacters(in: .whitespacesAndNewlines), !uid.isEmpty else {
-            throw KlaritiAPIError.missingTagUID
-        }
+        let authToken = try requireAuthToken()
+        let uid = try requireScanUID(scan)
 
         let scannedPayload = normalizedPayload(scan.primaryPayload)
 
@@ -303,6 +301,33 @@ struct KlaritiKtagProvisionResult: Equatable {
                 scannedPayload: scannedPayload
             )
         }
+    }
+
+    @MainActor
+    func ktagForScannedTag(_ scan: NFCTagScanResult) async throws -> KlaritiKtag {
+        guard isAdmin else { throw KlaritiAPIError.unauthorized }
+        let authToken = try requireAuthToken()
+        let uid = try requireScanUID(scan)
+        return try await apiClient.ktagByUID(token: authToken, uid: uid)
+    }
+
+    @MainActor
+    func patchKtag(
+        tagId: String,
+        status: KlaritiKtagStatus,
+        label: String?,
+        tagType: KlaritiKtagType
+    ) async throws -> KlaritiKtag {
+        guard isAdmin else { throw KlaritiAPIError.unauthorized }
+        let authToken = try requireAuthToken()
+
+        return try await apiClient.patchKtag(
+            token: authToken,
+            tagId: tagId,
+            status: status,
+            label: normalizedLabel(label),
+            tagType: tagType
+        )
     }
 
     private func persistAuthToken(_ token: String) throws {
@@ -334,6 +359,26 @@ struct KlaritiKtagProvisionResult: Equatable {
         guard let payload else { return nil }
         let trimmed = payload.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private func normalizedLabel(_ label: String?) -> String? {
+        guard let label else { return nil }
+        let trimmed = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private func requireAuthToken() throws -> String {
+        guard let authToken, !authToken.isEmpty else {
+            throw KlaritiAPIError.missingAuthToken
+        }
+        return authToken
+    }
+
+    private func requireScanUID(_ scan: NFCTagScanResult) throws -> String {
+        guard let uid = scan.uid?.trimmingCharacters(in: .whitespacesAndNewlines), !uid.isEmpty else {
+            throw KlaritiAPIError.missingTagUID
+        }
+        return uid
     }
 
     private func localizedMessage(for error: Error) -> String {
