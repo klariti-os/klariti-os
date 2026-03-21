@@ -11,6 +11,7 @@ import Observation
 import FamilyControls
 
 @Observable final class AppStore {
+    private let ktagVerifier = KtagVerifier()
 
     // MARK: - Persisted state
 
@@ -67,16 +68,16 @@ import FamilyControls
     func scanToUnlock() {
         nfcScanner.onVerifyScan = { [weak self] scan in
             guard let self else { return nil }
-            guard let payload = scan.primaryPayload else { return "This tag does not contain a readable Klariti payload." }
-            guard verifyTag(payload) else { return "This doesn't look like a valid Klariti tag." }
-            guard payload == nfcTagPayload else { return "Use the same tag you used to start this session." }
-            if !nfcTagUID.isEmpty {
-                guard let scannedUID = scan.uid else {
-                    return "This tag's UID could not be read on iPhone."
+            do {
+                let verifiedTag = try verifyTag(scan)
+                guard verifiedTag.payload == nfcTagPayload else {
+                    return "Use the same tag you used to start this session."
                 }
-                guard scannedUID == nfcTagUID else {
+                if !nfcTagUID.isEmpty, verifiedTag.normalizedUID != nfcTagUID {
                     return "Use the same physical tag you used to start this session."
                 }
+            } catch {
+                return verificationErrorMessage(from: error)
             }
             return nil
         }
@@ -93,24 +94,33 @@ import FamilyControls
     func startFocus() {
         nfcScanner.onVerifyScan = { [weak self] scan in
             guard let self else { return nil }
-            guard let payload = scan.primaryPayload else { return "This tag does not contain a readable Klariti payload." }
-            return verifyTag(payload) ? nil : "This doesn't look like a valid Klariti tag."
+            do {
+                _ = try verifyTag(scan)
+                return nil
+            } catch {
+                return verificationErrorMessage(from: error)
+            }
         }
         nfcScanner.onTagScanned = { [weak self] scan in
             guard let self else { return }
-            guard let payload = scan.primaryPayload else { return }
-            nfcTagPayload = payload
-            nfcTagUID = scan.uid ?? ""
+            guard let verifiedTag = try? verifyTag(scan) else { return }
+            nfcTagPayload = verifiedTag.payload
+            nfcTagUID = verifiedTag.normalizedUID
             isLocked = true
             screenTime.applyShields(from: activitySelection)
         }
         nfcScanner.beginScan(alert: "Hold iPhone near your Klariti tag to start a focus session.")
     }
 
-    // Checks that payload matches the klariti.so/tag/<message> URL format.
-    func verifyTag(_ payload: String) -> Bool {
-        let pattern = "^(https?://)?klariti\\.so/tag/[A-Za-z0-9._-]+$"
-        return payload.range(of: pattern, options: .regularExpression) != nil
+    func verifyTag(_ scan: NFCTagScanResult) throws -> VerifiedKtag {
+        try ktagVerifier.verify(scan: scan)
+    }
+
+    private func verificationErrorMessage(from error: Error) -> String {
+        if let localizedError = error as? LocalizedError, let message = localizedError.errorDescription {
+            return message
+        }
+        return "This doesn't look like a valid Klariti tag."
     }
 
     func requestAuthAndShowPicker() {
