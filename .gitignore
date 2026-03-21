@@ -32,6 +32,10 @@ coverage
 out/
 build
 dist
+!packages/database/dist/
+!packages/database/dist/**
+!packages/url-class/dist/
+!packages/url-class/dist/**
 
 
 # Debug

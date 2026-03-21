@@ -3,9 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file=../.env src/server.ts",
+    "build:runtime-deps": "pnpm --filter @klariti/database build && pnpm --filter @klariti/url-class build",
+    "build": "pnpm run build:runtime-deps && tsc --noEmit",
+    "dev": "pnpm run build:runtime-deps && tsx watch --env-file=../.env src/server.ts",
     "check-types": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "pnpm run build:runtime-deps && vitest run"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.2",
