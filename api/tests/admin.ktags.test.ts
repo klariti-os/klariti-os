@@ -121,6 +121,139 @@ describe("PATCH /api/admin/ktag/:tag_id", () => {
 
     expect(res.statusCode).toBe(400);
   });
+
+  it("rejects client-supplied revoked_at and stamps it automatically on revoke", async () => {
+    const token = await createAdminToken();
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/admin/ktag/register",
+      headers: authHeader(token),
+      payload: {
+        uid: "04A1B2C3D4E5FD",
+        tag_type: "test-suite",
+      },
+    });
+
+    expect(created.statusCode).toBe(201);
+    const { tag_id } = created.json();
+
+    const forgedTimestamp = await app.inject({
+      method: "PATCH",
+      url: `/api/admin/ktag/${tag_id}`,
+      headers: authHeader(token),
+      payload: {
+        status: "revoked",
+        revoked_at: "2020-01-01T00:00:00.000Z",
+      },
+    });
+
+    expect(forgedTimestamp.statusCode).toBe(400);
+
+    const revoked = await app.inject({
+      method: "PATCH",
+      url: `/api/admin/ktag/${tag_id}`,
+      headers: authHeader(token),
+      payload: {
+        status: "revoked",
+      },
+    });
+
+    expect(revoked.statusCode).toBe(200);
+    const revokedBody = revoked.json();
+    expect(revokedBody.status).toBe("revoked");
+    expect(revokedBody.revoked_at).toBeTypeOf("string");
+    expect(Number.isNaN(Date.parse(revokedBody.revoked_at))).toBe(false);
+
+    const revokedAgain = await app.inject({
+      method: "PATCH",
+      url: `/api/admin/ktag/${tag_id}`,
+      headers: authHeader(token),
+      payload: {
+        status: "revoked",
+        label: "Still Revoked",
+      },
+    });
+
+    expect(revokedAgain.statusCode).toBe(200);
+    expect(revokedAgain.json().revoked_at).toBe(revokedBody.revoked_at);
+
+    const reactivated = await app.inject({
+      method: "PATCH",
+      url: `/api/admin/ktag/${tag_id}`,
+      headers: authHeader(token),
+      payload: {
+        status: "active",
+      },
+    });
+
+    expect(reactivated.statusCode).toBe(200);
+    expect(reactivated.json().status).toBe("active");
+    expect(reactivated.json().revoked_at).toBeNull();
+  });
+});
+
+describe("GET admin ktag lookups", () => {
+  it("returns a ktag when looked up by raw uid", async () => {
+    const token = await createAdminToken();
+    const createRes = await app.inject({
+      method: "POST",
+      url: "/api/admin/ktag/register",
+      headers: authHeader(token),
+      payload: {
+        uid: "04A1B2C3D4E5FA",
+        tag_type: "test-suite",
+      },
+    });
+
+    expect(createRes.statusCode).toBe(201);
+    const created = createRes.json();
+
+    const lookupRes = await app.inject({
+      method: "GET",
+      url: "/api/admin/ktag/uid/04:A1:B2:C3:D4:E5:FA",
+      headers: authHeader(token),
+    });
+
+    expect(lookupRes.statusCode).toBe(200);
+    expect(lookupRes.json()).toMatchObject({
+      tag_id: created.tag_id,
+      uid_hash: created.uid_hash,
+      payload: created.payload,
+      status: "active",
+      tag_type: "test-suite",
+    });
+  });
+
+  it("returns a ktag when looked up by tag_id", async () => {
+    const token = await createAdminToken();
+    const createRes = await app.inject({
+      method: "POST",
+      url: "/api/admin/ktag/register",
+      headers: authHeader(token),
+      payload: {
+        uid: "04A1B2C3D4E5FB",
+        tag_type: "test-suite",
+      },
+    });
+
+    expect(createRes.statusCode).toBe(201);
+    const created = createRes.json();
+
+    const lookupRes = await app.inject({
+      method: "GET",
+      url: `/api/admin/ktag/${created.tag_id}`,
+      headers: authHeader(token),
+    });
+
+    expect(lookupRes.statusCode).toBe(200);
+    expect(lookupRes.json()).toMatchObject({
+      tag_id: created.tag_id,
+      uid_hash: created.uid_hash,
+      payload: created.payload,
+      status: "active",
+      tag_type: "test-suite",
+    });
+  });
 });
 
 describe("GET /api/tag/:message", () => {
