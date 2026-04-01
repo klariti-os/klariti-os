@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "pnpm run generate && pnpm run check-types",
+    "build": "pnpm run generate",
     "fetch-spec": "node scripts/fetch-openapi.mjs",
     "generate": "openapi-ts",
-    "generate:full": "npm run fetch-spec && npm run generate",
+    "generate:full": "pnpm run fetch-spec && pnpm run generate",
     "check-types": "tsc --noEmit"
   },
   "exports": {

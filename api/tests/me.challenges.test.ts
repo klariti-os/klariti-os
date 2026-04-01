@@ -49,9 +49,9 @@ async function inviteFriend(token: string, challengeId: string, userId: string) 
 
 beforeAll(async () => {
   await app.ready();
-  ({ token: tokenA, userId: userAId } = await signUp(app, testEmail("chal-a")));
-  ({ token: tokenB, userId: userBId } = await signUp(app, testEmail("chal-b")));
-  ({ token: tokenC, userId: userCId } = await signUp(app, testEmail("chal-c")));
+  ({ token: tokenA, userId: userAId } = await signUp(app, testEmail("chal-a"), "Owner Alpha"));
+  ({ token: tokenB, userId: userBId } = await signUp(app, testEmail("chal-b"), "Friend Beta"));
+  ({ token: tokenC, userId: userCId } = await signUp(app, testEmail("chal-c"), "Stranger Gamma"));
   await becomeFriends(tokenA, userBId, tokenB);
 });
 
@@ -184,6 +184,49 @@ describe("DELETE /api/me/challenges/:id", () => {
   });
 });
 
+describe("DELETE /api/me/challenges/:id/leave", () => {
+  it("participant can leave a shared challenge", async () => {
+    const { id } = await createChallenge(tokenA, "Leave Test");
+    const inviteRes = await inviteFriend(tokenA, id, userBId);
+    const requestId = inviteRes.json().id;
+
+    const acceptRes = await app.inject({
+      method: "PATCH",
+      url: `/api/me/challenges/requests/${requestId}`,
+      headers: authHeader(tokenB),
+      payload: { action: "accept" },
+    });
+    expect(acceptRes.statusCode).toBe(200);
+
+    const leaveRes = await app.inject({
+      method: "DELETE",
+      url: `/api/me/challenges/${id}/leave`,
+      headers: authHeader(tokenB),
+    });
+    expect(leaveRes.statusCode).toBe(200);
+    expect(leaveRes.json().success).toBe(true);
+
+    const challengesRes = await app.inject({
+      method: "GET",
+      url: "/api/me/challenges",
+      headers: authHeader(tokenB),
+    });
+    expect(challengesRes.statusCode).toBe(200);
+    const challenges = challengesRes.json() as { id: string }[];
+    expect(challenges.find((challenge) => challenge.id === id)).toBeUndefined();
+  });
+
+  it("creator cannot leave their own challenge", async () => {
+    const { id } = await createChallenge(tokenA, "Creator Leave Guard");
+    const res = await app.inject({
+      method: "DELETE",
+      url: `/api/me/challenges/${id}/leave`,
+      headers: authHeader(tokenA),
+    });
+    expect(res.statusCode).toBe(403);
+  });
+});
+
 describe("POST /api/me/challenges/:id/invite", () => {
   it("non-friend invite returns 403", async () => {
     const { id } = await createChallenge(tokenA, "Invite Test");
@@ -307,10 +350,11 @@ describe("PATCH /api/me/challenges/requests/:requestId — accept", () => {
       headers: authHeader(tokenB),
     });
     expect(res.statusCode).toBe(200);
-    const challenges = res.json() as { id: string; participant_status: string }[];
+    const challenges = res.json() as { id: string; participant_status: string; creator_name: string }[];
     const match = challenges.find((c) => c.id === challengeId);
     expect(match).toBeDefined();
     expect(match!.participant_status).toBe("active");
+    expect(match!.creator_name).toBe("Owner Alpha");
   });
 
   it("already-accepted invite cannot be accepted again", async () => {

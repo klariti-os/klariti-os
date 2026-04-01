@@ -27,6 +27,7 @@ export const challengeWithStatusObject = {
   type: "object",
   properties: {
     ...challengeObject.properties,
+    creator_name: { type: "string" },
     participant_status: { type: "string", enum: ["active", "paused", "completed"] },
     joined_at: { type: "string", format: "date-time", nullable: true },
   },
