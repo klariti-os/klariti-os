@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
   db,
+  authUser,
   challengesTable,
   challengeParticipantsTable,
   challengeRequestsTable,
@@ -96,17 +97,24 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       const userId = request.session!.user.id;
       const rows = await db
-        .select()
+        .select({
+          id: challengesTable.id,
+          creator_id: challengesTable.creator_id,
+          creator_name: authUser.name,
+          name: challengesTable.name,
+          goal: challengesTable.goal,
+          ends_at: challengesTable.ends_at,
+          pause_threshold: challengesTable.pause_threshold,
+          created_at: challengesTable.created_at,
+          updated_at: challengesTable.updated_at,
+          participant_status: challengeParticipantsTable.status,
+          joined_at: challengeParticipantsTable.joined_at,
+        })
         .from(challengeParticipantsTable)
         .innerJoin(challengesTable, eq(challengeParticipantsTable.challenge_id, challengesTable.id))
+        .innerJoin(authUser, eq(challengesTable.creator_id, authUser.id))
         .where(eq(challengeParticipantsTable.user_id, userId));
-      return reply.send(
-        rows.map(({ challenges, challenge_participants }) => ({
-          ...challenges,
-          participant_status: challenge_participants.status,
-          joined_at: challenge_participants.joined_at,
-        }))
-      );
+      return reply.send(rows);
     },
   });
 
@@ -208,6 +216,29 @@ export default async function challengesRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.verifySession, ensureChallengeCreator],
     handler: async (request, reply) => {
       await db.delete(challengesTable).where(eq(challengesTable.id, request.challenge!.id));
+      return reply.send({ success: true });
+    },
+  });
+
+  // Leave a challenge (participants only, excluding the creator)
+  fastify.delete("/:id/leave", {
+    schema: {
+      tags: ["Challenges"],
+      security: [{ bearerAuth: [] }],
+      response: { 200: successObject, 401: errorObject, 403: errorObject },
+    },
+    preHandler: [fastify.verifySession, ensureChallengeParticipant],
+    handler: async (request, reply) => {
+      const userId = request.session!.user.id;
+      if (request.challenge!.creator_id === userId) {
+        return reply.status(403).send({ error: "Creator cannot leave their own challenge" });
+      }
+
+      await db.delete(challengeParticipantsTable).where(and(
+        eq(challengeParticipantsTable.challenge_id, request.challenge!.id),
+        eq(challengeParticipantsTable.user_id, userId),
+      ));
+
       return reply.send({ success: true });
     },
   });

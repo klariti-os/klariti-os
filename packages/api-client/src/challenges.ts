@@ -31,6 +31,7 @@ export interface Challenge {
 }
 
 export interface ChallengeWithStatus extends Challenge {
+  creator_name: string;
   participant_status: ParticipantStatus;
   joined_at: string | null;
 }
@@ -88,6 +89,13 @@ export const deleteApiMeChallengesById = (options: { path: ChallengePath }) =>
   client.delete<{ 200: { success: boolean } }, ChallengeErrors>({
     security: bearerAuth,
     url: "/api/me/challenges/{id}",
+    ...options,
+  });
+
+export const deleteApiMeChallengesByIdLeave = (options: { path: ChallengePath }) =>
+  client.delete<{ 200: { success: boolean } }, ChallengeErrors>({
+    security: bearerAuth,
+    url: "/api/me/challenges/{id}/leave",
     ...options,
   });
 

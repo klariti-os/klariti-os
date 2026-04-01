@@ -5,6 +5,7 @@ export { client } from "./client";
 // after running `pnpm generate` in this package.
 // Re-export everything from the generated barrel.
 export * from "./generated";
+export { deleteApiMeChallengesByIdLeave } from "./challenges";
 export type {
   Goal,
   ParticipantStatus,
