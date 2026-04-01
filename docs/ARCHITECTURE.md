@@ -122,7 +122,7 @@ interface Ktag {
   status: "active" | "revoked"
   owner_id?: string | null    // nullable: tag may exist in inventory before assignment
   label?: string
-  tag_type?: string
+  tag_type?: "WALL" | "MOBILE" | "DESK"
   created_at: Date
   revoked_at?: Date
 }
@@ -130,7 +130,17 @@ interface Ktag {
 
 **Ownership model**: `owner_id` uses `ON DELETE SET NULL` so tags return to unassigned inventory if the owning user is removed.
 
-**Issuance model**: all Klariti tag IDs use the `kt_` prefix and are generated server-side. Tag registration happens through `POST /api/admin/ktag/register`. The admin client submits the raw NFC `uid` plus `tag_type`, and the server normalizes and hashes the UID, signs `v<sig_version>|<tag_id>|<uid_hash>` with its private key, generates a friendly two-word label, and writes the resulting message into the payload URL as `https://klariti.so/tag/v<sig_version>.<tag_id>.<signature>`.
+**Issuance model**: all Klariti tag IDs use the `kt_` prefix and are generated server-side. Tag registration happens through `POST /api/admin/ktag/register`. The admin client submits only the raw NFC `uid` plus enum `tag_type`, and the server normalizes and hashes the UID, signs `v<sig_version>|<tag_id>|<uid_hash>` with its private key, generates a friendly two-word label, and writes the resulting message into the payload URL as `https://klariti.so/tag/v<sig_version>.<tag_id>.<signature>`.
+
+**Mutable patch model**: `PATCH /api/admin/ktag/:tag_id` is intentionally narrow and only updates inventory / assignment fields:
+- `status`
+- `label`
+- `tag_type`
+- `owner_id` (including `null` to return a tag to inventory)
+
+Server-managed issuance fields such as `uid_hash`, `payload`, `signature`, and `sig_version` are never client-patchable. `revoked_at` is also server-managed: revoking a tag stamps it automatically, and reactivating a tag clears it.
+
+**Public resolution model**: the web landing flow resolves tags through `GET /api/tag/:message`. The API parses the signed `<message>` from the NFC URL, verifies that it matches a real issued tag, and returns the public-facing tag details needed by `klariti.so/tag/<message>`, including tag name, owner name when assigned, and current `status`.
 
 **Verification model**:
 - Web: the payload URL identifies the issued tag and can route to a Klariti page.
@@ -138,26 +148,42 @@ interface Ktag {
 
 ## iOS app
 
-The iOS companion enforces focus sessions using NFC tags + native Screen Time (FamilyControls). No VPN or proxy required.
+The iOS companion enforces focus sessions using NFC tags + native Screen Time (FamilyControls), and also includes built-in account + admin tooling. No VPN or proxy required.
+
+**Account / role model**:
+- the top-right profile entry routes to sign-in when signed out
+- signed-in users see their profile details
+- admin users see the NFC utility inside the same app, so there is no separate admin app
 
 **Session flow:**
 1. User selects apps to block on first launch
 2. Tap **Start Focus** → scan ktag → apps blocked, session locked to that specific physical tag
 3. To end the session, scan the **same** tag — any other tag is rejected
 
+**Admin NFC utility**:
+- `Provision`: scans a physical tag, registers it through the admin API if needed, recovers the existing record if the UID is already known, compares the live on-tag payload with Klariti's expected payload, and can burn the Klariti URL onto the tag
+- `Patch`: scans a registered tag by UID, loads its existing ktag record, and lets admins edit only `status`, `label`, and `tag_type`
+- `Inspect`: reads the raw iPhone-visible NFC details, including UID / identifier source, NDEF status, capacity, payload, and decoded records
+
+**Write flow note**: provisioning is intentionally a two-session NFC flow on iOS. The app reads first, completes registration or recovery, then starts a write session to burn the Klariti payload if the tag is blank or mismatched.
+
 **Key files:**
 
 ```
 apps/ios/klariti/
   Core/
+    KlaritiAPIClient.swift  # embedded iOS API client for auth + admin tag actions
     NFCScanner.swift        # NFC session handling + payload verification
+    NFCNDEFWriter.swift     # NDEF URL payload writing for provisioning
     ScreenTimeManager.swift # FamilyControls shield management
   Models/
     AppStore.swift          # Observable state + all actions (single source of truth)
   Features/
     Home/HomeView.swift
     Locked/LockedView.swift
+    Profile/ProfileView.swift
     Setup/AppSelectionView.swift
+    Utility/NFCUtilityView.swift
 ```
 
 ## Testing
