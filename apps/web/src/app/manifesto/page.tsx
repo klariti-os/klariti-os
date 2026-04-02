@@ -1,6 +1,5 @@
 import type { Metadata, NextPage } from "next";
 import Image from "next/image";
-import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Manifesto \u2014 Klariti",
@@ -12,9 +11,9 @@ const Manifesto: NextPage = () => {
   return (
     <div className="overflow-x-hidden pb-32">
       {/* ── Full-width banner ────────────────────────────────────── */}
-      <div className="relative mt-0 h-[40vh] w-full overflow-hidden sm:h-[50vh]">
+      <div className="relative -mb-px mt-0 h-[40vh] w-full overflow-hidden sm:h-[50vh]">
         <Image
-          src="/images/image.png"
+          src="/images/euphoria/015.png"
           alt="A calm dusk sky, symbolising clarity and intention"
           fill
           priority
@@ -84,61 +83,8 @@ const Manifesto: NextPage = () => {
           </p>
         </article>
 
-        {/* ── Principles ─────────────────────────────────────────── */}
-        <div className="screen-line-after mt-16" />
-
-        <div className="pt-16">
-          <p className="mb-8 font-mono text-xs uppercase tracking-widest text-muted-foreground">
-            Our Principles
-          </p>
-
-          <div className="space-y-8">
-            {[
-              {
-                num: "01",
-                title: "Wellbeing Over Engagement",
-                text: "Every design decision we make prioritizes your mental health over time spent on screen. We reject dark patterns, addictive loops, and any mechanism that trades your wellbeing for metrics.",
-              },
-              {
-                num: "02",
-                title: "Transparency Always",
-                text: "Every decision our system makes is explainable. You can see why something was filtered, delayed, or reframed. No hidden algorithms, no opaque models\u2014full visibility into how Klariti works on your behalf.",
-              },
-              {
-                num: "03",
-                title: "Agency, Not Restriction",
-                text: "We never take away your ability to choose. Klariti nudges, shapes, and suggests\u2014but you always have the final word. One click to override any decision, always.",
-              },
-              {
-                num: "04",
-                title: "Privacy Is Non-Negotiable",
-                text: "All processing happens locally on your device. We never see your browsing data, never sell it, never store it. Zero tracking, zero telemetry, zero compromise.",
-              },
-              {
-                num: "05",
-                title: "Open By Default",
-                text: "Klariti is and will always be open source. MIT licensed. We believe the tools that protect human agency must be owned by the community, not a corporation.",
-              },
-            ].map((p) => (
-              <div key={p.num} className="flex gap-6">
-                <span className="flex-shrink-0 font-mono text-sm text-muted-foreground/50">
-                  {p.num}
-                </span>
-                <div>
-                  <h3 className="mb-2 text-base font-semibold text-foreground">
-                    {p.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    {p.text}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
+    
         {/* ── Vision ─────────────────────────────────────────────── */}
-        <div className="screen-line-after mt-16" />
 
         <div className="pt-16">
           <article className="space-y-6 font-serif text-xl font-light leading-relaxed text-foreground md:text-2xl">
@@ -162,38 +108,6 @@ const Manifesto: NextPage = () => {
               </em>
             </p>
           </article>
-        </div>
-
-        {/* ── CTA ────────────────────────────────────────────────── */}
-        <div className="mt-16 flex flex-wrap gap-4">
-          <Link
-            href="/join"
-            className="focus-ring inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 font-mono text-xs text-primary-foreground transition-opacity hover:opacity-80"
-          >
-            Join the movement
-            <svg
-              className="h-3.5 w-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M14 5l7 7m0 0l-7 7m7-7H3"
-              />
-            </svg>
-          </Link>
-          <a
-            href="https://github.com/klariti-os"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="focus-ring inline-flex items-center rounded-full border border-border px-6 py-2.5 font-mono text-xs text-foreground transition-colors hover:bg-muted"
-          >
-            View on GitHub
-          </a>
         </div>
       </div>
     </div>
