@@ -46,7 +46,7 @@ const HomePage: NextPage = () => {
         {/* ── Hero ────────────────────────────────────────────────── */}
         <section className="relative h-[100svh] overflow-hidden rounded-3xl border-8 border-white">
           <Image
-            src="/images/euphoria/016.png"
+            src="/images/euphoria/012.png"
             alt=""
             fill
             priority
