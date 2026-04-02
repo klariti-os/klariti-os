@@ -2,6 +2,7 @@ import { type Metadata, type Viewport } from "next"
 
 import "@/styles/globals.css"
 import Navbar from "@/components/Navbar"
+import Footer from "@/components/Footer"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { fontSerif, fontMono, fontSans } from "@/lib/fonts"
 
@@ -43,14 +44,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable}`} suppressHydrationWarning>
-      <head>
-        <link
-          rel="preload"
-          href="https://aho0m5pvydzzhrre.public.blob.vercel-storage.com/klariti-melancholy%20mp4.mp4"
-          as="video"
-          type="video/mp4"
-        />
-      </head>
       <body className="min-h-screen antialiased selection:bg-primary/10">
         <a
           href="#main-content"
@@ -64,6 +57,7 @@ export default function RootLayout({
             <main id="main-content" className="flex-1">
               {children}
             </main>
+            <Footer />
           </div>
         </AuthProvider>
       </body>
