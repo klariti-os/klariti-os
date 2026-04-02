@@ -13,7 +13,7 @@ const Manifesto: NextPage = () => {
       {/* ── Full-width banner ────────────────────────────────────── */}
       <div className="relative -mb-px mt-0 h-[40vh] w-full overflow-hidden sm:h-[50vh]">
         <Image
-          src="/images/euphoria/015.png"
+          src="/images/euphoria/012.png"
           alt="A calm dusk sky, symbolising clarity and intention"
           fill
           priority
