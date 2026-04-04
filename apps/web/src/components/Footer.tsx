@@ -32,7 +32,7 @@ const Footer: React.FC = () => {
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2.5">
                   <Link
-                    href="/join"
+                    href="/auth"
                     className="focus-ring inline-flex items-center rounded-full border border-white/30 bg-white px-4 py-2 text-xs font-medium text-black transition-colors hover:bg-white/90"
                   >
                     Get started
