@@ -4,17 +4,8 @@ import { useState, useEffect } from "react";
 import { NextPage } from "next";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  deleteApiMeChallengesByIdLeave,
-  deleteApiMeChallengesById,
-  getApiMeChallenges,
-  patchApiMeChallengesByIdStatus,
-  postApiMeChallenges,
-  putApiMeChallengesById,
-  type ChallengeWithStatus,
-  type Goal,
-  type ParticipantStatus,
-} from "@klariti/api-client";
+import { api } from "@/lib/api";
+import type { ChallengeWithStatus, Goal, ParticipantStatus } from "@klariti/contracts";
 import { Switch } from "@repo/ui/switch";
 
 interface Intent {
@@ -25,7 +16,7 @@ interface Intent {
   goal: Goal;
   participant_status: ParticipantStatus;
   ends_at: string | null;
-  created_at: string;
+  created_at: string | null;
 }
 
 const goalMeta: Record<Goal, { label: string; description: string }> = {
@@ -68,9 +59,9 @@ const DashboardPage: NextPage = () => {
   const getIntentOwnerLabel = (intent: Intent) => (isIntentOwner(intent) ? "You" : intent.creator_name);
 
   const loadIntents = async () => {
-    const { data, error: apiError } = await getApiMeChallenges();
-    if (apiError || !data) return false;
-    setIntents((data as ChallengeWithStatus[]).map(challengeToIntent));
+    const res = await api.challenges.list();
+    if (res.status !== 200) return false;
+    setIntents((res.body as ChallengeWithStatus[]).map(challengeToIntent));
     return true;
   };
 
@@ -114,8 +105,8 @@ const DashboardPage: NextPage = () => {
       return;
     }
     setIsDeleting(true);
-    const { error: apiError } = await deleteApiMeChallengesById({ path: { id: editingIntent.id } });
-    if (apiError) {
+    const res = await api.challenges.delete({ params: { id: editingIntent.id } });
+    if (res.status !== 200) {
       setError("Failed to delete intent. Please try again.");
     } else {
       await loadIntents();
@@ -136,10 +127,8 @@ const DashboardPage: NextPage = () => {
 
     setIsLeaving(true);
     setError(null);
-    const { error: apiError } = await deleteApiMeChallengesByIdLeave({
-      path: { id: editingIntent.id },
-    });
-    if (apiError) {
+    const res = await api.challenges.leave({ params: { id: editingIntent.id } });
+    if (res.status !== 200) {
       setError("Failed to leave challenge. Please try again.");
     } else {
       await loadIntents();
@@ -162,36 +151,26 @@ const DashboardPage: NextPage = () => {
     const canEditDetails = isIntentOwner(editingIntent);
 
     if (editingIntent && canEditDetails) {
-      const { data, error: apiError } = await putApiMeChallengesById({
-        path: { id: editingIntent.id },
+      const res = await api.challenges.update({
+        params: { id: editingIntent.id },
         body: { name: formName.trim(), goal: formGoal },
       });
-      if (apiError || !data) {
+      if (res.status !== 200) {
         setError("Failed to update intent. Please try again.");
         setIsSubmitting(false);
         return;
       }
-      if (!data.id) {
-        setError("Updated the intent, but the server response was incomplete.");
-        setIsSubmitting(false);
-        return;
-      }
-      challengeId = data.id;
+      challengeId = res.body.id;
     } else if (!editingIntent) {
-      const { data, error: apiError } = await postApiMeChallenges({
+      const res = await api.challenges.create({
         body: { name: formName.trim(), goal: formGoal },
       });
-      if (apiError || !data) {
+      if (res.status !== 200) {
         setError("Failed to create intent. Please try again.");
         setIsSubmitting(false);
         return;
       }
-      if (!data.id) {
-        setError("Created the intent, but the server response was incomplete.");
-        setIsSubmitting(false);
-        return;
-      }
-      challengeId = data.id;
+      challengeId = res.body.id;
     }
 
     const shouldUpdateStatus = editingIntent
@@ -199,11 +178,11 @@ const DashboardPage: NextPage = () => {
       : !formIsActive;
 
     if (challengeId && shouldUpdateStatus) {
-      const { error: statusError } = await patchApiMeChallengesByIdStatus({
-        path: { id: challengeId },
+      const statusRes = await api.challenges.updateStatus({
+        params: { id: challengeId },
         body: { status: formIsActive ? "active" : "paused" },
       });
-      if (statusError) {
+      if (statusRes.status !== 200) {
         setError(editingIntent
           ? "Saved intent details, but failed to update its active state."
           : "Created the intent, but failed to update its active state.");

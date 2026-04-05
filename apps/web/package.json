@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@klariti/api-client": "workspace:*",
+    "@klariti/contracts": "workspace:*",
     "@repo/ui": "workspace:^",
     "@tanstack/query-sync-storage-persister": "^5.90.14",
     "@tanstack/react-query": "^5.90.12",
