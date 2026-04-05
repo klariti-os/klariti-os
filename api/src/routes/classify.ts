@@ -1,32 +1,14 @@
 import { FastifyInstance } from "fastify";
+import type { ClassifyBody } from "@klariti/contracts";
 import { classifyUrl } from "@klariti/url-class";
 
 export default async function classifyRoutes(fastify: FastifyInstance) {
-  fastify.post<{ Body: { url: string } }>("/", {
-    schema: {
-      tags: ["Classify"],
-      security: [{ bearerAuth: [] }],
-      body: {
-        type: "object",
-        required: ["url"],
-        properties: {
-          url: { type: "string" },
-        },
-      },
-      response: {
-        200: {
-          type: "object",
-          properties: {
-            category: { type: "string", nullable: true },
-          },
-        },
-        401: { type: "object", properties: { error: { type: "string" } } },
-      },
-    },
-    preHandler: [fastify.verifySession],
+  fastify.addHook("preHandler", fastify.verifySession);
+
+  fastify.post<{ Body: ClassifyBody }>("/api/classify", {
+    schema: { tags: ["Classify"], security: [{ bearerAuth: [] }], body: { type: "object" } },
     handler: async (request, reply) => {
-      const { url } = request.body;
-      const category = await classifyUrl(url);
+      const category = await classifyUrl(request.body.url);
       return reply.send({ category: category ?? null });
     },
   });

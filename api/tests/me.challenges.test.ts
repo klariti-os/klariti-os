@@ -14,7 +14,7 @@ let userCId: string;
 async function becomeFriends(senderToken: string, receiverId: string, receiverToken: string) {
   const reqRes = await app.inject({
     method: "POST",
-    url: "/api/me/friends/request",
+    url: "/api/me/friends/requests",
     headers: authHeader(senderToken),
     payload: { addressee_id: receiverId },
   });
