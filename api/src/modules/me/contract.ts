@@ -6,8 +6,8 @@ import {
   ChangeEmailResponseSchema,
   ChangePasswordBodySchema,
   ChangePasswordResponseSchema,
-} from "../auth/schemas.ts";
-import { UpdateProfileBodySchema } from "./schemas.ts";
+} from "../auth/schemas.js";
+import { UpdateProfileBodySchema } from "./schemas.js";
 
 const c = initContract();
 

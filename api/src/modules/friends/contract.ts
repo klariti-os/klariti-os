@@ -8,7 +8,7 @@ import {
   SentRequestUserSchema,
   SendFriendRequestBodySchema,
   FriendRequestActionBodySchema,
-} from "./schemas.ts";
+} from "./schemas.js";
 
 const c = initContract();
 

@@ -11,7 +11,7 @@ import {
   InviteToChallengeBodySchema,
   ChallengeRequestActionBodySchema,
   ChallengeStatusBodySchema,
-} from "./schemas.ts";
+} from "./schemas.js";
 
 const c = initContract();
 

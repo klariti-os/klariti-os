@@ -1,14 +1,14 @@
 import { initContract } from "@ts-rest/core";
-import { authContract } from "./modules/auth/contract.ts";
-import { meContract } from "./modules/me/contract.ts";
-import { challengesContract } from "./modules/challenges/contract.ts";
-import { friendsContract } from "./modules/friends/contract.ts";
+import { authContract } from "./modules/auth/contract.js";
+import { meContract } from "./modules/me/contract.js";
+import { challengesContract } from "./modules/challenges/contract.js";
+import { friendsContract } from "./modules/friends/contract.js";
 import {
   ktagsContract,
   adminKtagsContract,
   publicContract,
-} from "./modules/ktags/contract.ts";
-import { classifyContract } from "./modules/classify/contract.ts";
+} from "./modules/ktags/contract.js";
+import { classifyContract } from "./modules/classify/contract.js";
 
 const c = initContract();
 

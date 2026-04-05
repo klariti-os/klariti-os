@@ -1,6 +1,6 @@
 import { initContract } from "@ts-rest/core";
 import { ErrorSchema } from "../common/errors.schemas.js";
-import { ClassifyBodySchema, ClassifyResponseSchema } from "./schemas.ts";
+import { ClassifyBodySchema, ClassifyResponseSchema } from "./schemas.js";
 
 const c = initContract();
 

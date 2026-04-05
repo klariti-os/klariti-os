@@ -7,7 +7,7 @@ import {
   UpdateKtagLabelBodySchema,
   RegisterKtagBodySchema,
   UpdateKtagAdminBodySchema,
-} from "./schemas.ts";
+} from "./schemas.js";
 
 const c = initContract();
 
