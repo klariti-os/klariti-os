@@ -25,9 +25,6 @@
     "@klariti/api#build": {
       "outputs": []
     },
-    "@klariti/api-client#build": {
-      "outputs": ["src/generated/**"]
-    },
     "lint": {
       "dependsOn": ["^lint"]
     },

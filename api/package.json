@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:runtime-deps": "pnpm --filter @klariti/database build && pnpm --filter @klariti/url-class build",
+    "build:runtime-deps": "pnpm --filter @klariti/database build && pnpm --filter @klariti/url-class build && pnpm --filter @klariti/contracts build",
     "build": "pnpm run build:runtime-deps && tsc --noEmit",
     "dev": "pnpm run build:runtime-deps && tsx watch --env-file=../.env src/server.ts",
     "check-types": "tsc --noEmit",
