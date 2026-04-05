@@ -1,15 +1,25 @@
+import Fastify from "fastify";
+import fp from "fastify-plugin";
 import { config } from "./config.js";
-import { buildApp } from "./factory.js";
+import app from "./app.js";
 
-const usePrettyLogger = process.env.NODE_ENV !== "production" && Boolean(process.stdout.isTTY);
-
-const fastify = buildApp({
-  logger: usePrettyLogger
+const fastify = Fastify({
+  routerOptions: {
+    maxParamLength: 1024,
+  },
+  ajv: {
+    customOptions: {
+      removeAdditional: false,
+    },
+  },
+  logger: process.stdout.isTTY
     ? { transport: { target: "pino-pretty" } }
     : true,
 });
 
-async function main() {
+async function init() {
+  await fastify.register(fp(app));
+
   try {
     await fastify.listen({ port: config.port, host: config.host });
   } catch (err) {
@@ -25,6 +35,6 @@ async function main() {
   });
 });
 
-main();
+init();
 
 export default fastify;
