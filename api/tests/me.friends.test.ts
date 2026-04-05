@@ -41,7 +41,7 @@ describe("POST /api/me/friends/request", () => {
   it("cannot friend yourself", async () => {
     const res = await app.inject({
       method: "POST",
-      url: "/api/me/friends/request",
+      url: "/api/me/friends/requests",
       headers: authHeader(tokenA),
       payload: { addressee_id: userAId },
     });
@@ -51,7 +51,7 @@ describe("POST /api/me/friends/request", () => {
   it("sends a friend request", async () => {
     const res = await app.inject({
       method: "POST",
-      url: "/api/me/friends/request",
+      url: "/api/me/friends/requests",
       headers: authHeader(tokenA),
       payload: { addressee_id: userBId },
     });
@@ -65,7 +65,7 @@ describe("POST /api/me/friends/request", () => {
   it("rejects duplicate request", async () => {
     const res = await app.inject({
       method: "POST",
-      url: "/api/me/friends/request",
+      url: "/api/me/friends/requests",
       headers: authHeader(tokenA),
       payload: { addressee_id: userBId },
     });
@@ -211,7 +211,7 @@ describe("DELETE /api/me/friends/requests/:requestId (withdraw)", () => {
     // Send a new request from B to A
     const res = await app.inject({
       method: "POST",
-      url: "/api/me/friends/request",
+      url: "/api/me/friends/requests",
       headers: authHeader(tokenB),
       payload: { addressee_id: userAId },
     });
@@ -250,7 +250,7 @@ describe("DELETE /api/me/friends/requests/:requestId (withdraw)", () => {
   it("sender can re-send a request after withdrawing", async () => {
     const res = await app.inject({
       method: "POST",
-      url: "/api/me/friends/request",
+      url: "/api/me/friends/requests",
       headers: authHeader(tokenB),
       payload: { addressee_id: userAId },
     });

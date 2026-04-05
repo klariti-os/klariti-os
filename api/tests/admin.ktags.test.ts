@@ -26,7 +26,7 @@ describe("POST /api/admin/ktag/register", () => {
 
     const res = await app.inject({
       method: "POST",
-      url: "/api/admin/ktag/register",
+      url: "/api/admin/ktags",
       headers: authHeader(token),
       payload: {
         uid,
@@ -54,7 +54,7 @@ describe("POST /api/admin/ktag/register", () => {
 
     const first = await app.inject({
       method: "POST",
-      url: "/api/admin/ktag/register",
+      url: "/api/admin/ktags",
       headers: authHeader(token),
       payload: {
         uid: "0x04A1B2C3D4E5F7",
@@ -66,7 +66,7 @@ describe("POST /api/admin/ktag/register", () => {
 
     const second = await app.inject({
       method: "POST",
-      url: "/api/admin/ktag/register",
+      url: "/api/admin/ktags",
       headers: authHeader(token),
       payload: {
         uid: "04:A1:B2:C3:D4:E5:F7",
@@ -83,7 +83,7 @@ describe("POST /api/admin/ktag/register", () => {
 
     const res = await app.inject({
       method: "POST",
-      url: "/api/admin/ktag/register",
+      url: "/api/admin/ktags",
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E5F8",
@@ -100,7 +100,7 @@ describe("POST /api/admin/ktag/register", () => {
 
     const res = await app.inject({
       method: "POST",
-      url: "/api/admin/ktag/register",
+      url: "/api/admin/ktags",
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E5FC",
@@ -118,7 +118,7 @@ describe("PATCH /api/admin/ktag/:tag_id", () => {
     const { userId: ownerId } = await signUp(app, testEmail("ktag-owner"), "Owner Person");
     const created = await app.inject({
       method: "POST",
-      url: "/api/admin/ktag/register",
+      url: "/api/admin/ktags",
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E5EE",
@@ -130,7 +130,7 @@ describe("PATCH /api/admin/ktag/:tag_id", () => {
 
     const assigned = await app.inject({
       method: "PATCH",
-      url: `/api/admin/ktag/${created.json().tag_id}`,
+      url: `/api/admin/ktags/${created.json().tag_id}`,
       headers: authHeader(token),
       payload: {
         status: "revoked",
@@ -151,7 +151,7 @@ describe("PATCH /api/admin/ktag/:tag_id", () => {
 
     const unassigned = await app.inject({
       method: "PATCH",
-      url: `/api/admin/ktag/${created.json().tag_id}`,
+      url: `/api/admin/ktags/${created.json().tag_id}`,
       headers: authHeader(token),
       payload: {
         status: "active",
@@ -176,7 +176,7 @@ describe("PATCH /api/admin/ktag/:tag_id", () => {
     const token = await createAdminToken();
     const created = await app.inject({
       method: "POST",
-      url: "/api/admin/ktag/register",
+      url: "/api/admin/ktags",
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E5F9",
@@ -188,7 +188,7 @@ describe("PATCH /api/admin/ktag/:tag_id", () => {
 
     const res = await app.inject({
       method: "PATCH",
-      url: `/api/admin/ktag/${created.json().tag_id}`,
+      url: `/api/admin/ktags/${created.json().tag_id}`,
       headers: authHeader(token),
       payload: {
         payload: "https://klariti.so/tag/forged",
@@ -202,7 +202,7 @@ describe("PATCH /api/admin/ktag/:tag_id", () => {
     const token = await createAdminToken();
     const created = await app.inject({
       method: "POST",
-      url: "/api/admin/ktag/register",
+      url: "/api/admin/ktags",
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E5FD",
@@ -215,7 +215,7 @@ describe("PATCH /api/admin/ktag/:tag_id", () => {
 
     const forgedTimestamp = await app.inject({
       method: "PATCH",
-      url: `/api/admin/ktag/${tag_id}`,
+      url: `/api/admin/ktags/${tag_id}`,
       headers: authHeader(token),
       payload: {
         status: "revoked",
@@ -227,7 +227,7 @@ describe("PATCH /api/admin/ktag/:tag_id", () => {
 
     const revoked = await app.inject({
       method: "PATCH",
-      url: `/api/admin/ktag/${tag_id}`,
+      url: `/api/admin/ktags/${tag_id}`,
       headers: authHeader(token),
       payload: {
         status: "revoked",
@@ -242,7 +242,7 @@ describe("PATCH /api/admin/ktag/:tag_id", () => {
 
     const revokedAgain = await app.inject({
       method: "PATCH",
-      url: `/api/admin/ktag/${tag_id}`,
+      url: `/api/admin/ktags/${tag_id}`,
       headers: authHeader(token),
       payload: {
         status: "revoked",
@@ -255,7 +255,7 @@ describe("PATCH /api/admin/ktag/:tag_id", () => {
 
     const reactivated = await app.inject({
       method: "PATCH",
-      url: `/api/admin/ktag/${tag_id}`,
+      url: `/api/admin/ktags/${tag_id}`,
       headers: authHeader(token),
       payload: {
         status: "active",
@@ -273,7 +273,7 @@ describe("GET admin ktag lookups", () => {
     const token = await createAdminToken();
     const createRes = await app.inject({
       method: "POST",
-      url: "/api/admin/ktag/register",
+      url: "/api/admin/ktags",
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E5FA",
@@ -286,7 +286,7 @@ describe("GET admin ktag lookups", () => {
 
     const lookupRes = await app.inject({
       method: "GET",
-      url: "/api/admin/ktag/uid/04:A1:B2:C3:D4:E5:FA",
+      url: "/api/admin/ktags/uid/04:A1:B2:C3:D4:E5:FA",
       headers: authHeader(token),
     });
 
@@ -304,7 +304,7 @@ describe("GET admin ktag lookups", () => {
     const token = await createAdminToken();
     const createRes = await app.inject({
       method: "POST",
-      url: "/api/admin/ktag/register",
+      url: "/api/admin/ktags",
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E5FB",
@@ -317,7 +317,7 @@ describe("GET admin ktag lookups", () => {
 
     const lookupRes = await app.inject({
       method: "GET",
-      url: `/api/admin/ktag/${created.tag_id}`,
+      url: `/api/admin/ktags/${created.tag_id}`,
       headers: authHeader(token),
     });
 
@@ -339,7 +339,7 @@ describe("GET /api/tag/:message", () => {
 
     const created = await app.inject({
       method: "POST",
-      url: "/api/admin/ktag/register",
+      url: "/api/admin/ktags",
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E600",
@@ -352,7 +352,7 @@ describe("GET /api/tag/:message", () => {
     const createdBody = created.json();
     const assigned = await app.inject({
       method: "PATCH",
-      url: `/api/admin/ktag/${createdBody.tag_id}`,
+      url: `/api/admin/ktags/${createdBody.tag_id}`,
       headers: authHeader(token),
       payload: {
         owner_id: ownerId,
@@ -382,7 +382,7 @@ describe("GET /api/tag/:message", () => {
 
     const created = await app.inject({
       method: "POST",
-      url: "/api/admin/ktag/register",
+      url: "/api/admin/ktags",
       headers: authHeader(token),
       payload: {
         uid: "04A1B2C3D4E601",
@@ -395,7 +395,7 @@ describe("GET /api/tag/:message", () => {
     const createdBody = created.json();
     const revoked = await app.inject({
       method: "PATCH",
-      url: `/api/admin/ktag/${createdBody.tag_id}`,
+      url: `/api/admin/ktags/${createdBody.tag_id}`,
       headers: authHeader(token),
       payload: {
         status: "revoked",
