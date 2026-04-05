@@ -1,6 +1,12 @@
 import { initContract } from "@ts-rest/core";
-import { ErrorSchema, StatusSchema } from "../common/errors.schemas.js";
-import { UserSchema, ChangeEmailBodySchema, ChangePasswordBodySchema } from "../auth/auth.schemas.js";
+import { ErrorSchema } from "../common/errors.schemas.js";
+import {
+  UserSchema,
+  ChangeEmailBodySchema,
+  ChangeEmailResponseSchema,
+  ChangePasswordBodySchema,
+  ChangePasswordResponseSchema,
+} from "../auth/auth.schemas.js";
 import { UpdateProfileBodySchema } from "./me.schemas.js";
 
 const c = initContract();
@@ -27,7 +33,7 @@ export const meContract = c.router({
     method: "POST",
     path: "/api/me/change-email",
     body: ChangeEmailBodySchema,
-    responses: { 200: StatusSchema, 401: ErrorSchema },
+    responses: { 200: ChangeEmailResponseSchema, 400: ErrorSchema, 401: ErrorSchema },
     summary: "Change email address",
     ...sec,
   },
@@ -35,7 +41,7 @@ export const meContract = c.router({
     method: "POST",
     path: "/api/me/change-password",
     body: ChangePasswordBodySchema,
-    responses: { 200: StatusSchema, 401: ErrorSchema },
+    responses: { 200: ChangePasswordResponseSchema, 400: ErrorSchema, 401: ErrorSchema },
     summary: "Change password",
     ...sec,
   },
