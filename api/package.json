@@ -8,8 +8,8 @@
       "default": "./src/client.ts"
     },
     "./contracts": {
-      "types": "./src/contracts/index.ts",
-      "default": "./src/contracts/index.ts"
+      "types": "./src/types.ts",
+      "default": "./src/types.ts"
     }
   },
   "scripts": {
