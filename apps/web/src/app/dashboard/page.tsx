@@ -5,19 +5,8 @@ import { NextPage } from "next";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import type { ChallengeWithStatus, Goal, ParticipantStatus } from "@klariti/api/contracts";
+import type { ChallengeWithStatus, Goal } from "@klariti/api/contracts";
 import { Switch } from "@repo/ui/switch";
-
-interface Intent {
-  id: string;
-  creator_id: string;
-  creator_name: string;
-  name: string;
-  goal: Goal;
-  participant_status: ParticipantStatus;
-  ends_at: string | null;
-  created_at: string | null;
-}
 
 const goalMeta: Record<Goal, { label: string; description: string }> = {
   FOCUS: { label: "Focus", description: "Deep concentration, no distractions" },
@@ -26,24 +15,11 @@ const goalMeta: Record<Goal, { label: string; description: string }> = {
   CASUAL: { label: "Casual", description: "Light browsing, relaxed mode" },
 };
 
-function challengeToIntent(challenge: ChallengeWithStatus): Intent {
-  return {
-    id: challenge.id,
-    creator_id: challenge.creator_id,
-    creator_name: challenge.creator_name,
-    name: challenge.name,
-    goal: challenge.goal,
-    participant_status: challenge.participant_status,
-    ends_at: challenge.ends_at,
-    created_at: challenge.created_at,
-  };
-}
-
 const DashboardPage: NextPage = () => {
   const { user } = useAuth();
 
-  const [intents, setIntents] = useState<Intent[]>([]);
-  const [editingIntent, setEditingIntent] = useState<Intent | null>(null);
+  const [challenges, setChallenges] = useState<ChallengeWithStatus[]>([]);
+  const [editing, setEditing] = useState<ChallengeWithStatus | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
   const [formGoal, setFormGoal] = useState<Goal>("FOCUS");
@@ -55,18 +31,18 @@ const DashboardPage: NextPage = () => {
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isIntentOwner = (intent: Intent | null) => !!intent && intent.creator_id === user?.id;
-  const getIntentOwnerLabel = (intent: Intent) => (isIntentOwner(intent) ? "You" : intent.creator_name);
+  const isOwner = (c: ChallengeWithStatus | null) => !!c && c.creator_id === user?.id;
+  const ownerLabel = (c: ChallengeWithStatus) => (isOwner(c) ? "You" : c.creator_name);
 
-  const loadIntents = async () => {
+  const loadChallenges = async () => {
     const res = await api.challenges.list();
     if (res.status !== 200) return false;
-    setIntents((res.body as ChallengeWithStatus[]).map(challengeToIntent));
+    setChallenges(res.body as ChallengeWithStatus[]);
     return true;
   };
 
   const openCreate = () => {
-    setEditingIntent(null);
+    setEditing(null);
     setFormName("");
     setFormGoal("FOCUS");
     setFormIsActive(false);
@@ -76,11 +52,11 @@ const DashboardPage: NextPage = () => {
     setShowForm(true);
   };
 
-  const openEdit = (intent: Intent) => {
-    setEditingIntent(intent);
-    setFormName(intent.name);
-    setFormGoal(intent.goal);
-    setFormIsActive(intent.participant_status === "active");
+  const openEdit = (c: ChallengeWithStatus) => {
+    setEditing(c);
+    setFormName(c.name);
+    setFormGoal(c.goal);
+    setFormIsActive(c.participant_status === "active");
     setConfirmDelete(false);
     setConfirmLeave(false);
     setError(null);
@@ -89,57 +65,48 @@ const DashboardPage: NextPage = () => {
 
   const closeForm = () => {
     setShowForm(false);
-    setEditingIntent(null);
+    setEditing(null);
     setConfirmDelete(false);
     setConfirmLeave(false);
     setError(null);
   };
 
   const handleDelete = async () => {
-    if (!editingIntent || !isIntentOwner(editingIntent)) {
-      setError("Only the creator can delete this intent.");
+    if (!editing || !isOwner(editing)) {
+      setError("Only the creator can delete this challenge.");
       return;
     }
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
+    if (!confirmDelete) { setConfirmDelete(true); return; }
     setIsDeleting(true);
-    const res = await api.challenges.delete({ params: { id: editingIntent.id } });
+    const res = await api.challenges.delete({ params: { id: editing.id } });
     if (res.status !== 200) {
-      setError("Failed to delete intent. Please try again.");
+      setError("Failed to delete challenge. Please try again.");
     } else {
-      await loadIntents();
+      await loadChallenges();
       closeForm();
     }
     setIsDeleting(false);
   };
 
   const handleLeave = async () => {
-    if (!editingIntent || isIntentOwner(editingIntent)) {
+    if (!editing || isOwner(editing)) {
       setError("Only participants can leave a shared challenge.");
       return;
     }
-    if (!confirmLeave) {
-      setConfirmLeave(true);
-      return;
-    }
-
+    if (!confirmLeave) { setConfirmLeave(true); return; }
     setIsLeaving(true);
     setError(null);
-    const res = await api.challenges.leave({ params: { id: editingIntent.id } });
+    const res = await api.challenges.leave({ params: { id: editing.id } });
     if (res.status !== 200) {
       setError("Failed to leave challenge. Please try again.");
     } else {
-      await loadIntents();
+      await loadChallenges();
       closeForm();
     }
     setIsLeaving(false);
   };
 
-  useEffect(() => {
-    void loadIntents();
-  }, []);
+  useEffect(() => { void loadChallenges(); }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -147,34 +114,33 @@ const DashboardPage: NextPage = () => {
     setIsSubmitting(true);
     setError(null);
 
-    let challengeId: string | null = editingIntent?.id ?? null;
-    const canEditDetails = isIntentOwner(editingIntent);
+    let challengeId: string | null = editing?.id ?? null;
 
-    if (editingIntent && canEditDetails) {
+    if (editing && isOwner(editing)) {
       const res = await api.challenges.update({
-        params: { id: editingIntent.id },
+        params: { id: editing.id },
         body: { name: formName.trim(), goal: formGoal },
       });
       if (res.status !== 200) {
-        setError("Failed to update intent. Please try again.");
+        setError("Failed to update challenge. Please try again.");
         setIsSubmitting(false);
         return;
       }
       challengeId = res.body.id;
-    } else if (!editingIntent) {
+    } else if (!editing) {
       const res = await api.challenges.create({
         body: { name: formName.trim(), goal: formGoal },
       });
       if (res.status !== 200) {
-        setError("Failed to create intent. Please try again.");
+        setError("Failed to create challenge. Please try again.");
         setIsSubmitting(false);
         return;
       }
       challengeId = res.body.id;
     }
 
-    const shouldUpdateStatus = editingIntent
-      ? (editingIntent.participant_status === "active") !== formIsActive
+    const shouldUpdateStatus = editing
+      ? (editing.participant_status === "active") !== formIsActive
       : !formIsActive;
 
     if (challengeId && shouldUpdateStatus) {
@@ -183,16 +149,16 @@ const DashboardPage: NextPage = () => {
         body: { status: formIsActive ? "active" : "paused" },
       });
       if (statusRes.status !== 200) {
-        setError(editingIntent
-          ? "Saved intent details, but failed to update its active state."
-          : "Created the intent, but failed to update its active state.");
-        await loadIntents();
+        setError(editing
+          ? "Saved details, but failed to update active state."
+          : "Created challenge, but failed to update active state.");
+        await loadChallenges();
         setIsSubmitting(false);
         return;
       }
     }
 
-    await loadIntents();
+    await loadChallenges();
     closeForm();
     setIsSubmitting(false);
   };
@@ -211,11 +177,10 @@ const DashboardPage: NextPage = () => {
             Welcome back{user ? `, ${user.name}` : ""}
           </h1>
           <p className="max-w-md text-sm text-muted-foreground leading-relaxed">
-            Manage your intents and track your digital wellness progress.
+            Manage your challenges and track your digital wellness progress.
           </p>
         </header>
 
-        {/* Create Intent Modal */}
         {showForm && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-6 backdrop-blur-sm"
@@ -224,7 +189,7 @@ const DashboardPage: NextPage = () => {
             <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="font-serif text-xl text-foreground">
-                  {editingIntent ? "Edit Intent" : "New Intent"}
+                  {editing ? "Edit Challenge" : "New Challenge"}
                 </h2>
                 <button
                   type="button"
@@ -236,22 +201,22 @@ const DashboardPage: NextPage = () => {
                 </button>
               </div>
 
-              {editingIntent && (
+              {editing && (
                 <div className="mb-5 flex items-center justify-between rounded-xl border border-border bg-background/60 px-3 py-2.5">
                   <div>
                     <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
                       Owner
                     </p>
-                    <p className="text-sm text-foreground">{getIntentOwnerLabel(editingIntent)}</p>
+                    <p className="text-sm text-foreground">{ownerLabel(editing)}</p>
                   </div>
                   <span
                     className={`rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] ${
-                      isIntentOwner(editingIntent)
+                      isOwner(editing)
                         ? "border border-foreground/10 bg-foreground/[0.04] text-foreground"
                         : "border border-border text-muted-foreground"
                     }`}
                   >
-                    {isIntentOwner(editingIntent) ? "Your intent" : "Shared"}
+                    {isOwner(editing) ? "Your challenge" : "Shared"}
                   </span>
                 </div>
               )}
@@ -267,7 +232,7 @@ const DashboardPage: NextPage = () => {
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder="e.g. No social media after 9pm"
                     className="focus-ring w-full rounded-lg border border-border bg-background px-4 py-2.5 font-mono text-sm text-foreground placeholder:text-muted-foreground/50"
-                    disabled={!!editingIntent && !isIntentOwner(editingIntent)}
+                    disabled={!!editing && !isOwner(editing)}
                     autoFocus
                   />
                 </div>
@@ -282,12 +247,12 @@ const DashboardPage: NextPage = () => {
                         key={goal}
                         type="button"
                         onClick={() => setFormGoal(goal)}
-                        disabled={!!editingIntent && !isIntentOwner(editingIntent)}
+                        disabled={!!editing && !isOwner(editing)}
                         className={`focus-ring rounded-xl border p-3 text-left transition-colors ${
                           formGoal === goal
                             ? "border-primary bg-primary/5 text-foreground"
                             : "border-border text-muted-foreground hover:border-foreground/40"
-                        } ${editingIntent && !isIntentOwner(editingIntent) ? "cursor-not-allowed opacity-50" : ""}`}
+                        } ${editing && !isOwner(editing) ? "cursor-not-allowed opacity-50" : ""}`}
                       >
                         <p className="mb-0.5 font-mono text-xs font-medium uppercase tracking-wide">
                           {goalMeta[goal].label}
@@ -303,7 +268,7 @@ const DashboardPage: NextPage = () => {
                 <div className="flex items-center justify-between rounded-xl border border-border p-3">
                   <div>
                     <p className="font-mono text-xs font-medium uppercase tracking-wide text-foreground">Active</p>
-                    <p className="text-[11px] text-muted-foreground">Enable this intent now</p>
+                    <p className="text-[11px] text-muted-foreground">Enable this challenge now</p>
                   </div>
                   <Switch checked={formIsActive} onCheckedChange={setFormIsActive} />
                 </div>
@@ -312,7 +277,7 @@ const DashboardPage: NextPage = () => {
                   <p className="text-xs text-[var(--destructive)]">{error}</p>
                 )}
 
-                {editingIntent && !isIntentOwner(editingIntent) && (
+                {editing && !isOwner(editing) && (
                   <div className="space-y-3">
                     <p className="text-[11px] text-muted-foreground">
                       Only the creator can rename or delete this challenge. You can still toggle your own active status or leave it entirely.
@@ -332,7 +297,7 @@ const DashboardPage: NextPage = () => {
                   </div>
                 )}
 
-                {editingIntent && isIntentOwner(editingIntent) && (
+                {editing && isOwner(editing) && (
                   <div className="pt-1">
                     <button
                       type="button"
@@ -344,7 +309,7 @@ const DashboardPage: NextPage = () => {
                           : "border-[var(--destructive)]/30 text-[var(--destructive)] hover:border-[var(--destructive)] hover:bg-[var(--destructive)]/5"
                       }`}
                     >
-                      {isDeleting ? "Deleting…" : confirmDelete ? "Confirm Delete" : "Delete Intent"}
+                      {isDeleting ? "Deleting…" : confirmDelete ? "Confirm Delete" : "Delete Challenge"}
                     </button>
                   </div>
                 )}
@@ -362,7 +327,7 @@ const DashboardPage: NextPage = () => {
                     disabled={isSubmitting || isLeaving || !formName.trim()}
                     className="focus-ring flex-1 rounded-full border border-primary bg-primary py-2 font-mono text-xs uppercase tracking-wide text-primary-foreground transition-opacity hover:opacity-80 disabled:opacity-40"
                   >
-                    {isSubmitting ? "Saving…" : editingIntent ? (isIntentOwner(editingIntent) ? "Save" : "Update Status") : "Create"}
+                    {isSubmitting ? "Saving…" : editing ? (isOwner(editing) ? "Save" : "Update Status") : "Create"}
                   </button>
                 </div>
               </form>
@@ -372,52 +337,52 @@ const DashboardPage: NextPage = () => {
 
         <section className="rounded-2xl border border-border bg-card p-6">
           <div className="mb-5 flex items-center justify-between">
-            <h2 className="font-serif text-xl text-foreground">Intents</h2>
+            <h2 className="font-serif text-xl text-foreground">Challenges</h2>
             <button
               type="button"
               onClick={openCreate}
               className="focus-ring rounded-full border border-primary bg-primary px-4 py-1.5 font-mono text-[11px] uppercase tracking-wide text-primary-foreground transition-opacity hover:opacity-80"
             >
-              + New Intent
+              + New Challenge
             </button>
           </div>
 
-          {intents.length === 0 ? (
+          {challenges.length === 0 ? (
             <div className="flex items-center justify-center rounded-xl border border-dashed border-border py-10">
-              <p className="text-sm text-muted-foreground">No intents yet</p>
+              <p className="text-sm text-muted-foreground">No challenges yet</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {intents.map((intent) => (
+              {challenges.map((c) => (
                 <button
-                  key={intent.id}
+                  key={c.id}
                   type="button"
-                  onClick={() => openEdit(intent)}
+                  onClick={() => openEdit(c)}
                   className="focus-ring flex w-full flex-col gap-2 rounded-xl border border-border p-4 text-left transition-colors hover:border-foreground/40 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="space-y-1">
-                    <p className="text-sm text-foreground">{intent.name}</p>
+                    <p className="text-sm text-foreground">{c.name}</p>
                     <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                       <span className="font-mono uppercase tracking-[0.18em] text-muted-foreground/70">
                         Owner
                       </span>
-                      <span>{getIntentOwnerLabel(intent)}</span>
+                      <span>{ownerLabel(c)}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="rounded-full border border-border px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                      {goalMeta[intent.goal].label}
+                      {goalMeta[c.goal].label}
                     </span>
                     <span
                       className={`rounded-full px-2 py-1 font-mono text-[10px] uppercase tracking-wider ${
-                        isIntentOwner(intent)
+                        isOwner(c)
                           ? "border border-foreground/10 bg-foreground/[0.04] text-foreground"
                           : "border border-border text-muted-foreground"
                       }`}
                     >
-                      {isIntentOwner(intent) ? "Owner" : "Shared"}
+                      {isOwner(c) ? "Owner" : "Shared"}
                     </span>
-                    {intent.participant_status === "active" && (
+                    {c.participant_status === "active" && (
                       <span className="rounded-full bg-[var(--success)]/10 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-[var(--success)]">
                         Active
                       </span>
