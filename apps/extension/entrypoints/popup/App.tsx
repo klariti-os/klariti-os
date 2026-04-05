@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { client, getApiMeChallenges, type ChallengeWithStatus } from "@klariti/api-client";
+import { createApiClient, type ChallengeWithStatus } from "@klariti/contracts";
 import "./style.css";
 
 const API_URL = "http://localhost:4200";
 const WEB_URL = "http://localhost:3001";
+
+const api = createApiClient({ baseUrl: API_URL });
 
 interface User {
   id: string;
@@ -41,16 +43,15 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
-    client.setConfig({ baseUrl: API_URL, credentials: "include" });
 
     fetch(`${API_URL}/api/auth/get-session`, { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then(async (data) => {
         if (data?.user?.id && !cancelled) {
           setUser(data.user);
-          const { data: challengeData } = await getApiMeChallenges();
-          if (challengeData && !cancelled) {
-            setIntents((challengeData as ChallengeWithStatus[]).map(challengeToIntent));
+          const res = await api.challenges.list();
+          if (res.status === 200 && !cancelled) {
+            setIntents((res.body as ChallengeWithStatus[]).map(challengeToIntent));
           }
         }
       })
@@ -68,9 +69,9 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     const interval = setInterval(async () => {
-      const { data } = await getApiMeChallenges();
-      if (data) {
-        setIntents((data as ChallengeWithStatus[]).map(challengeToIntent));
+      const res = await api.challenges.list();
+      if (res.status === 200) {
+        setIntents((res.body as ChallengeWithStatus[]).map(challengeToIntent));
       }
     }, 500);
     return () => clearInterval(interval);
