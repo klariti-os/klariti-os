@@ -1,5 +1,5 @@
 import { config } from "./config.js";
-import { buildApp } from "./app.js";
+import { buildApp } from "./factory.js";
 
 const usePrettyLogger = process.env.NODE_ENV !== "production" && Boolean(process.stdout.isTTY);
 
@@ -26,3 +26,5 @@ async function main() {
 });
 
 main();
+
+export default fastify;

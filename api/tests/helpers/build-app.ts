@@ -1,4 +1,4 @@
-import { buildApp as createApp } from "../../src/app.js";
+import { buildApp as createApp } from "../../src/factory.js";
 
 export function buildApp() {
   return createApp({
