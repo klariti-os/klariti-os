@@ -8,9 +8,8 @@ import {
   eq,
   and,
   ne,
-  or,
 } from "@klariti/database";
-import type { CreateChallengeBody, UpdateChallengeBody } from "@klariti/contracts";
+import type { CreateChallengeBody, UpdateChallengeBody } from "./schemas.js";
 
 export const challengesRepository = {
   listForUser: (userId: string) =>

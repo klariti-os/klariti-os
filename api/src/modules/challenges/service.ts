@@ -1,5 +1,5 @@
-import type { CreateChallengeBody, UpdateChallengeBody } from "@klariti/contracts";
-import { challengesRepository } from "../repositories/challenges.repository.js";
+import type { CreateChallengeBody, UpdateChallengeBody } from "./schemas.js";
+import { challengesRepository } from "./repository.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

@@ -1,6 +1,6 @@
 import { createHash, createPrivateKey, randomBytes, sign } from "node:crypto";
 import { adjectives, animals, uniqueNamesGenerator } from "unique-names-generator";
-import { config } from "../config.js";
+import { config } from "../../config.js";
 
 const TAG_ID_PREFIX = "kt_";
 const uidFormattingPattern = /[\s:-]/g;

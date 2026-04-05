@@ -1,10 +1,14 @@
-import { friendsRepository } from "../repositories/friends.repository.js";
+import { friendsRepository } from "./repository.js";
 
 type User = { id: string; name: string; email: string; image: string | null; createdAt: Date };
 
-function formatFriend(friendship: { id: string; user_a_id: string; user_b_id: string }, userId: string, users: User[]) {
+function formatFriend(
+  friendship: { id: string; user_a_id: string; user_b_id: string },
+  userId: string,
+  users: User[],
+) {
   const friendId = friendship.user_a_id === userId ? friendship.user_b_id : friendship.user_a_id;
-  const user = users.find((u) => u.id === friendId)!;
+  const user = users.find((value) => value.id === friendId)!;
   return {
     friendship_id: friendship.id,
     id: user.id,
@@ -19,20 +23,22 @@ export const friendsService = {
   async listFriends(userId: string) {
     const friendships = await friendsRepository.listActiveFriendships(userId);
     if (friendships.length === 0) return [];
-    const otherIds = friendships.map((f) => f.user_a_id === userId ? f.user_b_id : f.user_a_id);
+    const otherIds = friendships.map((friendship) =>
+      friendship.user_a_id === userId ? friendship.user_b_id : friendship.user_a_id,
+    );
     const users = await friendsRepository.findUsersByIds(otherIds);
-    return friendships.map((f) => formatFriend(f, userId, users as User[]));
+    return friendships.map((friendship) => formatFriend(friendship, userId, users as User[]));
   },
 
   async listSentRequests(userId: string) {
     const requests = await friendsRepository.listSentRequests(userId);
     if (requests.length === 0) return [];
-    const users = await friendsRepository.findUsersByIds(requests.map((r) => r.to_id));
-    return requests.map((r) => {
-      const user = (users as User[]).find((u) => u.id === r.to_id)!;
-      const status = r.status === "withdrawn" ? "withdrawn" : "pending";
+    const users = await friendsRepository.findUsersByIds(requests.map((request) => request.to_id));
+    return requests.map((request) => {
+      const user = (users as User[]).find((value) => value.id === request.to_id)!;
+      const status = request.status === "withdrawn" ? "withdrawn" : "pending";
       return {
-        request_id: r.id,
+        request_id: request.id,
         status: status as "pending" | "withdrawn",
         id: user.id,
         name: user.name,
@@ -46,12 +52,12 @@ export const friendsService = {
   async listReceivedRequests(userId: string) {
     const requests = await friendsRepository.listReceivedRequests(userId);
     if (requests.length === 0) return [];
-    const users = await friendsRepository.findUsersByIds(requests.map((r) => r.from_id));
-    return requests.map((r) => {
-      const user = (users as User[]).find((u) => u.id === r.from_id)!;
+    const users = await friendsRepository.findUsersByIds(requests.map((request) => request.from_id));
+    return requests.map((request) => {
+      const user = (users as User[]).find((value) => value.id === request.from_id)!;
       return {
-        request_id: r.id,
-        status: r.status,
+        request_id: request.id,
+        status: request.status,
         id: user.id,
         name: user.name,
         email: user.email,
@@ -71,15 +77,20 @@ export const friendsService = {
     const [existing] = await friendsRepository.findPendingRequest(fromId, toId);
     if (existing) return { error: "A pending request already exists" as const };
 
-    const [req] = await friendsRepository.createRequest(fromId, toId);
-    return { data: req };
+    const [request] = await friendsRepository.createRequest(fromId, toId);
+    return { data: request };
   },
 
   async respondToRequest(requestId: string, userId: string, action: "accept" | "decline") {
-    const [req] = await friendsRepository.findPendingRequestById(requestId);
-    if (!req || req.to_id !== userId) return { error: "Not found or not the recipient" as const };
+    const [request] = await friendsRepository.findPendingRequestById(requestId);
+    if (!request || request.to_id !== userId) {
+      return { error: "Not found or not the recipient" as const };
+    }
 
-    const [updated] = await friendsRepository.updateRequest(requestId, action === "accept" ? "accepted" : "declined");
+    const [updated] = await friendsRepository.updateRequest(
+      requestId,
+      action === "accept" ? "accepted" : "declined",
+    );
 
     if (action === "accept") {
       const [userA, userB] = updated.from_id < updated.to_id
@@ -92,9 +103,11 @@ export const friendsService = {
   },
 
   async withdrawRequest(requestId: string, userId: string) {
-    const [req] = await friendsRepository.findRequestById(requestId);
-    if (!req || req.from_id !== userId) return { error: "Not found or not the sender" as const };
-    if (req.status !== "pending") return { error: "Request is no longer pending" as const };
+    const [request] = await friendsRepository.findRequestById(requestId);
+    if (!request || request.from_id !== userId) {
+      return { error: "Not found or not the sender" as const };
+    }
+    if (request.status !== "pending") return { error: "Request is no longer pending" as const };
     const [updated] = await friendsRepository.updateRequest(requestId, "withdrawn");
     return { data: updated };
   },

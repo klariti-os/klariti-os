@@ -1,5 +1,5 @@
 import { db, authUser, ktagsTable, eq, and } from "@klariti/database";
-import type { KtagType } from "@klariti/contracts";
+import type { KtagType } from "./schemas.js";
 
 export const ktagsRepository = {
   listByOwner: (ownerId: string) =>
