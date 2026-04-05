@@ -3,7 +3,7 @@ import { FastifyInstance } from "fastify";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { generateOpenApi } from "@ts-rest/open-api";
-import { contract } from "../api.contracts.js";
+import { contract } from "../api.contract.js";
 
 const openApiDocument = generateOpenApi(
   contract,

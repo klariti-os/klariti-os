@@ -1,5 +1,5 @@
 import { initClient, type InitClientArgs } from "@ts-rest/core";
-import { contract } from "./api.contracts.js";
+import { contract } from "./api.contract.js";
 
 export type ApiClientArgs = Pick<InitClientArgs, "baseUrl" | "baseHeaders" | "credentials">;
 
