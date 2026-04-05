@@ -3,10 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:runtime-deps": "pnpm --filter @klariti/database build && pnpm --filter @klariti/url-class build",
+    "build:runtime-deps": "pnpm --filter @klariti/database build && pnpm --filter @klariti/url-class build && pnpm --filter @klariti/contracts build",
     "build": "pnpm run build:runtime-deps && tsc --noEmit",
     "dev": "pnpm run build:runtime-deps && tsx watch --env-file=../.env src/server.ts",
-    "generate:openapi": "pnpm run build:runtime-deps && node --env-file=../.env --import tsx ./scripts/generate-openapi.ts",
     "check-types": "tsc --noEmit",
     "test": "pnpm run build:runtime-deps && vitest run"
   },
@@ -15,6 +14,7 @@
     "@fastify/formbody": "^8.0.2",
     "@fastify/swagger": "^9.5.0",
     "@fastify/swagger-ui": "^5.2.2",
+    "@klariti/contracts": "workspace:*",
     "@klariti/database": "workspace:*",
     "@klariti/url-class": "workspace:*",
     "better-auth": "^1.2.0",

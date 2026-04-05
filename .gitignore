@@ -49,6 +49,6 @@ yarn-error.log*
 
 
 # ios 
-Auth*
+/apps/ios/Auth*
 .swift-module-cache
 .env*.local

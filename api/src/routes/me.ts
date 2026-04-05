@@ -1,33 +1,17 @@
 import { FastifyInstance } from "fastify";
-import { toWebHeaders } from "../utils/headers.js";
+import type { UpdateProfileBody, ChangeEmailBody, ChangePasswordBody } from "@klariti/contracts";
 import { resolveStatus, resolveMessage } from "../utils/errors.js";
-import { errorObject } from "../schemas/shared.schema.js";
-import { userObject } from "../schemas/user.schema.js";
-import { updateProfileBody } from "../schemas/user.schema.js";
-import { changeEmailBody, changePasswordBody } from "../schemas/auth.schema.js";
+import { toWebHeaders } from "../utils/headers.js";
 
 export default async function meRoutes(fastify: FastifyInstance) {
-  // ── GET / ─ current user profile ──────────────────────────────────────────
-  fastify.get("/", {
-    schema: {
-      tags: ["Me"],
-      security: [{ bearerAuth: [] }],
-      response: { 200: userObject, 401: errorObject },
-    },
+  fastify.get("/api/me", {
+    schema: { tags: ["Me"], security: [{ bearerAuth: [] }] },
     preHandler: [fastify.verifySession],
-    handler: async (request, reply) => {
-      return reply.send(request.session!.user);
-    },
+    handler: async (request, reply) => reply.send(request.session!.user),
   });
 
-  // ── PATCH / ─ update name / image ─────────────────────────────────────────
-  fastify.patch<{ Body: { name?: string; image?: string | null } }>("/", {
-    schema: {
-      tags: ["Me"],
-      security: [{ bearerAuth: [] }],
-      body: updateProfileBody,
-      response: { 200: userObject, 401: errorObject },
-    },
+  fastify.patch<{ Body: UpdateProfileBody }>("/api/me", {
+    schema: { tags: ["Me"], security: [{ bearerAuth: [] }], body: { type: "object" } },
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
       const headers = toWebHeaders(request.headers);
@@ -41,17 +25,8 @@ export default async function meRoutes(fastify: FastifyInstance) {
     },
   });
 
-  // ── POST /change-email ────────────────────────────────────────────────────
-  fastify.post<{ Body: { newEmail: string } }>("/change-email", {
-    schema: {
-      tags: ["Me"],
-      security: [{ bearerAuth: [] }],
-      body: changeEmailBody,
-      response: {
-        200: { type: "object", properties: { status: { type: "boolean" } } },
-        401: errorObject,
-      },
-    },
+  fastify.post<{ Body: ChangeEmailBody }>("/api/me/change-email", {
+    schema: { tags: ["Me"], security: [{ bearerAuth: [] }], body: { type: "object" } },
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
       const headers = toWebHeaders(request.headers);
@@ -64,17 +39,8 @@ export default async function meRoutes(fastify: FastifyInstance) {
     },
   });
 
-  // ── POST /change-password ─────────────────────────────────────────────────
-  fastify.post<{ Body: { currentPassword: string; newPassword: string } }>("/change-password", {
-    schema: {
-      tags: ["Me"],
-      security: [{ bearerAuth: [] }],
-      body: changePasswordBody,
-      response: {
-        200: { type: "object", properties: { status: { type: "boolean" } } },
-        401: errorObject,
-      },
-    },
+  fastify.post<{ Body: ChangePasswordBody }>("/api/me/change-password", {
+    schema: { tags: ["Me"], security: [{ bearerAuth: [] }], body: { type: "object" } },
     preHandler: [fastify.verifySession],
     handler: async (request, reply) => {
       const headers = toWebHeaders(request.headers);

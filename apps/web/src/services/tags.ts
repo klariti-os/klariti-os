@@ -1,11 +1,9 @@
 import "server-only";
 
+import { createApiClient } from "@klariti/contracts";
 import API_BASE from "@/lib/configs/api";
-import { client, getApiTagByMessage } from "@klariti/api-client";
 
-client.setConfig({
-  baseUrl: API_BASE,
-});
+const serverApi = createApiClient({ baseUrl: API_BASE });
 
 export type PublicTagDetails = {
   tagId: string;
@@ -19,22 +17,18 @@ export async function getPublicTagDetails(message: string): Promise<PublicTagDet
 
   if (!trimmedMessage) return null;
 
-  const { data, error, response } = await getApiTagByMessage({
-    path: { message: trimmedMessage },
-  });
+  const res = await serverApi.public.getTag({ params: { message: trimmedMessage } });
 
-  if (response?.status === 404) {
-    return null;
-  }
+  if (res.status === 404) return null;
 
-  if (error || !data?.tag_id || !data.tag_name || !data.status) {
+  if (res.status !== 200 || !res.body.tag_id || !res.body.tag_name || !res.body.status) {
     throw new Error("Failed to load public tag details.");
   }
 
   return {
-    tagId: data.tag_id,
-    tagName: data.tag_name,
-    ownerName: data.owner_name ?? null,
-    status: data.status,
+    tagId: res.body.tag_id,
+    tagName: res.body.tag_name,
+    ownerName: res.body.owner_name ?? null,
+    status: res.body.status,
   };
 }

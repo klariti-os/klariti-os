@@ -3,11 +3,10 @@ import formbody from "@fastify/formbody";
 import authPlugin from "../../src/plugins/auth.js";
 import authRoutes from "../../src/routes/auth.js";
 import meRoutes from "../../src/routes/me.js";
-import meKtagsRoutes from "../../src/routes/me.ktags.js";
-import meChallengesRoutes from "../../src/routes/me.challenges.js";
-import meFriendsRoutes from "../../src/routes/me.friends.js";
-import adminKtagsRoutes from "../../src/routes/admin.ktags.js";
-import publicTagRoutes from "../../src/routes/public.tag.js";
+import challengesRoutes from "../../src/routes/challenges.js";
+import friendsRoutes from "../../src/routes/friends.js";
+import ktagsRoutes from "../../src/routes/ktags.js";
+import classifyRoutes from "../../src/routes/classify.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -24,11 +23,10 @@ export function buildApp() {
   app.register(formbody);
   app.register(authPlugin);
   app.register(authRoutes);
-  app.register(meRoutes, { prefix: "/api/me" });
-  app.register(meChallengesRoutes, { prefix: "/api/me/challenges" });
-  app.register(meFriendsRoutes, { prefix: "/api/me/friends" });
-  app.register(meKtagsRoutes, { prefix: "/api/me/ktags" });
-  app.register(adminKtagsRoutes, { prefix: "/api/admin/ktag" });
-  app.register(publicTagRoutes, { prefix: "/api/tag" });
+  app.register(meRoutes);
+  app.register(challengesRoutes);
+  app.register(friendsRoutes);
+  app.register(ktagsRoutes);
+  app.register(classifyRoutes);
   return app;
 }
