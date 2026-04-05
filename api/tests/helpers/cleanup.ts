@@ -1,11 +1,13 @@
 import { db, authUser, inArray, ktagsTable, like } from "@klariti/database";
-import { hashKtagUid } from "../../src/lib/ktag-issuance.js";
+import { hashKtagUid } from "../../src/modules/ktags/service.js";
 
 const testKtagUidHashes = [
   "04:A1:B2:C3:D4:E5:F6",
   "04:A1:B2:C3:D4:E5:F7",
   "04:A1:B2:C3:D4:E5:F8",
   "04:A1:B2:C3:D4:E5:F9",
+  "04:A1:B2:C3:D4:E5:FC",
+  "04:A1:B2:C3:D4:E5:EE",
   "04:A1:B2:C3:D4:E5:FA",
   "04:A1:B2:C3:D4:E5:FB",
   "04:A1:B2:C3:D4:E5:FD",

@@ -135,7 +135,7 @@ final class KlaritiAPIClient {
         }
 
         return try await send(
-            path: "/api/admin/ktag/register",
+            path: "/api/admin/ktags",
             method: "POST",
             token: token,
             body: Body(uid: uid, tagType: tagType)
@@ -145,7 +145,7 @@ final class KlaritiAPIClient {
     func ktagByUID(token: String, uid: String) async throws -> KlaritiKtag {
         let encodedUID = uid.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? uid
         return try await send(
-            path: "/api/admin/ktag/uid/\(encodedUID)",
+            path: "/api/admin/ktags/uid/\(encodedUID)",
             method: "GET",
             token: token
         )
@@ -167,7 +167,7 @@ final class KlaritiAPIClient {
         let encodedTagId = tagId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? tagId
 
         return try await send(
-            path: "/api/admin/ktag/\(encodedTagId)",
+            path: "/api/admin/ktags/\(encodedTagId)",
             method: "PATCH",
             token: token,
             body: Body(status: status, label: label, tagType: tagType)

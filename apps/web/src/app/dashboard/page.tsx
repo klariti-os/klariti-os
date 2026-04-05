@@ -5,7 +5,7 @@ import { NextPage } from "next";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
-import type { ChallengeWithStatus, Goal, ParticipantStatus } from "@klariti/contracts";
+import type { ChallengeWithStatus, Goal, ParticipantStatus } from "@klariti/api/contracts";
 import { Switch } from "@repo/ui/switch";
 
 interface Intent {

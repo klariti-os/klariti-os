@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { createApiClient, type ChallengeWithStatus } from "@klariti/contracts";
+import { createApiClient } from "@klariti/api/client";
+import type { ChallengeWithStatus } from "@klariti/api/contracts";
 import "./style.css";
 
 const API_URL = "http://localhost:4200";
