@@ -10,7 +10,6 @@ import {
   authAccount,
   authVerification,
 } from "@klariti/database";
-import { toWebHeaders } from "../utils/headers.js";
 
 // ── better-auth instance ────────────────────────────────────────────────────
 const trustedOrigins = (process.env.CORS_ORIGINS ?? "")
@@ -49,6 +48,7 @@ export type Session = typeof auth.$Infer.Session;
 declare module "fastify" {
   interface FastifyRequest {
     session: Session | null;
+    webHeaders(): Headers;
   }
   interface FastifyInstance {
     auth: typeof auth;
@@ -68,15 +68,26 @@ export default fp(
     // Expose the auth instance so routes can call auth.api.* via fastify.auth
     fastify.decorate("auth", auth);
 
-    // Attach session to every request (null if unauthenticated)
     fastify.decorateRequest("session", null);
+
+    fastify.decorateRequest(
+      "webHeaders", 
+      function () {
+      const webHeaders = new Headers();
+      for (const [key, value] of Object.entries(this.headers)) {
+        if (value !== undefined) {
+          webHeaders.set(key, Array.isArray(value) ? value.join(", ") : value);
+        }
+      }
+      return webHeaders;
+    });
 
     // Reusable preHandler – use on any protected route:
     //   { preHandler: [fastify.verifySession] }
     fastify.decorate(
       "verifySession",
       async function (request: FastifyRequest, reply: FastifyReply) {
-        const headers = toWebHeaders(request.headers);
+        const headers = request.webHeaders();
         const session = await auth.api.getSession({ headers });
         if (!session) {
           return reply.status(401).send({ error: "Unauthorized" });
@@ -88,7 +99,7 @@ export default fp(
     fastify.decorate(
       "verifyAdmin",
       async function (request: FastifyRequest, reply: FastifyReply) {
-        const headers = toWebHeaders(request.headers);
+        const headers = request.webHeaders();
         const session = await auth.api.getSession({ headers });
         if (!session) {
           return reply.status(401).send({ error: "Unauthorized" });
@@ -107,7 +118,7 @@ export default fp(
       schema: { hide: true },
       async handler(request, reply) {
         const url = new URL(request.url, `http://${request.headers.host}`);
-        const headers = toWebHeaders(request.headers);
+        const headers = request.webHeaders();
 
         const req = new Request(url.toString(), {
           method: request.method,

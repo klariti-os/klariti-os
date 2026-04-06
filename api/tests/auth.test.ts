@@ -5,7 +5,10 @@ import { cleanupTestUsers } from "./helpers/cleanup.js";
 import { testEmail } from "./helpers/auth.js";
 
 const app = buildApp();
-beforeAll(() => app.ready());
+beforeAll(async () => {
+  await cleanupTestUsers();
+  await app.ready();
+});
 afterAll(async () => {
   await cleanupTestUsers();
   await app.close();

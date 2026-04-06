@@ -48,6 +48,7 @@ async function inviteFriend(token: string, challengeId: string, userId: string) 
 }
 
 beforeAll(async () => {
+  await cleanupTestUsers();
   await app.ready();
   ({ token: tokenA, userId: userAId } = await signUp(app, testEmail("chal-a"), "Owner Alpha"));
   ({ token: tokenB, userId: userBId } = await signUp(app, testEmail("chal-b"), "Friend Beta"));

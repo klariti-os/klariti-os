@@ -10,6 +10,7 @@ let tokenB: string;
 let userBId: string;
 
 beforeAll(async () => {
+  await cleanupTestUsers();
   await app.ready();
   ({ token: tokenA, userId: userAId } = await signUp(app, testEmail("friends-a")));
   ({ token: tokenB, userId: userBId } = await signUp(app, testEmail("friends-b")));
