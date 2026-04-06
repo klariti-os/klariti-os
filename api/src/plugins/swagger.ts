@@ -6,7 +6,7 @@ import { generateOpenApi } from "@ts-rest/open-api";
 import { contract } from "../api.contract.js";
 
 const openApiDocument = generateOpenApi(
-  contract,
+  contract, 
   {
     info: { title: "Klariti API", description: "Klariti OS REST API", version: "1.0.0" },
     servers: [{ url: "/", description: "Current server" }],
