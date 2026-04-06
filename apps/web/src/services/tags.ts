@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createApiClient } from "@klariti/contracts";
+import { createApiClient } from "@klariti/api/client";
 import API_BASE from "@/lib/configs/api";
 
 const serverApi = createApiClient({ baseUrl: API_BASE });

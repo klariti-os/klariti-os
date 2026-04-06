@@ -26,11 +26,54 @@ packages/
 
 ## API
 
-Fastify on port 4200. Plugin-first: auth, session verification, and Swagger are registered as plugins before routes. Routes are flat files named `<domain>.<resource>.ts` (e.g. `me.friends.ts`, `me.challenges.ts`).
+Fastify on port 4200. Plugin-first: auth, session verification, and Swagger are registered as plugins before routes. Server features are organized as domain modules under `api/src/modules/`.
 
 Auth is handled by Better Auth with a Drizzle adapter. The bearer plugin enables token-based auth for mobile and extension clients. Sessions are attached to every request via a `verifySession` preHandler decorator.
 
 Dev: `tsx watch src/server.ts`
+
+### Vercel deployment note
+
+The `klariti-api` Vercel project uses the Fastify framework preset with `api/` as the root directory, and `api/src/server.ts` must stay as a plain Fastify entrypoint file.
+
+Important constraint: do not export the Fastify instance from `api/src/server.ts` (for example `export const server = ...` or `export default server`). When that shape was introduced during the April 5, 2026 refactor, Vercel builds still succeeded, but runtime bootstrapping broke and requests started failing with errors like:
+
+- `Invalid export found in module`
+- `TypeError: fastify.register...`
+- `504 INTERNAL_FUNCTION_INVOCATION_TIMEOUT`
+
+The working pattern is:
+
+- create the Fastify instance inside `api/src/server.ts`
+- register plugins and routes there
+- call `server.listen(...)` there
+- do not export the instance
+
+If Vercel suddenly starts timing out on `/` even though the build is green, check the `api/src/server.ts` entrypoint shape first before debugging route handlers or database calls.
+
+### API modules
+
+The API is organized by domain modules under `api/src/modules/<domain>/` rather than by technical layer. Each module keeps its own related concerns together:
+
+```txt
+api/src/modules/friends/
+  contract.ts
+  schemas.ts
+  router.ts
+  service.ts
+  repository.ts
+```
+
+This keeps the ts-rest contract, request/response schemas, server route implementation, and domain logic close to each other so adding a route does not require editing a separate contracts package first.
+
+### Client-safe exports
+
+Client consumers import the shared API surface from `@klariti/api`, not from a separate contracts workspace package:
+
+- `@klariti/api/contracts` — ts-rest contracts and shared schema/types
+- `@klariti/api/client` — `createApiClient(...)`
+
+These exports are intentionally limited to client-safe files so web and extension code can share the contract surface without importing Fastify, Better Auth server wiring, or database code.
 
 ## Auth package
 
@@ -130,9 +173,9 @@ interface Ktag {
 
 **Ownership model**: `owner_id` uses `ON DELETE SET NULL` so tags return to unassigned inventory if the owning user is removed.
 
-**Issuance model**: all Klariti tag IDs use the `kt_` prefix and are generated server-side. Tag registration happens through `POST /api/admin/ktag/register`. The admin client submits only the raw NFC `uid` plus enum `tag_type`, and the server normalizes and hashes the UID, signs `v<sig_version>|<tag_id>|<uid_hash>` with its private key, generates a friendly two-word label, and writes the resulting message into the payload URL as `https://klariti.so/tag/v<sig_version>.<tag_id>.<signature>`.
+**Issuance model**: all Klariti tag IDs use the `kt_` prefix and are generated server-side. Tag registration happens through `POST /api/admin/ktags`. The admin client submits only the raw NFC `uid` plus enum `tag_type`, and the server normalizes and hashes the UID, signs `v<sig_version>|<tag_id>|<uid_hash>` with its private key, generates a friendly two-word label, and writes the resulting message into the payload URL as `https://klariti.so/tag/v<sig_version>.<tag_id>.<signature>`.
 
-**Mutable patch model**: `PATCH /api/admin/ktag/:tag_id` is intentionally narrow and only updates inventory / assignment fields:
+**Mutable patch model**: `PATCH /api/admin/ktags/:tag_id` is intentionally narrow and only updates inventory / assignment fields:
 - `status`
 - `label`
 - `tag_type`

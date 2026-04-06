@@ -1,4 +1,4 @@
-import { createApiClient } from "@klariti/contracts";
+import { createApiClient } from "@klariti/api/client";
 import API_BASE from "@/lib/configs/api";
 
 export const api = createApiClient({
