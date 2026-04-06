@@ -14,7 +14,7 @@ import { config } from "./config.js";
 
 const s = initServer();
 
-export const server = Fastify({
+const server = Fastify({
   routerOptions: {
     maxParamLength: 1024,
   },
@@ -75,5 +75,3 @@ async function init() {
 });
 
 init();
-
-export default server;

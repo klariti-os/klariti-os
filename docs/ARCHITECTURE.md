@@ -32,6 +32,25 @@ Auth is handled by Better Auth with a Drizzle adapter. The bearer plugin enables
 
 Dev: `tsx watch src/server.ts`
 
+### Vercel deployment note
+
+The `klariti-api` Vercel project uses the Fastify framework preset with `api/` as the root directory, and `api/src/server.ts` must stay as a plain Fastify entrypoint file.
+
+Important constraint: do not export the Fastify instance from `api/src/server.ts` (for example `export const server = ...` or `export default server`). When that shape was introduced during the April 5, 2026 refactor, Vercel builds still succeeded, but runtime bootstrapping broke and requests started failing with errors like:
+
+- `Invalid export found in module`
+- `TypeError: fastify.register...`
+- `504 INTERNAL_FUNCTION_INVOCATION_TIMEOUT`
+
+The working pattern is:
+
+- create the Fastify instance inside `api/src/server.ts`
+- register plugins and routes there
+- call `server.listen(...)` there
+- do not export the instance
+
+If Vercel suddenly starts timing out on `/` even though the build is green, check the `api/src/server.ts` entrypoint shape first before debugging route handlers or database calls.
+
 ### API modules
 
 The API is organized by domain modules under `api/src/modules/<domain>/` rather than by technical layer. Each module keeps its own related concerns together:
