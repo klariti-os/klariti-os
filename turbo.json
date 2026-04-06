@@ -23,6 +23,20 @@
       "outputs": [".next/**", "dist/**", "!.next/cache/**"]
     },
     "@klariti/api#build": {
+      "env": [
+        "NODE_ENV",
+        "BLOB_READ_WRITE_TOKEN",
+        "NEXT_PUBLIC_API_URL",
+        "DATABASE_URL",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "CORS_ORIGINS",
+        "YOUTUBE_API_KEY",
+        "KTAG_BASE_URL",
+        "KTAG_SIG_VERSION",
+        "KTAG_SIGNING_PRIVATE_KEY",
+        "KTAG_SIGNING_PUBLIC_KEY"
+      ],
       "outputs": []
     },
     "lint": {
