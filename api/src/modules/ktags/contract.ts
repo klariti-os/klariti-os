@@ -33,7 +33,7 @@ export const ktagsContract = c.router({
 export const adminKtagsContract = c.router({
   register: {
     method: "POST",
-    path: "/api/admin/ktags",
+    path: "/api/admin/ktag/register",
     body: RegisterKtagBodySchema,
     responses: {
       201: KtagSchema,
