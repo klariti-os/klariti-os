@@ -21,7 +21,7 @@ export const ktagsContract = c.router({
   },
   updateLabel: {
     method: "PATCH",
-    path: "/api/me/ktags/:tag_id/label",
+    path: "/api/me/ktags/label/:tag_id",
     pathParams: z.object({ tag_id: z.string() }),
     body: UpdateKtagLabelBodySchema,
     responses: { 200: KtagSchema, 401: ErrorSchema, 404: ErrorSchema },
