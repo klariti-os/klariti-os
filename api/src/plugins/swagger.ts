@@ -6,17 +6,22 @@ import { generateOpenApi } from "@ts-rest/open-api";
 import { contract } from "../api.contract.js";
 
 const openApiDocument = generateOpenApi(
-  contract, 
+  contract,
   {
     info: { title: "Klariti API", description: "Klariti OS REST API", version: "1.0.0" },
     servers: [{ url: "/", description: "Current server" }],
     components: {
       securitySchemes: {
         bearerAuth: {
-          type: "http",
-          scheme: "bearer",
+          type: "oauth2",
           description:
-            "Sign in via POST /api/sign-in, copy the token from the response, then paste it here.",
+            "Use Swagger UI's built-in password flow to sign in. The username field should be your Klariti account email.",
+          flows: {
+            password: {
+              tokenUrl: "/api/docs/oauth/token",
+              scopes: {},
+            },
+          },
         },
       },
     },
@@ -44,6 +49,9 @@ export default fp(
         docExpansion: "list",
         deepLinking: true,
         persistAuthorization: true,
+      },
+      theme: {
+        title: "Klariti API Docs",
       },
     });
   },
