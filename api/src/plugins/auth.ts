@@ -44,6 +44,22 @@ const auth = betterAuth({
 
 export type Session = typeof auth.$Infer.Session;
 
+function sendOauthTokenError(
+  reply: FastifyReply,
+  statusCode: number,
+  error: string,
+  errorDescription: string,
+) {
+  return reply
+    .status(statusCode)
+    .header("cache-control", "no-store")
+    .header("pragma", "no-cache")
+    .send({
+      error,
+      error_description: errorDescription,
+    });
+}
+
 // ── Fastify type augmentation ───────────────────────────────────────────────
 declare module "fastify" {
   interface FastifyRequest {
@@ -110,6 +126,75 @@ export default fp(
         request.session = session;
       },
     );
+
+    fastify.route({
+      method: "POST",
+      url: "/api/docs/oauth/token",
+      schema: { hide: true },
+      async handler(request, reply) {
+        const body = (request.body ?? {}) as Record<string, unknown>;
+        const grantType =
+          typeof body.grant_type === "string" ? body.grant_type : undefined;
+        const username =
+          typeof body.username === "string" ? body.username.trim() : undefined;
+        const password =
+          typeof body.password === "string" ? body.password : undefined;
+        const scope = typeof body.scope === "string" ? body.scope : undefined;
+
+        if (grantType !== "password") {
+          return sendOauthTokenError(
+            reply,
+            400,
+            "unsupported_grant_type",
+            "Only the OAuth2 password grant is supported for Swagger UI.",
+          );
+        }
+
+        if (!username || !password) {
+          return sendOauthTokenError(
+            reply,
+            400,
+            "invalid_request",
+            "username and password are required.",
+          );
+        }
+
+        try {
+          const data = await auth.api.signInEmail({
+            body: {
+              email: username,
+              password,
+              rememberMe: true,
+            },
+          });
+
+          if (!data.token) {
+            return sendOauthTokenError(
+              reply,
+              500,
+              "server_error",
+              "No bearer token was returned.",
+            );
+          }
+
+          return reply
+            .header("cache-control", "no-store")
+            .header("pragma", "no-cache")
+            .send({
+              access_token: data.token,
+              token_type: "Bearer",
+              ...(scope ? { scope } : {}),
+            });
+        } catch {
+          return sendOauthTokenError(
+            reply,
+            400,
+            "invalid_grant",
+            "Invalid email or password.",
+          );
+        }
+      },
+    });
 
     // Forward all better-auth routes (cookie-based auth, etc.)
     fastify.route({
