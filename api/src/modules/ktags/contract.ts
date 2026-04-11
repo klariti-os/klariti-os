@@ -56,7 +56,7 @@ export const adminKtagsContract = c.router({
   },
   getByUid: {
     method: "GET",
-    path: "/api/admin/ktags/uid/:uid",
+    path: "/api/admin/ktag/uid/:uid",
     pathParams: z.object({ uid: z.string() }),
     responses: {
       200: KtagSchema,
